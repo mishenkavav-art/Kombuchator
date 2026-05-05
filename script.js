@@ -22,7 +22,7 @@ const teaTypes = {
   rooibos: { label: "rooibos", icon: "ikony/rooibos.png", main: false, grams: 6 },
   hibiscus: { label: "ibišek", icon: "ikony/ibišek.png", main: false, grams: 3 },
   fruit: { label: "ovocný", icon: "ikony/ovocný čaj.png", main: false, grams: 3 },
-  herbal: { label: "bylinný", icon: "ikony/ovocný čaj.png", main: false, grams: 3 }
+  herbal: { label: "bylinný", icon: "ikony/bylinný čaj.png", main: false, grams: 3 }
 };
 
 const pellicles = {
