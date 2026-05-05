@@ -1,9 +1,9 @@
 const goals = [
-  { id: "gentle", icon: "🌿", title: "slabý čajíček", note: "Lehká, jemná chuť.", percent: 0.10, days: "3–5 dní", tasteDay: "4.–5. den" },
-  { id: "balanced", icon: "🥃", title: "kombucha jak má být", note: "Vyvážený standard.", percent: 0.13, days: "4–7 dní", tasteDay: "3.–4. den" },
-  { id: "tangy", icon: "🍹", title: "kyselejší limonáda", note: "Výraznější říz.", percent: 0.15, days: "6–9 dní", tasteDay: "3. den" },
-  { id: "starter", icon: "🫙", title: "startér pro příště", note: "Kyselost je cíl.", percent: 0.18, days: "8+ dní", tasteDay: "5. den" },
-  { id: "enemy", icon: "☠️", title: "kyselina pro nepřátele", note: "Spíš čistič než pití.", percent: 0.20, days: "varování", tasteDay: "2. den" }
+  { id: "gentle", icon: "ikony/slabý čajíček_výluh z ponožek.png", title: "slabý čajíček", note: "Lehká, jemná chuť.", percent: 0.10, days: "3–5 dní", tasteDay: "4.–5. den" },
+  { id: "balanced", icon: "ikony/kombucha jak má být.png", title: "kombucha jak má být", note: "Vyvážený standard.", percent: 0.13, days: "4–7 dní", tasteDay: "3.–4. den" },
+  { id: "tangy", icon: "ikony/kyselejší limonádka.png", title: "kyselejší limonáda", note: "Výraznější říz.", percent: 0.15, days: "6–9 dní", tasteDay: "3. den" },
+  { id: "starter", icon: "ikony/startér pro příště.png", title: "startér pro příště", note: "Kyselost je cíl.", percent: 0.18, days: "8+ dní", tasteDay: "5. den" },
+  { id: "enemy", icon: "ikony/kyselina pro nepřátele.png", title: "kyselina pro nepřátele", note: "Spíš čistič než pití.", percent: 0.20, days: "varování", tasteDay: "2. den" }
 ];
 
 const starterTypes = {
@@ -15,21 +15,21 @@ const starterTypes = {
 };
 
 const teaTypes = {
-  black: { label: "černý", icon: "🍃", main: true, grams: 6 },
-  green: { label: "zelený", icon: "🌱", main: true, grams: 5 },
-  white: { label: "bílý", icon: "🍂", main: true, grams: 5 },
-  oolong: { label: "oolong", icon: "🫖", main: true, grams: 6 },
-  rooibos: { label: "rooibos", icon: "🧡", main: false, grams: 6 },
-  hibiscus: { label: "ibišek", icon: "🌺", main: false, grams: 3 },
-  fruit: { label: "ovocný", icon: "🍓", main: false, grams: 3 },
-  herbal: { label: "bylinný", icon: "🌼", main: false, grams: 3 }
+  black: { label: "černý", icon: "ikony/černý čaj.png", main: true, grams: 6 },
+  green: { label: "zelený", icon: "ikony/zelený čaj.png", main: true, grams: 5 },
+  white: { label: "bílý", icon: "ikony/bílý čaj.png", main: true, grams: 5 },
+  oolong: { label: "oolong", icon: "ikony/oolong.png", main: true, grams: 6 },
+  rooibos: { label: "rooibos", icon: "ikony/rooibos.png", main: false, grams: 6 },
+  hibiscus: { label: "ibišek", icon: "ikony/ibišek.png", main: false, grams: 3 },
+  fruit: { label: "ovocný", icon: "ikony/ovocný čaj.png", main: false, grams: 3 },
+  herbal: { label: "bylinný", icon: "ikony/ovocný čaj.png", main: false, grams: 3 }
 };
 
 const pellicles = {
-  jelly: { label: "medůzka", icon: "🪼", score: 0.5 },
-  palm: { label: "do dlaně", icon: "🥞", score: 1 },
-  pancake: { label: "palačinka", icon: "🥞", score: 1.5 },
-  tractor: { label: "UFO", icon: "🛞", score: 2 }
+  jelly: { label: "medůzka", icon: "ikony/malá medůzka.png", score: 0.5 },
+  palm: { label: "do dlaně", icon: "ikony/kombuška do dlaně.png", score: 1 },
+  pancake: { label: "palačinka", icon: "ikony/typická palačinka.png", score: 1.5 },
+  tractor: { label: "kolo od traktoru", icon: "ikony/placka jak kolo od traktoru.png", score: 2 }
 };
 
 let teaIdCounter = 0;
@@ -116,7 +116,7 @@ function approxRange(n, step = 5) {
 function renderChoices() {
   els.goalGrid.innerHTML = goals.map(goal => `
     <button class="goal-card ${state.goal === goal.id ? "active" : ""}" type="button" data-goal="${goal.id}">
-      <span class="icon">${goal.icon}</span>
+      <img class="icon" src="${goal.icon}" alt="" aria-hidden="true">
       <strong>${goal.title}</strong>
       <small>${goal.note}</small>
     </button>
@@ -128,7 +128,7 @@ function renderChoices() {
 
   els.pellicleSize.innerHTML = Object.entries(pellicles).map(([id, item]) => `
     <button class="pellicle-card ${state.pellicleSize === id ? "active" : ""}" type="button" data-pellicle="${id}">
-      <span class="icon">${item.icon}</span>
+      <img class="icon" src="${item.icon}" alt="" aria-hidden="true">
       <strong>${item.label}</strong>
     </button>
   `).join("");
@@ -150,7 +150,7 @@ function renderTeas() {
     <div class="tea-row" data-tea-id="${tea.id}">
       <input class="tea-check" type="checkbox" ${tea.enabled ? "checked" : ""} aria-label="Použít čaj">
       <select class="tea-type">
-        ${Object.entries(teaTypes).map(([id, item]) => `<option value="${id}" ${tea.type === id ? "selected" : ""}>${item.icon} ${item.label}</option>`).join("")}
+        ${Object.entries(teaTypes).map(([id, item]) => `<option value="${id}" ${tea.type === id ? "selected" : ""}>${item.label}</option>`).join("")}
       </select>
       <select class="tea-role ${showDetails ? "" : "visually-hidden"}" title="Role čaje" aria-label="Role čaje">
         <option value="main" ${tea.role === "main" ? "selected" : ""}>hlavní</option>

@@ -69,55 +69,11 @@ select {
   font-weight: 800;
 }
 
-.jar-logo {
-  position: relative;
-  width: 72px;
+.brand-icon {
+  width: 86px;
   height: 86px;
-  border: 4px solid #d9973c;
-  border-radius: 12px 12px 18px 18px;
-  background: linear-gradient(#fffaf0 0 26%, #f8b33b 27% 100%);
-  box-shadow: inset 0 -15px 0 rgba(178, 103, 17, 0.18);
-}
-
-.jar-lid {
-  position: absolute;
-  left: -8px;
-  top: -12px;
-  width: 88px;
-  height: 22px;
-  border: 3px solid #d9973c;
-  border-radius: 50%;
-  background: #fff8ec;
-}
-
-.jar-tea {
-  position: absolute;
-  left: 11px;
-  right: 11px;
-  bottom: 14px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgba(129, 70, 13, 0.2);
-}
-
-.jar-bubble {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.62);
-}
-
-.b1 {
-  width: 10px;
-  height: 10px;
-  left: 18px;
-  top: 42px;
-}
-
-.b2 {
-  width: 7px;
-  height: 7px;
-  right: 17px;
-  top: 55px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .ghost-button {
@@ -255,9 +211,10 @@ select {
 .goal-card .icon,
 .pellicle-card .icon {
   display: block;
-  font-size: 36px;
-  line-height: 1.1;
-  margin-bottom: 10px;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  margin: 0 auto 10px;
 }
 
 .goal-card strong,
@@ -332,6 +289,13 @@ label span,
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.field-icon {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 input,
@@ -500,6 +464,11 @@ select {
 
 .pellicle-card {
   min-height: 92px;
+}
+
+.pellicle-card .icon {
+  width: 48px;
+  height: 48px;
 }
 
 .count-row {
