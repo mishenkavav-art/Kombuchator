@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kombuchátor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <div class="jar-logo" aria-hidden="true">
+          <span class="jar-lid"></span>
+          <span class="jar-tea"></span>
+          <span class="jar-bubble b1"></span>
+          <span class="jar-bubble b2"></span>
+        </div>
+        <div>
+          <h1>Kombuchátor</h1>
+          <p>Spočítá nálev, odhadne hrozící průšvih a řekne, kdy ochutnat.</p>
+        </div>
+      </div>
+      <button class="ghost-button" id="howItWorksBtn" type="button">Jak to funguje? <span>?</span></button>
+    </header>
+
+    <main>
+      <section class="mode-switch" aria-label="Režim kalkulačky">
+        <label class="mode-option active" data-mode-card="classic">
+          <input type="radio" name="mode" value="classic" checked>
+          <span class="radio-dot"></span>
+          <span>
+            <strong>Klasická kalkulačka</strong>
+            <small>vím, co chci, ale nevím kolik čeho použít</small>
+          </span>
+        </label>
+        <label class="mode-option" data-mode-card="experiment">
+          <input type="radio" name="mode" value="experiment">
+          <span class="radio-dot"></span>
+          <span>
+            <strong>Hokus pokus</strong>
+            <small>mám ingredience a chci vědět, co z toho vznikne</small>
+          </span>
+        </label>
+      </section>
+
+      <section class="goal-strip" id="goalStrip">
+        <div class="section-kicker">Co z toho chceš vyrobit?</div>
+        <div class="goal-grid" id="goalGrid"></div>
+      </section>
+
+      <section class="form-grid">
+        <article class="panel">
+          <h2><span>1</span><span id="volumeTitle">Jak velkou máš nádobu?</span></h2>
+          <div class="volume-grid">
+            <label>
+              <span>Velikost nádoby</span>
+              <div class="unit-input">
+                <input id="jarLiters" type="number" min="0" step="0.1" value="3">
+                <em>litrů</em>
+              </div>
+            </label>
+            <label>
+              <span>Chci vyrobit</span>
+              <div class="unit-input">
+                <input id="targetLiters" type="number" min="0" step="0.1" placeholder="např. 2">
+                <em>litrů</em>
+              </div>
+            </label>
+          </div>
+          <p class="result-line" id="volumeHint"></p>
+          <p class="microcopy">Neplníme po okraj. Kombucha není akvárko.</p>
+        </article>
+
+        <article class="panel">
+          <h2><span>2</span>Kolik máš startéru?</h2>
+          <div class="starter-layout">
+            <label>
+              <span>Množství startéru</span>
+              <div class="unit-input">
+                <input id="starterMl" type="number" min="0" step="10" value="300">
+                <em>ml</em>
+              </div>
+            </label>
+            <div>
+              <span class="field-label">Typ startéru</span>
+              <div class="segmented" id="starterType"></div>
+            </div>
+          </div>
+          <p class="result-line" id="starterHint"></p>
+        </article>
+
+        <article class="panel tea-panel">
+          <h2><span>3</span>Jaký chceš použít čaj?</h2>
+          <div class="tea-list" id="teaList"></div>
+          <button class="small-button" id="addTeaBtn" type="button">+ Přidat další čaj</button>
+          <p class="warning-line" id="teaWarning"></p>
+        </article>
+
+        <article class="panel pellicle-panel">
+          <label class="checkbox-row">
+            <input id="usePellicle" type="checkbox" checked>
+            <span>Chci zohlednit placku</span>
+            <small>volitelné</small>
+          </label>
+          <div id="pellicleControls">
+            <span class="field-label">Velikost placky</span>
+            <div class="pellicle-grid" id="pellicleSize"></div>
+            <div class="count-row">
+              <span>Počet placek</span>
+              <button type="button" id="pellicleMinus">−</button>
+              <strong id="pellicleCountLabel">1</strong>
+              <button type="button" id="pelliclePlus">+</button>
+            </div>
+            <label class="grams-row">
+              <span>Přesná gramáž, pokud ji víš</span>
+              <div class="unit-input">
+                <input id="pellicleGrams" type="number" min="0" step="5" placeholder="volitelné">
+                <em>g</em>
+              </div>
+            </label>
+            <p class="result-line" id="pellicleHint"></p>
+            <p class="microcopy">Placka není povinná. Startér je motor.</p>
+          </div>
+        </article>
+
+        <article class="panel sugar-panel" id="sugarPanel">
+          <h2><span>4</span>Jak sladký bude mít SCOBY život?</h2>
+          <div class="sugar-row">
+            <label>
+              <span>Cukr na litr čaje</span>
+              <div class="unit-input">
+                <input id="sugarPerLiter" type="number" min="0" step="5" value="65">
+                <em>g/l</em>
+              </div>
+            </label>
+            <label>
+              <span>Nebo cukr celkem</span>
+              <div class="unit-input">
+                <input id="sugarTotal" type="number" min="0" step="5" placeholder="auto">
+                <em>g</em>
+              </div>
+            </label>
+          </div>
+          <input id="sugarSlider" type="range" min="20" max="110" step="5" value="65">
+          <div class="sugar-status" id="sugarStatus"></div>
+        </article>
+      </section>
+
+      <section class="output-grid">
+        <article class="output-card needs-card">
+          <h2>Budeš potřebovat</h2>
+          <ul id="needsList"></ul>
+        </article>
+        <article class="output-card prediction-card">
+          <div>
+            <span class="section-kicker">Předpověď výsledku</span>
+            <h2 id="predictionTitle"></h2>
+            <p id="predictionText"></p>
+            <div class="intensity" id="intensityDots"></div>
+          </div>
+          <div class="recommendations" id="recommendations"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="howItWorksDialog">
+    <div class="modal-card">
+      <button class="close-button" id="closeDialog" type="button" aria-label="Zavřít">×</button>
+      <h2>Jak to funguje?</h2>
+      <p>Kombucha vzniká fermentací oslazeného čaje. Nejdůležitější je aktivní kyselý startér, protože SCOBY nežije jen v placce, ale hlavně v tekutině.</p>
+      <ul>
+        <li>Celulózová placka je hlavně biofilm. Pomáhá, ale bez startéru to nepošlape.</li>
+        <li>F1 se nezavírá vzduchotěsně. Zakryj ji látkou, ať může dýchat.</li>
+        <li>Ochutnávání je důležitější než počítání dnů.</li>
+        <li>Výpočty jsou orientační. Záleží na teplotě, síle startéru a náladě kultury.</li>
+      </ul>
+      <p class="microcopy">Ochutnávej. Nejlepší výsledek ti sdělí vlastní chuťové pohárky.</p>
+    </div>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>
