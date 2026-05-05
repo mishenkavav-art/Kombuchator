@@ -1,9 +1,9 @@
 const goals = [
-  { id: "gentle", icon: "🌿", title: "jemný čajíček", note: "Lehká, jemná chuť.", percent: 0.10, days: "3–5 dní", tasteDay: "4.–5. den" },
+  { id: "gentle", icon: "🌿", title: "slabý čajíček", note: "Lehká, jemná chuť.", percent: 0.10, days: "3–5 dní", tasteDay: "4.–5. den" },
   { id: "balanced", icon: "🥃", title: "kombucha jak má být", note: "Vyvážený standard.", percent: 0.13, days: "4–7 dní", tasteDay: "3.–4. den" },
   { id: "tangy", icon: "🍹", title: "kyselejší limonáda", note: "Výraznější říz.", percent: 0.15, days: "6–9 dní", tasteDay: "3. den" },
   { id: "starter", icon: "🫙", title: "startér pro příště", note: "Kyselost je cíl.", percent: 0.18, days: "8+ dní", tasteDay: "5. den" },
-  { id: "enemy", icon: "☠️", title: "kyselina pro nepřítele", note: "Spíš čistič než pití.", percent: 0.20, days: "varování", tasteDay: "2. den" }
+  { id: "enemy", icon: "☠️", title: "kyselina pro nepřátele", note: "Spíš čistič než pití.", percent: 0.20, days: "varování", tasteDay: "2. den" }
 ];
 
 const starterTypes = {
@@ -42,6 +42,7 @@ function createTeaId() {
 const state = {
   mode: "classic",
   goal: "tangy",
+  volumeSource: "jar",
   starterType: "normal",
   teas: [
     { id: createTeaId(), enabled: true, type: "black", role: "main", grams: 6, waterMl: "" },
@@ -55,13 +56,17 @@ const state = {
 const els = {
   goalGrid: document.querySelector("#goalGrid"),
   goalStrip: document.querySelector("#goalStrip"),
+  modeNote: document.querySelector("#modeNote"),
   volumeTitle: document.querySelector("#volumeTitle"),
+  jarChoice: document.querySelector("#jarChoice"),
   jarLiters: document.querySelector("#jarLiters"),
+  targetChoice: document.querySelector("#targetChoice"),
   targetLiters: document.querySelector("#targetLiters"),
   volumeHint: document.querySelector("#volumeHint"),
   starterMl: document.querySelector("#starterMl"),
   starterType: document.querySelector("#starterType"),
   starterHint: document.querySelector("#starterHint"),
+  teaIntro: document.querySelector("#teaIntro"),
   teaList: document.querySelector("#teaList"),
   addTeaBtn: document.querySelector("#addTeaBtn"),
   teaWarning: document.querySelector("#teaWarning"),
@@ -74,6 +79,7 @@ const els = {
   pellicleGrams: document.querySelector("#pellicleGrams"),
   pellicleHint: document.querySelector("#pellicleHint"),
   sugarPanel: document.querySelector("#sugarPanel"),
+  sugarTitle: document.querySelector("#sugarTitle"),
   sugarPerLiter: document.querySelector("#sugarPerLiter"),
   sugarTotal: document.querySelector("#sugarTotal"),
   sugarSlider: document.querySelector("#sugarSlider"),
@@ -129,18 +135,29 @@ function renderChoices() {
 }
 
 function renderTeas() {
-  els.teaList.innerHTML = state.teas.map(tea => `
+  const showDetails = state.mode === "experiment";
+  els.teaList.classList.toggle("simple-tea-list", !showDetails);
+  els.teaList.innerHTML = (showDetails ? `
+      <div class="tea-row tea-row-head" aria-hidden="true">
+        <span></span>
+        <strong>Typ čaje</strong>
+        <strong>Role</strong>
+        <strong>g/l</strong>
+        <strong>Voda</strong>
+        <span></span>
+      </div>
+    ` : "") + state.teas.map(tea => `
     <div class="tea-row" data-tea-id="${tea.id}">
       <input class="tea-check" type="checkbox" ${tea.enabled ? "checked" : ""} aria-label="Použít čaj">
       <select class="tea-type">
         ${Object.entries(teaTypes).map(([id, item]) => `<option value="${id}" ${tea.type === id ? "selected" : ""}>${item.icon} ${item.label}</option>`).join("")}
       </select>
-      <select class="tea-role" title="Role čaje">
+      <select class="tea-role ${showDetails ? "" : "visually-hidden"}" title="Role čaje" aria-label="Role čaje">
         <option value="main" ${tea.role === "main" ? "selected" : ""}>hlavní</option>
         <option value="extra" ${tea.role === "extra" ? "selected" : ""}>přídavný</option>
       </select>
-      <input class="tea-grams" type="number" min="0" step="0.5" value="${tea.grams}" aria-label="Gramáž v g/l">
-      <input class="tea-water" type="number" min="0" step="50" value="${tea.waterMl}" placeholder="voda ml" aria-label="Objem vody v ml">
+      <input class="tea-grams ${showDetails ? "" : "visually-hidden"}" type="number" min="0" step="0.5" value="${tea.grams}" aria-label="Gramáž v g/l">
+      <input class="tea-water ${showDetails ? "" : "visually-hidden"}" type="number" min="0" step="50" value="${tea.waterMl}" placeholder="auto" aria-label="Objem vody v ml">
       <button class="remove-tea" type="button" aria-label="Odebrat čaj">×</button>
     </div>
   `).join("");
@@ -149,7 +166,7 @@ function renderTeas() {
 function calculate() {
   const jarLiters = numberValue(els.jarLiters, 3);
   const targetLiters = numberValue(els.targetLiters, 0);
-  const usesTarget = targetLiters > 0;
+  const usesTarget = state.volumeSource === "target" && targetLiters > 0;
   const workingLiters = usesTarget ? targetLiters : Math.max(0, jarLiters * 0.9);
   const neededJar = workingLiters / 0.9;
   const goal = goals.find(item => item.id === state.goal) || goals[1];
@@ -157,30 +174,77 @@ function calculate() {
   let starterMl = numberValue(els.starterMl, 0);
   if (state.starterType === "unknown" || starterMl <= 0) starterMl = workingLiters * goal.percent * 1000;
   const starterLiters = starterMl / 1000;
-  const teaLiters = Math.max(0, workingLiters - starterLiters);
+  const plannedTeaLiters = Math.max(0, workingLiters - starterLiters);
   const enabledTeas = state.teas.filter(tea => tea.enabled);
-  const teaWaterTotalMl = enabledTeas.reduce((sum, tea) => sum + (Number(tea.waterMl) || 0), 0);
-  const autoWater = teaWaterTotalMl <= 0;
-  const perTeaWater = autoWater && enabledTeas.length ? teaLiters * 1000 / enabledTeas.length : 0;
-  const teaItems = enabledTeas.map(tea => {
-    const waterMl = autoWater ? perTeaWater : Number(tea.waterMl) || 0;
-    return { ...tea, waterMl, gramsTotal: waterMl / 1000 * (Number(tea.grams) || teaTypes[tea.type].grams) };
-  });
+  const teaItems = state.mode === "classic"
+    ? buildClassicTeaItems(enabledTeas, plannedTeaLiters)
+    : buildExperimentTeaItems(enabledTeas, plannedTeaLiters);
+  const teaWaterTotalMl = state.mode === "experiment"
+    ? enabledTeas.reduce((sum, tea) => sum + (Number(tea.waterMl) || 0), 0)
+    : teaItems.reduce((sum, tea) => sum + tea.waterMl, 0);
+  const teaLiters = teaItems.reduce((sum, tea) => sum + tea.waterMl / 1000, 0);
   const teaTotalGrams = teaItems.reduce((sum, tea) => sum + tea.gramsTotal, 0);
-  const sugarPerLiter = state.sugarSource === "total" && numberValue(els.sugarTotal, 0) > 0
+  const recommendedSugar = goal.id === "gentle" ? 60 : goal.id === "tangy" ? 60 : goal.id === "starter" ? 65 : goal.id === "enemy" ? 55 : 65;
+  const sugarPerLiter = state.mode === "classic" ? recommendedSugar : state.sugarSource === "total" && numberValue(els.sugarTotal, 0) > 0
     ? numberValue(els.sugarTotal, 0) / Math.max(teaLiters, 0.1)
     : numberValue(els.sugarPerLiter, 65);
   const sugarTotal = sugarPerLiter * teaLiters;
   const starterPercent = workingLiters > 0 ? starterLiters / workingLiters * 100 : 0;
+  const totalLiquidLiters = starterLiters + teaItems.reduce((sum, tea) => sum + tea.waterMl / 1000, 0);
   const mainTeaMl = teaItems.filter(tea => tea.role === "main" && teaTypes[tea.type].main).reduce((sum, tea) => sum + tea.waterMl, 0);
   const onlyExtraTea = teaItems.length > 0 && mainTeaMl === 0;
   const teaScore = teaItems.reduce((max, tea) => Math.max(max, Number(tea.grams) || 0), 0);
   const sugarScore = sugarPerLiter < 50 ? -1 : sugarPerLiter > 80 ? 1 : 0;
   const starterScore = starterPercent > 25 ? 2 : starterPercent > 16 ? 1 : starterPercent < 9 ? -1 : 0;
-  const sourScore = starterType.score + starterScore + sugarScore + (goal.id === "starter" ? 2 : goal.id === "enemy" ? 3 : goal.id === "tangy" ? 1 : 0);
+  const goalScore = state.mode === "classic" ? (goal.id === "starter" ? 2 : goal.id === "enemy" ? 3 : goal.id === "tangy" ? 1 : goal.id === "gentle" ? -1 : 0) : 0;
+  const sourScore = starterType.score + starterScore + sugarScore + goalScore;
   const intensity = Math.max(1, Math.min(5, 3 + sourScore));
+  const fermentationDays = state.mode === "classic"
+    ? goal.days
+    : intensity <= 2 ? "5–8 dní" : intensity === 3 ? "4–7 dní" : intensity === 4 ? "3–6 dní" : "2–5 dní";
+  const errors = [];
+  const warnings = [];
+  if (workingLiters <= 0) errors.push("Doplň objem nádoby nebo množství kombuchy.");
+  if (!enabledTeas.length) errors.push("Vyber alespoň jeden čaj.");
+  if (starterLiters > workingLiters && workingLiters > 0) errors.push("Startér je větší než pracovní objem. Výpočet nedává smysl.");
+  if (!usesTarget && totalLiquidLiters > jarLiters) errors.push("Součet startéru a vody přesahuje fyzickou velikost nádoby.");
+  if (totalLiquidLiters > workingLiters * 1.05 && workingLiters > 0) warnings.push("Součet vody a startéru je o víc než 5 % nad pracovním objemem.");
+  if (teaWaterTotalMl > 0 && totalLiquidLiters < workingLiters * 0.95 && workingLiters > 0) warnings.push("Zadaná voda a startér nedosahují plánovaného objemu. Výstup počítá s tím, co jsi opravdu zadala.");
+  if (onlyExtraTea) warnings.push("Je vybraný jen přídavný čaj. Přidej černý, zelený, bílý čaj nebo oolong.");
+  if (state.mode === "classic" && goal.id === "enemy") warnings.push("Tenhle cíl není doporučený jako pitný výsledek.");
 
-  return { jarLiters, targetLiters, usesTarget, workingLiters, neededJar, goal, starterType, starterMl, starterLiters, teaLiters, teaItems, teaTotalGrams, sugarPerLiter, sugarTotal, starterPercent, onlyExtraTea, teaScore, intensity };
+  return { jarLiters, targetLiters, usesTarget, workingLiters, neededJar, goal, starterType, starterMl, starterLiters, teaLiters, teaItems, teaTotalGrams, sugarPerLiter, sugarTotal, starterPercent, totalLiquidLiters, onlyExtraTea, teaScore, intensity, fermentationDays, errors, warnings };
+}
+
+function buildClassicTeaItems(enabledTeas, plannedTeaLiters) {
+  const main = enabledTeas.filter(tea => teaTypes[tea.type].main);
+  const extra = enabledTeas.filter(tea => !teaTypes[tea.type].main);
+  let weighted;
+  if (main.length && extra.length) {
+    const mainShare = 0.7 / main.length;
+    const extraShare = 0.3 / extra.length;
+    weighted = enabledTeas.map(tea => ({ ...tea, role: teaTypes[tea.type].main ? "main" : "extra", share: teaTypes[tea.type].main ? mainShare : extraShare }));
+  } else {
+    weighted = enabledTeas.map(tea => ({ ...tea, role: teaTypes[tea.type].main ? "main" : "extra", share: 1 / enabledTeas.length }));
+  }
+  const totalShare = weighted.reduce((sum, tea) => sum + tea.share, 0) || 1;
+  return weighted.map(tea => {
+    const waterMl = plannedTeaLiters * 1000 * (tea.share / totalShare);
+    const grams = teaTypes[tea.type].grams;
+    return { ...tea, grams, waterMl, gramsTotal: waterMl / 1000 * grams };
+  });
+}
+
+function buildExperimentTeaItems(enabledTeas, plannedTeaLiters) {
+  const teaWaterTotalMl = enabledTeas.reduce((sum, tea) => sum + (Number(tea.waterMl) || 0), 0);
+  const blankWaterCount = enabledTeas.filter(tea => !(Number(tea.waterMl) > 0)).length;
+  const remainingWaterMl = Math.max(0, plannedTeaLiters * 1000 - teaWaterTotalMl);
+  const autoWaterPerBlank = blankWaterCount ? remainingWaterMl / blankWaterCount : 0;
+  return enabledTeas.map(tea => {
+    const manualWaterMl = Number(tea.waterMl) || 0;
+    const waterMl = manualWaterMl > 0 ? manualWaterMl : autoWaterPerBlank;
+    return { ...tea, waterMl, gramsTotal: waterMl / 1000 * (Number(tea.grams) || teaTypes[tea.type].grams) };
+  });
 }
 
 function updateVolumeHint(calc) {
@@ -216,13 +280,14 @@ function updatePellicle(calc) {
     els.pellicleHint.textContent = "Bez placky to jde, když máš kvalitní kyselý startér.";
     return;
   }
-  const score = pellicles[state.pellicleSize].score * state.pellicleCount;
+  const grams = numberValue(els.pellicleGrams, 0);
+  const score = grams > 0 ? Math.max(0.5, Math.round((grams / 120) * 2) / 2) : pellicles[state.pellicleSize].score * state.pellicleCount;
   const idealMin = calc.workingLiters <= 1.5 ? 0.5 : calc.workingLiters <= 3 ? 1 : calc.workingLiters <= 5 ? 2 : 3;
   const idealMax = calc.workingLiters <= 1.5 ? 1 : calc.workingLiters <= 3 ? 2 : calc.workingLiters <= 5 ? 3 : 4;
   let text = "Placka akorát, jedeš v normálu.";
   if (score < idealMin) text = "Tohle množství jedna placka neutáhne. Přidej placku nebo víc kvalitního startéru.";
   if (score > idealMax) text = "Na velikosti v tomhle případě fakt nezáleží. Hlavní síla je ve startéru.";
-  els.pellicleHint.textContent = `${text} Síla placky: ${score} bodu.`;
+  els.pellicleHint.textContent = `${text} Síla placky: ${score} bodu${grams > 0 ? ` podle cca ${Math.round(grams)} g` : ""}.`;
 }
 
 function updateSugar(calc) {
@@ -235,16 +300,24 @@ function updateSugar(calc) {
 }
 
 function updateOutputs(calc) {
+  if (calc.errors.length) {
+    els.needsList.innerHTML = calc.errors.map(text => `<li><strong>Pozor:</strong> ${text}</li>`).join("");
+    els.predictionTitle.textContent = "Nejdřív doplň vstupy.";
+    els.predictionText.textContent = "Jakmile budou základní poměry dávat smysl, Kombuchátor ukáže suroviny i předpověď.";
+    els.intensityDots.innerHTML = "";
+    els.recommendations.innerHTML = calc.warnings.map(text => `<div class="recommendation-item warning"><strong>Pozor</strong><p>${text}</p></div>`).join("");
+    return;
+  }
   const teaLines = calc.teaItems.map(tea => {
     const label = teaTypes[tea.type].label;
-    return `<li>${roundLiters(tea.waterMl / 1000)} ${label} čaje, ${approxRange(tea.gramsTotal, 1).replace("cca ", "cca ")} čaje</li>`;
+    return `<li><strong>${label[0].toUpperCase()}${label.slice(1)} čaj:</strong> ${roundLiters(tea.waterMl / 1000)} vody + ${approxRange(tea.gramsTotal, 1)} čaje</li>`;
   }).join("");
   const pellicleLine = els.usePellicle.checked ? `<li>${state.pellicleCount}× placka ${pellicles[state.pellicleSize].label}</li>` : "";
   els.needsList.innerHTML = `
-    <li>${roundLiters(calc.teaLiters)} sladkého čaje celkem</li>
+    <li><strong>Sladký čaj celkem:</strong> ${roundLiters(calc.teaLiters)}</li>
     ${teaLines}
-    <li>${approxRange(calc.sugarTotal, 5)} cukru</li>
-    <li>${roundMl(calc.starterMl)} startéru</li>
+    <li><strong>Cukr:</strong> ${approxRange(calc.sugarTotal, 5)} (${Math.round(calc.sugarPerLiter)} g/l)</li>
+    <li><strong>Startér:</strong> ${roundMl(calc.starterMl)} (${Math.round(calc.starterPercent)} % pracovního objemu)</li>
     ${pellicleLine}
   `;
 
@@ -261,10 +334,10 @@ function updateOutputs(calc) {
   els.intensityDots.innerHTML = Array.from({ length: 5 }, (_, i) => `<span class="${i < calc.intensity ? "on" : ""}"></span>`).join("");
   els.recommendations.innerHTML = [
     ["Kdy začít ochutnávat", calc.starterType.taste],
-    ["Orientační doba F1", calc.goal.days],
+    ["Orientační doba F1", calc.fermentationDays],
     ["Cukr", `${Math.round(calc.sugarPerLiter)} g/l. ${calc.sugarPerLiter < 50 ? "SCOBY bude mít hlad." : calc.sugarPerLiter > 80 ? "Hrozí tlamolep." : "Bezpečný základ."}`],
     ["Rada", calc.goal.id === "enemy" ? "Dobrý pro startér nebo nepřítele. Na pití nedoporučuju." : "Ochutnávej. Kombucha není trouba."]
-  ].map(([title, text]) => `<div class="recommendation-item"><strong>${title}</strong><p>${text}</p></div>`).join("");
+  ].concat(calc.warnings.map(text => ["Pozor", text])).map(([title, text]) => `<div class="recommendation-item ${title === "Pozor" ? "warning" : ""}"><strong>${title}</strong><p>${text}</p></div>`).join("");
 }
 
 function syncModeUI() {
@@ -274,12 +347,22 @@ function syncModeUI() {
   });
   els.goalStrip.hidden = state.mode !== "classic";
   els.sugarPanel.classList.toggle("visible", state.mode === "experiment");
-  els.volumeTitle.textContent = state.mode === "classic" ? "Jak velkou máš nádobu?" : "Nádoba F1";
+  els.volumeTitle.textContent = "Kolik toho bude?";
+  els.sugarTitle.textContent = "Jak sladký bude mít SCOBY život?";
+  els.teaIntro.textContent = state.mode === "classic"
+    ? "Vyber jen čaje, které chceš použít. Poměr vody i gramáž doporučí Kombuchátor."
+    : "Tady zadej skutečný stav: typ čaje, gramáž a kolik vody opravdu použiješ.";
+  els.modeNote.innerHTML = state.mode === "classic"
+    ? "<strong>Klasická kalkulačka:</strong> vybereš cíl a Kombuchátor doporučí bezpečné poměry."
+    : "<strong>Hokus pokus:</strong> zadáváš reálné ingredience a Kombuchátor odhadne, co z toho vyleze.";
+  els.jarChoice.classList.toggle("active", state.volumeSource === "jar");
+  els.targetChoice.classList.toggle("active", state.volumeSource === "target");
 }
 
-function render() {
+function render(options = {}) {
+  const shouldRenderTeas = options.teas !== false;
   syncModeUI();
-  renderTeas();
+  if (shouldRenderTeas) renderTeas();
   const calc = calculate();
   updateVolumeHint(calc);
   updateStarter(calc);
@@ -319,7 +402,8 @@ function bindEvents() {
   });
   [els.jarLiters, els.targetLiters, els.starterMl, els.pellicleGrams, els.sugarPerLiter, els.sugarTotal, els.sugarSlider].forEach(input => {
     input.addEventListener("input", () => {
-      if (input === els.jarLiters && els.jarLiters.value) els.targetLiters.value = "";
+      if (input === els.jarLiters) state.volumeSource = "jar";
+      if (input === els.targetLiters) state.volumeSource = "target";
       if (input === els.sugarSlider) els.sugarPerLiter.value = input.value;
       if (input === els.sugarPerLiter) {
         state.sugarSource = "perLiter";
@@ -328,6 +412,14 @@ function bindEvents() {
       if (input === els.sugarTotal) state.sugarSource = "total";
       render();
     });
+  });
+  els.jarLiters.addEventListener("focus", () => {
+    state.volumeSource = "jar";
+    render();
+  });
+  els.targetLiters.addEventListener("focus", () => {
+    state.volumeSource = "target";
+    render();
   });
   els.addTeaBtn.addEventListener("click", () => {
     state.teas.push({ id: createTeaId(), enabled: true, type: "rooibos", role: "extra", grams: 6, waterMl: "" });
@@ -355,7 +447,7 @@ function bindEvents() {
 }
 
 function updateTeaFromDom() {
-  state.teas = Array.from(document.querySelectorAll(".tea-row")).map(row => ({
+  state.teas = Array.from(document.querySelectorAll(".tea-row[data-tea-id]")).map(row => ({
     id: row.dataset.teaId,
     enabled: row.querySelector(".tea-check").checked,
     type: row.querySelector(".tea-type").value,
@@ -363,7 +455,7 @@ function updateTeaFromDom() {
     grams: Number(row.querySelector(".tea-grams").value) || teaTypes[row.querySelector(".tea-type").value].grams,
     waterMl: row.querySelector(".tea-water").value
   }));
-  render();
+  render({ teas: false });
 }
 
 renderChoices();

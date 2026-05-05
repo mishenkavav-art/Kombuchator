@@ -44,6 +44,8 @@
         </label>
       </section>
 
+      <section class="mode-note" id="modeNote"></section>
+
       <section class="goal-strip" id="goalStrip">
         <div class="section-kicker">Co z toho chceš vyrobit?</div>
         <div class="goal-grid" id="goalGrid"></div>
@@ -51,16 +53,16 @@
 
       <section class="form-grid">
         <article class="panel">
-          <h2><span>1</span><span id="volumeTitle">Jak velkou máš nádobu?</span></h2>
+          <h2><span>1</span><span id="volumeTitle">Kolik toho bude?</span></h2>
           <div class="volume-grid">
-            <label>
+            <label class="volume-choice active" id="jarChoice">
               <span>Velikost nádoby</span>
               <div class="unit-input">
                 <input id="jarLiters" type="number" min="0" step="0.1" value="3">
                 <em>litrů</em>
               </div>
             </label>
-            <label>
+            <label class="volume-choice" id="targetChoice">
               <span>Chci vyrobit</span>
               <div class="unit-input">
                 <input id="targetLiters" type="number" min="0" step="0.1" placeholder="např. 2">
@@ -92,6 +94,7 @@
 
         <article class="panel tea-panel">
           <h2><span>3</span>Jaký chceš použít čaj?</h2>
+          <p class="panel-intro" id="teaIntro"></p>
           <div class="tea-list" id="teaList"></div>
           <button class="small-button" id="addTeaBtn" type="button">+ Přidat další čaj</button>
           <p class="warning-line" id="teaWarning"></p>
@@ -125,7 +128,7 @@
         </article>
 
         <article class="panel sugar-panel" id="sugarPanel">
-          <h2><span>4</span>Jak sladký bude mít SCOBY život?</h2>
+          <h2><span>4</span><span id="sugarTitle">Jak sladký bude mít SCOBY život?</span></h2>
           <div class="sugar-row">
             <label>
               <span>Cukr na litr čaje</span>

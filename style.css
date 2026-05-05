@@ -146,7 +146,7 @@ select {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 48px;
-  margin-bottom: 44px;
+  margin-bottom: 14px;
 }
 
 .mode-option {
@@ -189,6 +189,19 @@ select {
   margin-top: 4px;
   color: var(--muted);
   font-size: 16px;
+}
+
+.mode-note {
+  margin: 0 0 34px;
+  padding: 14px 18px;
+  border: 1px dashed rgba(111, 150, 91, 0.45);
+  border-radius: 8px;
+  background: rgba(255, 250, 241, 0.72);
+  color: #4f4b45;
+}
+
+.mode-note strong {
+  color: var(--green-dark);
 }
 
 .goal-strip,
@@ -303,6 +316,18 @@ label span,
   gap: 18px;
 }
 
+.volume-choice {
+  display: block;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.volume-choice.active {
+  border-color: rgba(111, 150, 91, 0.45);
+  background: rgba(111, 150, 91, 0.07);
+}
+
 .unit-input {
   display: flex;
   align-items: center;
@@ -373,6 +398,12 @@ select {
   font-size: 14px;
 }
 
+.panel-intro {
+  margin: -8px 0 18px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .tea-list {
   display: grid;
   gap: 12px;
@@ -383,6 +414,34 @@ select {
   grid-template-columns: 34px minmax(120px, 1.2fr) minmax(84px, 0.7fr) minmax(98px, 0.8fr) minmax(98px, 0.8fr) 34px;
   gap: 8px;
   align-items: center;
+}
+
+.simple-tea-list .tea-row {
+  grid-template-columns: 34px minmax(160px, 1fr) 34px;
+  max-width: 420px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.tea-row-head {
+  padding: 0 2px 2px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.tea-row-head strong {
+  font-weight: 900;
 }
 
 .tea-row .tea-check {
@@ -578,6 +637,17 @@ input[type="range"] {
   text-transform: uppercase;
 }
 
+.recommendation-item.warning {
+  padding: 10px 12px;
+  border: 1px solid rgba(159, 61, 53, 0.22);
+  border-radius: 8px;
+  background: rgba(159, 61, 53, 0.06);
+}
+
+.recommendation-item.warning strong {
+  color: var(--danger);
+}
+
 .recommendation-item p {
   margin: 0;
   font-size: 16px;
@@ -668,6 +738,10 @@ dialog::backdrop {
 
   .tea-row {
     grid-template-columns: 28px 1fr 80px;
+  }
+
+  .tea-row-head {
+    display: none;
   }
 
   .tea-row select:nth-of-type(2),
