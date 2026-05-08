@@ -585,8 +585,8 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 
 .pellicle-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
   margin: 10px 0 14px;
 }
 
@@ -594,30 +594,30 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 12px 10px;
+  gap: 4px;
+  padding: 8px 6px;
   border-radius: 13px;
   border: 1.5px solid var(--cream-border);
   background: var(--cream);
   cursor: pointer;
   transition: border-color .13s, background .13s;
-  min-height: 116px;
+  min-height: 94px;
   text-align: center;
 }
 .pellicle-card .icon {
-  width: 52px;
-  height: 52px;
+  width: 58px;
+  height: 58px;
   object-fit: contain;
   display: block;
 }
 .pellicle-card strong {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ink-mid);
   display: block;
 }
 .pellicle-card small {
-  font-size: 12px;
+  font-size: 10.5px;
   line-height: 1.2;
   color: var(--ink-muted);
 }
