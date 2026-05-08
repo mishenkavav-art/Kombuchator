@@ -27,10 +27,10 @@ const teaTypes = {
 };
 
 const pellicles = {
-  jelly:   { label: "medůzka",          icon: "ikony/malá medůzka.png",                 score: 0.5 },
-  palm:    { label: "do dlaně",         icon: "ikony/kombuška do dlaně.png",            score: 1   },
-  pancake: { label: "palačinka",        icon: "ikony/typická palačinka.png",            score: 1.5 },
-  tractor: { label: "kolo od traktoru", icon: "ikony/placka jak kolo od traktoru.png", score: 2   }
+  jelly:   { label: "tenká medůzka",    icon: "ikony/malá medůzka.png",                 score: 0.5, gramsRange: "15-50 g",   defaultGrams: 30  },
+  palm:    { label: "akorát do dlaně",  icon: "ikony/kombuška do dlaně.png",            score: 1,   gramsRange: "50-120 g",  defaultGrams: 80  },
+  pancake: { label: "palačinka",        icon: "ikony/typická palačinka.png",            score: 1.5, gramsRange: "120-250 g", defaultGrams: 180 },
+  tractor: { label: "kolo od traktoru", icon: "ikony/placka jak kolo od traktoru.png", score: 2,   gramsRange: "250-600+ g", defaultGrams: 350 }
 };
 
 const temperatureBands = {
@@ -174,6 +174,13 @@ function parseWaterLiters(value) {
   const liters = Number(String(value).replace(",", "."));
   return Number.isFinite(liters) && liters > 0 ? liters * 1000 : "";
 }
+function pellicleScoreFromGrams(grams) {
+  if (!(grams > 0)) return 0;
+  if (grams <= 50) return 0.5;
+  if (grams <= 120) return 1;
+  if (grams <= 250) return 1.5;
+  return 2;
+}
 
 // ═══ RENDER CHOICES ═══
 
@@ -199,6 +206,7 @@ function renderChoices() {
     <button class="pellicle-card ${state.pellicleSize === id ? "active" : ""}" type="button" data-pellicle="${id}">
       <img class="icon" src="${p.icon}" alt="" aria-hidden="true">
       <strong>${p.label}</strong>
+      <small>cca ${p.gramsRange}</small>
     </button>`).join("");
 }
 
@@ -320,12 +328,13 @@ function calculate() {
   // Pellicle
   const pellicleEnabled = els.usePellicle.checked;
   const pellicleGrams   = numberValue(els.pellicleGrams, 0);
-  const pellicleScore   = pellicleGrams > 0
-    ? Math.max(0.5, Math.round((pellicleGrams / 120) * 2) / 2)
-    : (pellicleEnabled ? pellicles[state.pellicleSize].score * state.pellicleCount : 0);
-  const pellicleBonus   = pellicleEnabled ? Math.min(pellicleScore * 0.01, 0.03) : 0;
+  const basePellicleScore = pellicleGrams > 0
+    ? pellicleScoreFromGrams(pellicleGrams)
+    : (pellicleEnabled ? pellicles[state.pellicleSize].score : 0);
+  const pellicleScore   = pellicleEnabled ? basePellicleScore * state.pellicleCount : 0;
+  const pellicleBonusScore = pellicleScore;
 
-  const effectiveStarterRatio = starterRatio * starterType.activityMultiplier + pellicleBonus;
+  const effectiveStarterRatio = starterRatio * starterType.activityMultiplier;
 
   // Tea
   const goal        = goals.find(g => g.id === state.goal) || goals[1];
@@ -436,7 +445,7 @@ function calculate() {
     goal, starterType, starterMl, starterLiters, starterRatio, effectiveStarterRatio,
     starterMin, starterGap, starterSeverity,
     recommendedMaxBatchL, requiredStarterMinL, requiredStarterTargetL,
-    pellicleEnabled, pellicleScore, pellicleBonus,
+    pellicleEnabled, pellicleScore, pellicleBonusScore,
     teaLiters, teaItems, teaTotalGrams, onlyExtraTea, avgTeaStrength,
     sugarPerLiter, sugarTotal, sugarBand,
     tempBand, tasteWindow,
@@ -494,14 +503,20 @@ function updatePellicle(calc) {
     return;
   }
   const score    = calc.pellicleScore;
+  const p = pellicles[state.pellicleSize];
+  const exactGrams = numberValue(els.pellicleGrams, 0);
   const idealMin = calc.workingLiters <= 1.5 ? 0.5 : calc.workingLiters <= 3 ? 1 : calc.workingLiters <= 5 ? 2 : 3;
   const idealMax = calc.workingLiters <= 1.5 ? 1   : calc.workingLiters <= 3 ? 2 : calc.workingLiters <= 5 ? 3 : 4;
   let text;
-  if      (score < idealMin) text = "Placka je jen spolujezdec. Řidič je startér.";
-  else if (score > idealMax) text = "Na velikosti tady nezáleží. Hlavní síla je ve startéru.";
-  else                       text = "Placka akorát – malý bonus ke startu.";
-  const g = numberValue(els.pellicleGrams, 0);
-  els.pellicleHint.textContent = `${text} Bonus: +${(calc.pellicleBonus * 100).toFixed(1)} pp${g > 0 ? ` (cca ${Math.round(g)} g)` : ""}.`;
+  if (calc.starterSeverity === "STOP" || calc.starterSeverity === "RED") text = "Placka je fajn parťák, ale hlavní motor je kyselý startér.";
+  else if (exactGrams > 0) text = "Zvážená placka je přesnější než naše kombuchová zoologie.";
+  else if (score < idealMin) text = "Malá placka nevadí, když máš dost silného startéru.";
+  else if (score > idealMax) text = "Obří placka vypadá impozantně, ale startér za ni práci neodmaká.";
+  else text = "Ber to orientačně. Placka může být tenká blána nebo nacucaná deka.";
+  const gramsText = exactGrams > 0
+    ? `${Math.round(exactGrams)} g mokré placky -> ${pellicleScoreFromGrams(exactGrams)} bodu na placku`
+    : `cca ${p.gramsRange} mokré placky, pro výpočet počítáme ${p.defaultGrams} g`;
+  els.pellicleHint.textContent = `${text} ${gramsText}. Síla placky: ${score} bodu. Bonus je jen doplňkový a nenahrazuje startér.`;
 }
 
 function updateTemperature() {
@@ -543,7 +558,7 @@ function updateOutputs(calc) {
     return `<li><img src="${teaTypes[t.type].icon}" alt="" aria-hidden="true"><span><strong>${lbl[0].toUpperCase()}${lbl.slice(1)} čaj:</strong> ${roundLiters(t.waterMl / 1000)} vody + ${approxRange(t.gramsTotal, 1)} čaje</span></li>`;
   }).join("");
   const pellicleLine = calc.pellicleEnabled
-    ? `<li><img src="${pellicles[state.pellicleSize].icon}" alt="" aria-hidden="true"><span><strong>Placka:</strong> ${state.pellicleCount}× ${pellicles[state.pellicleSize].label}</span></li>`
+    ? `<li><img src="${pellicles[state.pellicleSize].icon}" alt="" aria-hidden="true"><span><strong>Placka:</strong> ${state.pellicleCount}× ${pellicles[state.pellicleSize].label} (${calc.pellicleScore} bodu, nenahrazuje startér)</span></li>`
     : "";
   const safeBatchLine = calc.starterSeverity === "STOP"
     ? `<li class="fix-line"><span><strong>Bezpečnější posilovací várka:</strong> s tímhle startérem jdi spíš na ${starterFixRange(calc)}. Pro původní objem potřebuješ aspoň ${kitchenStarterAmount(calc.requiredStarterMinL)}, ideálně ${kitchenStarterAmount(calc.requiredStarterTargetL[0])}-${kitchenStarterAmount(calc.requiredStarterTargetL[1])} startéru.</span></li>`

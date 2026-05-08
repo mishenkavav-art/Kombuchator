@@ -584,9 +584,9 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 
 .pellicle-grid {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   margin: 10px 0 14px;
 }
 
@@ -595,18 +595,18 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  padding: 10px 10px;
+  padding: 12px 10px;
   border-radius: 13px;
   border: 1.5px solid var(--cream-border);
   background: var(--cream);
   cursor: pointer;
   transition: border-color .13s, background .13s;
-  min-width: 72px;
+  min-height: 116px;
   text-align: center;
 }
 .pellicle-card .icon {
-  width: 34px;
-  height: 34px;
+  width: 52px;
+  height: 52px;
   object-fit: contain;
   display: block;
 }
@@ -615,6 +615,11 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   font-weight: 600;
   color: var(--ink-mid);
   display: block;
+}
+.pellicle-card small {
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--ink-muted);
 }
 .pellicle-card:hover { border-color: #c8b898; }
 .pellicle-card.active {
@@ -637,8 +642,8 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   text-align: center;
 }
 .stepper-btn {
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1.5px solid var(--cream-border);
   background: var(--cream);
@@ -662,6 +667,10 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   font-size: 15px;
   color: var(--ink-soft);
   margin-bottom: 10px;
+}
+
+#pellicleGrams {
+  width: 104px;
 }
 
 /* ═══ GOAL STRIP ═══ */
