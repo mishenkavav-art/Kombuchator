@@ -91,7 +91,6 @@ const els = {
   jarLiters:          document.querySelector("#jarLiters"),
   targetChoice:       document.querySelector("#targetChoice"),
   targetLiters:       document.querySelector("#targetLiters"),
-  volumeHint:         document.querySelector("#volumeHint"),
   starterMl:          document.querySelector("#starterMl"),
   starterType:        document.querySelector("#starterType"),
   starterAmountHint:  document.querySelector("#starterAmountHint"),
@@ -165,7 +164,7 @@ function displayWaterLiters(waterMl) {
 }
 function displayLitersValue(liters) {
   return Number.isFinite(liters) && liters > 0
-    ? String(Math.round(liters * 10) / 10).replace(".", ",")
+    ? String(Math.round(liters * 10) / 10)
     : "";
 }
 function parseWaterLiters(value) {
@@ -427,14 +426,6 @@ function calculate() {
 
 // ═══ UPDATE FUNCTIONS ═══
 
-function updateVolumeHint(calc) {
-  if (calc.usesTarget) {
-    els.volumeHint.textContent = `Na ${roundLiters(calc.workingLiters)} kombuchy potřebuješ nádobu alespoň ${roundLiters(calc.neededJar)}.`;
-  } else {
-    els.volumeHint.textContent = `Do nádoby ${roundLiters(calc.jarLiters)} připrav cca ${roundLiters(calc.workingLiters)} kombuchy.`;
-  }
-}
-
 function updateStarter(calc) {
   if (calc.workingLiters <= 0) {
     els.starterAmountHint.textContent = "";
@@ -630,7 +621,6 @@ function render(options = {}) {
   const calc = calculate();
   syncAutoVolumeFields(calc);
   if (shouldRenderTeas) renderTeas(calc);
-  updateVolumeHint(calc);
   updateStarter(calc);
   updateTea(calc);
   updatePellicle(calc);
