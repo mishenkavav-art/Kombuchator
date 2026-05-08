@@ -256,10 +256,19 @@ function buildClassicTeaItems(enabledTeas, freshTeaL) {
 
 function buildExperimentTeaItems(enabledTeas, freshTeaL) {
   const specified = enabledTeas.reduce((s, t) => s + (Number(t.waterMl) || 0), 0);
-  const blanks    = enabledTeas.filter(t => !(Number(t.waterMl) > 0)).length;
-  const autoMl    = blanks ? Math.max(0, freshTeaL * 1000 - specified) / blanks : 0;
+  const blanks    = enabledTeas.filter(t => !(Number(t.waterMl) > 0));
+  const blankMain = blanks.filter(t => t.role === "main");
+  const blankExtra = blanks.filter(t => t.role !== "main");
+  const remainingMl = Math.max(0, freshTeaL * 1000 - specified);
+  const mainShare = blankMain.length && blankExtra.length ? 0.7 : 1;
+  const extraShare = blankMain.length && blankExtra.length ? 0.3 : 1;
   return enabledTeas.map(t => {
-    const waterMl = Number(t.waterMl) > 0 ? Number(t.waterMl) : autoMl;
+    let waterMl = Number(t.waterMl) > 0 ? Number(t.waterMl) : 0;
+    if (!waterMl && blanks.length) {
+      if (t.role === "main" && blankMain.length) waterMl = remainingMl * mainShare / blankMain.length;
+      else if (t.role !== "main" && blankExtra.length) waterMl = remainingMl * extraShare / blankExtra.length;
+      else waterMl = remainingMl / blanks.length;
+    }
     return { ...t, waterMl, gramsTotal: waterMl / 1000 * (Number(t.grams) || teaTypes[t.type].grams) };
   });
 }
