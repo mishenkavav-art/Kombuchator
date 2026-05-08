@@ -4,167 +4,276 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kombuchátor</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="app-header">
-      <div class="brand">
-        <img class="brand-icon" src="ikony/kombucha.png" alt="" aria-hidden="true">
-        <div>
-          <h1>Kombuchátor</h1>
-          <p>Spočítá nálev, odhadne hrozící průšvih a řekne, kdy ochutnat.</p>
+  <div class="app-layout">
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-logo">
+          <img src="ikony/kombucha.png" alt="Kombuchátor">
+        </div>
+        <nav class="sidebar-nav">
+          <a class="nav-item active" href="#" aria-current="page">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            <span>Kalkulačka</span>
+          </a>
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 8c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"/><path d="M9 6V4m6 2V4"/><path d="M5 11h14"/></svg>
+            <span>Moje várky</span>
+          </a>
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+            <span>Čajovna</span>
+          </a>
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07m14.14 0A10 10 0 0 0 4.93 4.93"/><path d="M12 2v2m0 18v2M2 12h2m18 0h2"/></svg>
+            <span>Nastavení</span>
+          </a>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <p class="sidebar-tagline">Fermentuj<br>s rozumem.</p>
+        <div class="sidebar-promo">
+          <span class="promo-icon">🧪</span>
+          <small>Každá várka<br>je experiment</small>
         </div>
       </div>
-      <button class="ghost-button" id="howItWorksBtn" type="button">Jak to funguje? <span>?</span></button>
-    </header>
+    </aside>
 
-    <main>
-      <section class="mode-switch" aria-label="Režim kalkulačky">
-        <label class="mode-option active" data-mode-card="classic">
-          <input type="radio" name="mode" value="classic" checked>
-          <span class="radio-dot"></span>
-          <span>
-            <strong>Klasická kalkulačka</strong>
-            <small>vím, co chci, ale nevím kolik čeho použít</small>
-          </span>
-        </label>
-        <label class="mode-option" data-mode-card="experiment">
-          <input type="radio" name="mode" value="experiment">
-          <span class="radio-dot"></span>
-          <span>
-            <strong>Hokus pokus</strong>
-            <small>mám ingredience a chci vědět, co z toho vznikne</small>
-          </span>
-        </label>
-      </section>
+    <!-- ═══ MAIN AREA ═══ -->
+    <div class="main-area">
 
-      <section class="mode-note" id="modeNote"></section>
+      <!-- HEADER -->
+      <header class="main-header">
+        <div class="header-brand">
+          <h1 class="brand-title">Kombuchátor</h1>
+          <p class="brand-sub">Spočítá nálev, odhadne hrozící průšvih a řekne, kdy ochutnat.</p>
+        </div>
+        <div class="header-arrow" aria-hidden="true">
+          <svg width="90" height="44" viewBox="0 0 90 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 28 C18 10, 54 10, 74 22" stroke="#E89A20" stroke-width="2.4" stroke-linecap="round" fill="none" opacity="0.9"/>
+            <path d="M66 15 L76 22 L66 29" stroke="#E89A20" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
+          </svg>
+        </div>
+        <button class="how-btn" id="howItWorksBtn" type="button">
+          <span class="how-btn-icon">?</span>
+          Jak to funguje?
+        </button>
+      </header>
 
-      <section class="goal-strip" id="goalStrip">
-        <div class="section-kicker">Co z toho chceš vyrobit?</div>
-        <div class="goal-grid" id="goalGrid"></div>
-      </section>
-
-      <section class="form-grid">
-        <article class="panel">
-          <h2><span>1</span><span id="volumeTitle">Kolik toho bude?</span></h2>
-          <div class="volume-grid">
-            <label class="volume-choice active" id="jarChoice">
-              <span>Velikost nádoby</span>
-              <div class="unit-input">
-                <img class="field-icon" src="ikony/nádoba.png" alt="" aria-hidden="true">
-                <input id="jarLiters" type="number" min="0" step="0.1" value="3">
-                <em>litrů</em>
-              </div>
-            </label>
-            <label class="volume-choice" id="targetChoice">
-              <span>Chci vyrobit</span>
-              <div class="unit-input">
-                <input id="targetLiters" type="number" min="0" step="0.1" placeholder="např. 2">
-                <em>litrů</em>
-              </div>
-            </label>
-          </div>
-          <p class="result-line" id="volumeHint"></p>
-          <p class="microcopy">Neplníme po okraj. Kombucha není akvárko.</p>
-        </article>
-
-        <article class="panel">
-          <h2><span>2</span>Kolik máš startéru?</h2>
-          <div class="starter-layout">
-            <label>
-              <span>Množství startéru</span>
-              <div class="unit-input">
-                <input id="starterMl" type="number" min="0" step="10" value="300">
-                <em>ml</em>
-              </div>
-            </label>
-            <div>
-              <span class="field-label">Typ startéru</span>
-              <div class="segmented" id="starterType"></div>
-            </div>
-          </div>
-          <p class="result-line" id="starterHint"></p>
-        </article>
-
-        <article class="panel tea-panel">
-          <h2><span>3</span>Jaký chceš použít čaj?</h2>
-          <p class="panel-intro" id="teaIntro"></p>
-          <div class="tea-list" id="teaList"></div>
-          <button class="small-button" id="addTeaBtn" type="button">+ Přidat další čaj</button>
-          <p class="warning-line" id="teaWarning"></p>
-        </article>
-
-        <article class="panel pellicle-panel">
-          <label class="checkbox-row">
-            <input id="usePellicle" type="checkbox" checked>
-            <span>Chci zohlednit placku</span>
-            <small>volitelné</small>
+      <!-- MODE SWITCH -->
+      <div class="mode-bar">
+        <div class="mode-segmented">
+          <label class="mode-option active" data-mode-card="classic">
+            <input type="radio" name="mode" value="classic" checked>
+            <span>Klasická kalkulačka</span>
           </label>
-          <div id="pellicleControls">
-            <span class="field-label">Velikost placky</span>
-            <div class="pellicle-grid" id="pellicleSize"></div>
-            <div class="count-row">
-              <span>Počet placek</span>
-              <button type="button" id="pellicleMinus">−</button>
-              <strong id="pellicleCountLabel">1</strong>
-              <button type="button" id="pelliclePlus">+</button>
+          <label class="mode-option" data-mode-card="experiment">
+            <input type="radio" name="mode" value="experiment">
+            <span>Hokus pokus</span>
+          </label>
+        </div>
+        <p class="mode-note" id="modeNote"></p>
+      </div>
+
+      <!-- CONTENT -->
+      <div class="content-grid">
+
+        <!-- INPUT COLUMN -->
+        <div class="input-col">
+
+          <!-- 01 VOLUME -->
+          <article class="card">
+            <div class="card-head">
+              <span class="card-badge">01</span>
+              <h2 class="card-title" id="volumeTitle">Kolik toho bude?</h2>
             </div>
+            <div class="volume-grid">
+              <label class="volume-choice active" id="jarChoice">
+                <span class="choice-label">Velikost nádoby</span>
+                <div class="unit-input">
+                  <img class="field-icon" src="ikony/nádoba.png" alt="" aria-hidden="true">
+                  <input id="jarLiters" type="number" min="0" step="0.1" value="3">
+                  <em>litrů</em>
+                </div>
+              </label>
+              <label class="volume-choice" id="targetChoice">
+                <span class="choice-label">Chci vyrobit</span>
+                <div class="unit-input">
+                  <img class="field-icon" src="ikony/kombucha.png" alt="" aria-hidden="true">
+                  <input id="targetLiters" type="number" min="0" step="0.1" placeholder="např. 2">
+                  <em>litrů</em>
+                </div>
+              </label>
+            </div>
+            <p class="result-line" id="volumeHint"></p>
+            <p class="microcopy">Neplníme po okraj. Kombucha není akvárko.</p>
+          </article>
+
+          <!-- 02 STARTER -->
+          <article class="card">
+            <div class="card-head">
+              <span class="card-badge">02</span>
+              <h2 class="card-title">Kolik máš startéru?</h2>
+            </div>
+            <div class="starter-layout">
+              <label>
+                <span class="choice-label">Množství startéru</span>
+                <div class="unit-input">
+                  <img class="field-icon" src="ikony/startér pro příště.png" alt="" aria-hidden="true">
+                  <input id="starterMl" type="number" min="0" step="10" value="300">
+                  <em>ml</em>
+                </div>
+              </label>
+              <div>
+                <span class="choice-label">Typ startéru</span>
+                <div class="starter-seg" id="starterType"></div>
+              </div>
+            </div>
+            <p class="result-line" id="starterHint"></p>
+          </article>
+
+          <!-- 03 TEA -->
+          <article class="card">
+            <div class="card-head">
+              <span class="card-badge">03</span>
+              <h2 class="card-title">Jaký chceš použít čaj?</h2>
+            </div>
+            <p class="card-intro" id="teaIntro"></p>
+            <div class="tea-list" id="teaList"></div>
+            <button class="add-btn" id="addTeaBtn" type="button">+ Přidat další čaj</button>
+            <p class="warning-line" id="teaWarning"></p>
+          </article>
+
+          <!-- 04 PELLICLE -->
+          <article class="card">
+            <div class="card-head pellicle-head">
+              <div class="pellicle-head-left">
+                <span class="card-badge">04</span>
+                <label class="checkbox-row">
+                  <input id="usePellicle" type="checkbox" checked>
+                  <span class="card-title">Chci zohlednit placku</span>
+                </label>
+              </div>
+              <small class="optional-badge">volitelné</small>
+            </div>
+            <div id="pellicleControls">
+              <span class="choice-label">Velikost placky</span>
+              <div class="pellicle-grid" id="pellicleSize"></div>
+              <div class="count-row">
+                <span>Počet placek</span>
+                <button type="button" id="pellicleMinus" class="stepper-btn">−</button>
+                <strong id="pellicleCountLabel">1</strong>
+                <button type="button" id="pelliclePlus" class="stepper-btn">+</button>
+              </div>
+              <label class="grams-row">
+                <span>Přesná gramáž, pokud ji víš</span>
+                <div class="unit-input unit-sm">
+                  <input id="pellicleGrams" type="number" min="0" step="5" placeholder="volitelné">
+                  <em>g</em>
+                </div>
+              </label>
+              <p class="result-line" id="pellicleHint"></p>
+              <p class="microcopy">Placka není povinná. Startér je motor.</p>
+            </div>
+          </article>
+
+          <!-- 05 TEPLOTA (experiment only) -->
+          <article class="card" id="tempPanel">
+            <div class="card-head">
+              <span class="card-badge">05</span>
+              <h2 class="card-title">Jak je doma teplo?</h2>
+            </div>
+            <span class="choice-label">Teplota prostoru</span>
+            <div class="starter-seg" id="tempBand"></div>
             <label class="grams-row">
-              <span>Přesná gramáž, pokud ji víš</span>
-              <div class="unit-input">
-                <input id="pellicleGrams" type="number" min="0" step="5" placeholder="volitelné">
-                <em>g</em>
+              <span>Nebo zadej přesnou teplotu</span>
+              <div class="unit-input unit-sm">
+                <input id="temperatureInput" type="number" min="0" max="50" step="1" placeholder="volitelné">
+                <em>°C</em>
               </div>
             </label>
-            <p class="result-line" id="pellicleHint"></p>
-            <p class="microcopy">Placka není povinná. Startér je motor.</p>
-          </div>
-        </article>
+            <p class="result-line" id="tempHint"></p>
+          </article>
 
-        <article class="panel sugar-panel" id="sugarPanel">
-          <h2><span>4</span><span id="sugarTitle">Jak sladký bude mít SCOBY život?</span></h2>
-          <div class="sugar-row">
-            <label>
-              <span>Cukr na litr čaje</span>
-              <div class="unit-input">
-                <img class="field-icon" src="ikony/cukr.png" alt="" aria-hidden="true">
-                <input id="sugarPerLiter" type="number" min="0" step="5" value="65">
-                <em>g/l</em>
+          <!-- 06 GOAL (classic only) -->
+          <section class="card goal-strip" id="goalStrip">
+            <div class="card-head">
+              <span class="card-badge">06</span>
+              <h2 class="card-title">Co z toho chceš vyrobit?</h2>
+            </div>
+            <div class="goal-grid" id="goalGrid"></div>
+          </section>
+
+          <!-- 06 SUGAR (experiment only) -->
+          <article class="card" id="sugarPanel">
+            <div class="card-head">
+              <span class="card-badge amber">06</span>
+              <h2 class="card-title" id="sugarTitle">Jak sladký bude mít SCOBY život?</h2>
+            </div>
+            <div class="sugar-row">
+              <label>
+                <span class="choice-label">Cukr na litr čaje</span>
+                <div class="unit-input">
+                  <img class="field-icon" src="ikony/cukr.png" alt="" aria-hidden="true">
+                  <input id="sugarPerLiter" type="number" min="0" step="5" value="65">
+                  <em>g/l</em>
+                </div>
+              </label>
+              <label>
+                <span class="choice-label">Nebo cukr celkem</span>
+                <div class="unit-input">
+                  <input id="sugarTotal" type="number" min="0" step="5" placeholder="auto">
+                  <em>g</em>
+                </div>
+              </label>
+            </div>
+            <input id="sugarSlider" type="range" min="20" max="110" step="5" value="65" class="sugar-slider">
+            <div class="sugar-status" id="sugarStatus"></div>
+          </article>
+
+        </div><!-- /input-col -->
+
+        <!-- RESULT COLUMN -->
+        <div class="result-col">
+
+          <!-- DARK RESULT PANEL -->
+          <article class="result-panel">
+            <div class="result-glow" aria-hidden="true"></div>
+            <div class="result-inner">
+              <div class="result-top-row">
+                <span class="result-kicker">PŘEDPOVĚĎ VÝSLEDKU</span>
               </div>
-            </label>
-            <label>
-              <span>Nebo cukr celkem</span>
-              <div class="unit-input">
-                <input id="sugarTotal" type="number" min="0" step="5" placeholder="auto">
-                <em>g</em>
-              </div>
-            </label>
-          </div>
-          <input id="sugarSlider" type="range" min="20" max="110" step="5" value="65">
-          <div class="sugar-status" id="sugarStatus"></div>
-        </article>
-      </section>
+              <h2 class="result-title" id="predictionTitle">Nejdřív doplň vstupy.</h2>
+              <p class="result-text" id="predictionText">Jakmile budou základní poměry dávat smysl, Kombuchátor ukáže předpověď.</p>
+              <div class="intensity-row" id="intensityDots"></div>
+              <div class="result-metrics" id="recommendations"></div>
+            </div>
+            <div class="result-side-tab">Ochutnávkový<br>režim</div>
+          </article>
 
-      <section class="output-grid">
-        <article class="output-card needs-card">
-          <h2>Budeš potřebovat</h2>
-          <ul id="needsList"></ul>
-        </article>
-        <article class="output-card prediction-card">
-          <div>
-            <span class="section-kicker">Předpověď výsledku</span>
-            <h2 id="predictionTitle"></h2>
-            <p id="predictionText"></p>
-            <div class="intensity" id="intensityDots"></div>
+          <!-- PINNED NOTE -->
+          <div class="pinned-note">
+            <div class="note-pin" aria-hidden="true">
+              <svg width="24" height="32" viewBox="0 0 24 32"><ellipse cx="12" cy="10" rx="7" ry="7" fill="#bbb" stroke="#999" stroke-width="1"/><line x1="12" y1="17" x2="12" y2="32" stroke="#999" stroke-width="2" stroke-linecap="round"/><ellipse cx="12" cy="10" rx="3" ry="3" fill="#e8e0d0"/></svg>
+            </div>
+            <h3 class="note-title">Budeš potřebovat</h3>
+            <ul class="needs-list" id="needsList"></ul>
           </div>
-          <div class="recommendations" id="recommendations"></div>
-        </article>
-      </section>
-    </main>
-  </div>
 
+        </div><!-- /result-col -->
+
+      </div><!-- /content-grid -->
+    </div><!-- /main-area -->
+  </div><!-- /app-layout -->
+
+  <!-- DIALOG -->
   <dialog id="howItWorksDialog">
     <div class="modal-card">
       <button class="close-button" id="closeDialog" type="button" aria-label="Zavřít">×</button>
