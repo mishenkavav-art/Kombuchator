@@ -210,8 +210,8 @@ function renderTeas(calc = null) {
   els.teaList.classList.toggle("simple-tea-list", !showDetails);
   els.teaList.innerHTML = (showDetails ? `
     <div class="tea-row tea-row-head" aria-hidden="true">
-      <span></span><strong>Typ čaje</strong><strong>Poměr</strong>
-      <strong>Voda v litrech</strong><strong>Množství na litr</strong><strong>Celkem</strong><span></span>
+      <span></span><strong>Typ čaje</strong><strong>Poměr %</strong>
+      <strong>Voda v litrech</strong><strong>Množství g/l</strong><strong>Celkem g</strong><span></span>
     </div>` : "") + state.teas.map(tea => `
     <div class="tea-row" data-tea-id="${tea.id}">
       <input class="tea-check" type="checkbox" ${tea.enabled ? "checked" : ""} aria-label="Použít čaj">
@@ -223,19 +223,15 @@ function renderTeas(calc = null) {
       </div>
       <div class="inline-unit tea-ratio-unit ${showDetails ? "" : "visually-hidden"}">
         <input class="tea-ratio" type="number" min="0" max="100" step="1" value="${tea.ratio || displayGramsValue(autoTeaById.get(tea.id)?.ratio)}" aria-label="Poměr čaje v procentech">
-        <em>%</em>
       </div>
       <div class="inline-unit tea-water-unit ${showDetails ? "" : "visually-hidden"}">
         <input class="tea-water" type="number" min="0" step="0.1" value="${displayWaterLiters(autoTeaById.get(tea.id)?.waterMl)}" aria-label="Voda v litrech" readonly>
-        <em>l</em>
       </div>
       <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
         <input class="tea-grams" type="number" min="0" step="0.5" value="${tea.grams}" aria-label="Gramáž g/l">
-        <em>g/l</em>
       </div>
       <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
         <input class="tea-total-grams" type="number" min="0" step="0.5" value="${displayGramsValue(autoTeaById.get(tea.id)?.gramsTotal)}" aria-label="Čaj celkem v gramech">
-        <em>g</em>
       </div>
       <button class="remove-tea" type="button" aria-label="Odebrat čaj">×</button>
     </div>`).join("");
@@ -661,7 +657,10 @@ function updateTeaFromDom(event) {
     const icon = event.target.closest(".tea-picker")?.querySelector(".tea-icon");
     if (icon) icon.src = teaTypes[event.target.value]?.icon ?? "";
   }
-  state.teas = Array.from(document.querySelectorAll(".tea-row[data-tea-id]")).map(row => ({
+  const rows = Array.from(document.querySelectorAll(".tea-row[data-tea-id]"));
+  const editedRow = event?.target.matches(".tea-ratio") ? event.target.closest(".tea-row[data-tea-id]") : null;
+  const editedRatio = editedRow ? Math.min(100, Math.max(0, Number(event.target.value) || 0)) : null;
+  let teas = rows.map(row => ({
     id:      row.dataset.teaId,
     enabled: row.querySelector(".tea-check").checked,
     type:    row.querySelector(".tea-type").value,
@@ -670,6 +669,18 @@ function updateTeaFromDom(event) {
       ? Math.max(0, Number(row.querySelector(".tea-total-grams").value) / Math.max(parseWaterLiters(row.querySelector(".tea-water").value) / 1000, 0.1))
       : (Number(row.querySelector(".tea-grams").value) || teaTypes[row.querySelector(".tea-type").value].grams)
   }));
+  if (editedRow && teas.length > 1) {
+    const editedId = editedRow.dataset.teaId;
+    const others = teas.filter(t => t.id !== editedId);
+    const previousOthersTotal = others.reduce((sum, t) => sum + (Number(t.ratio) || 0), 0);
+    const remaining = Math.max(0, 100 - editedRatio);
+    teas = teas.map(t => {
+      if (t.id === editedId) return { ...t, ratio: editedRatio };
+      const share = previousOthersTotal > 0 ? (Number(t.ratio) || 0) / previousOthersTotal : 1 / others.length;
+      return { ...t, ratio: Math.round(remaining * share * 10) / 10 };
+    });
+  }
+  state.teas = teas;
   render();
 }
 
