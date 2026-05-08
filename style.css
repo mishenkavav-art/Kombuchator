@@ -361,7 +361,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   gap: 8px;
 }
 .unit-input input {
-  width: 68px;
+  width: 88px;
   border: 1.5px solid var(--cream-border);
   border-radius: 8px;
   padding: 6px 8px;
@@ -376,6 +376,12 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 .unit-input input::placeholder { font-size: 13px; font-weight: 400; }
 .unit-input em { font-style: normal; font-size: 14px; color: var(--ink-muted); }
 .unit-input.unit-sm input { width: 88px; font-size: 14px; }
+#starterMl,
+#sugarTotal,
+#targetLiters,
+#jarLiters {
+  width: 104px;
+}
 
 .field-icon {
   width: 26px;

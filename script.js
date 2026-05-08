@@ -11,7 +11,6 @@ const goals = [
 const starterTypes = {
   sweet:    { label: "sladký",  emoji: "😋", activityMultiplier: 0.50, min: 0.18, target: [0.18, 0.25], tasteOffset: +2, text: "Tohle je ještě tlamolep – potřebuje víc kyselého startéru." },
   weak:     { label: "slabý",   emoji: "😴", activityMultiplier: 0.70, min: 0.15, target: [0.15, 0.20], tasteOffset: +2, text: "Bude trvat, než se nakopne." },
-  unknown:  { label: "nevím",   emoji: "🤔", activityMultiplier: 0.80, min: 0.15, target: [0.15, 0.20], tasteOffset: +1, text: "Dám bezpečný default." },
   normal:   { label: "běžný",   emoji: "🙂", activityMultiplier: 1.00, min: 0.10, target: [0.10, 0.15], tasteOffset:  0, text: "Takhle to má vypadat." },
   vinegary: { label: "octový",  emoji: "😖", activityMultiplier: 1.25, min: 0.08, target: [0.08, 0.12], tasteOffset: -1, text: "Tohle vystřelí jak raketa." }
 };
@@ -164,6 +163,11 @@ function displayWaterLiters(waterMl) {
   const ml = Number(waterMl);
   return ml > 0 ? String(Math.round((ml / 1000) * 100) / 100).replace(".", ",") : "";
 }
+function displayLitersValue(liters) {
+  return Number.isFinite(liters) && liters > 0
+    ? String(Math.round(liters * 10) / 10).replace(".", ",")
+    : "";
+}
 function parseWaterLiters(value) {
   const liters = Number(String(value).replace(",", "."));
   return Number.isFinite(liters) && liters > 0 ? liters * 1000 : "";
@@ -198,8 +202,9 @@ function renderChoices() {
 
 // ═══ RENDER TEAS ═══
 
-function renderTeas() {
+function renderTeas(calc = null) {
   const showDetails = state.mode === "experiment";
+  const autoTeaById = new Map((calc?.teaItems ?? []).map(t => [t.id, t]));
   els.teaList.classList.toggle("simple-tea-list", !showDetails);
   els.teaList.innerHTML = (showDetails ? `
     <div class="tea-row tea-row-head" aria-hidden="true">
@@ -223,7 +228,7 @@ function renderTeas() {
         <em>g</em>
       </div>
       <div class="inline-unit tea-water-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-water" type="number" min="0" step="0.1" value="${displayWaterLiters(tea.waterMl)}" placeholder="auto" aria-label="Voda v litrech">
+        <input class="tea-water" type="number" min="0" step="0.1" value="${displayWaterLiters(tea.waterMl || autoTeaById.get(tea.id)?.waterMl)}" data-auto-water="${tea.waterMl ? "false" : "true"}" aria-label="Voda v litrech">
         <em>l</em>
       </div>
       <button class="remove-tea" type="button" aria-label="Odebrat čaj">×</button>
@@ -450,7 +455,8 @@ function updateStarter(calc) {
     amountHint += ` Stopka: potřebuješ aspoň ${needMn}, ideálně ${needT0}-${needT1}. Nebo zmenši várku na cca ${maxB}.`;
     if (calc.pellicleEnabled) amountHint += " Placka trochu pomůže, ale tenhle objem nezachrání.";
   } else if (calc.starterSeverity === "RED") {
-    amountHint += ` Výrazně pod minimem - dlouhý rozjezd, vyšší riziko. Přidej aspoň ${kitchenStarterAmount(calc.requiredStarterMinL)}.`;
+    const missing = Math.max(0, calc.requiredStarterMinL - calc.starterLiters);
+    amountHint += ` Výrazně pod minimem - změň množství startéru na alespoň ${kitchenStarterAmount(calc.requiredStarterMinL)}. Teď chybí cca ${kitchenStarterAmount(missing)}.`;
   } else if (calc.starterSeverity === "YELLOW") {
     amountHint += " Na hraně - sleduj, jestli se kyselost opravdu rozjíždí.";
   } else if (calc.starterSeverity === "FAST") {
@@ -492,6 +498,14 @@ function updateTemperature() {
 }
 
 function updateSugar(calc) {
+  if (state.mode === "experiment") {
+    if (state.sugarSource === "total") {
+      els.sugarPerLiter.value = Math.round(calc.sugarPerLiter);
+      els.sugarSlider.value = Math.min(110, Math.max(20, Math.round(calc.sugarPerLiter / 5) * 5));
+    } else {
+      els.sugarTotal.value = Math.round(calc.sugarTotal / 5) * 5;
+    }
+  }
   const statuses = [
     { icon: "☹️", text: "SCOBY na dietě",             active: calc.sugarBand === "very_low" || calc.sugarBand === "low"  },
     { icon: "🙂", text: "Tady si SCOBY pomlaskává",   active: calc.sugarBand === "safe"                                   },
@@ -600,13 +614,22 @@ function syncModeUI() {
   els.targetChoice.classList.toggle("active", state.volumeSource === "target");
 }
 
+function syncAutoVolumeFields(calc) {
+  if (state.volumeSource === "jar") {
+    els.targetLiters.value = displayLitersValue(calc.workingLiters);
+  } else {
+    els.jarLiters.value = displayLitersValue(calc.neededJar);
+  }
+}
+
 // ═══ RENDER ═══
 
 function render(options = {}) {
   const shouldRenderTeas = options.teas !== false;
   syncModeUI();
-  if (shouldRenderTeas) renderTeas();
   const calc = calculate();
+  syncAutoVolumeFields(calc);
+  if (shouldRenderTeas) renderTeas(calc);
   updateVolumeHint(calc);
   updateStarter(calc);
   updateTea(calc);
@@ -623,13 +646,16 @@ function updateTeaFromDom(event) {
     const icon = event.target.closest(".tea-picker")?.querySelector(".tea-icon");
     if (icon) icon.src = teaTypes[event.target.value]?.icon ?? "";
   }
+  const previousById = new Map(state.teas.map(t => [t.id, t]));
   state.teas = Array.from(document.querySelectorAll(".tea-row[data-tea-id]")).map(row => ({
     id:      row.dataset.teaId,
     enabled: row.querySelector(".tea-check").checked,
     type:    row.querySelector(".tea-type").value,
     role:    row.querySelector(".tea-role").value,
     grams:   Number(row.querySelector(".tea-grams").value) || teaTypes[row.querySelector(".tea-type").value].grams,
-    waterMl: parseWaterLiters(row.querySelector(".tea-water").value)
+    waterMl: event?.target.matches(".tea-water") || previousById.get(row.dataset.teaId)?.waterMl
+      ? parseWaterLiters(row.querySelector(".tea-water").value)
+      : ""
   }));
   render({ teas: false });
 }
