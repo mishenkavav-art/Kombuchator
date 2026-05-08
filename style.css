@@ -37,7 +37,7 @@ body {
   background: var(--cream);
   color: var(--ink);
   font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.5;
 }
 
@@ -173,21 +173,22 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 .header-brand { flex: 1; min-width: 0; }
 
 .brand-title {
-  font-family: "Fraunces", "Georgia", serif;
+  font-family: inherit;
   font-size: clamp(40px, 4vw, 68px);
   font-weight: 900;
   line-height: .92;
   color: var(--ink);
   margin: 0 0 8px;
-  letter-spacing: -.02em;
+  letter-spacing: 0;
 }
 
 .brand-sub {
   color: var(--ink-soft);
-  font-size: 13.5px;
+  font-size: 17px;
   margin: 0;
-  max-width: 320px;
-  line-height: 1.5;
+  max-width: none;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .header-arrow {
@@ -255,7 +256,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   transition: background .18s, color .18s;
   color: var(--ink-soft);
   font-weight: 500;
-  font-size: 14px;
+  font-size: 15.5px;
   user-select: none;
   white-space: nowrap;
 }
@@ -268,7 +269,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 .mode-option:not(.active):hover { background: rgba(0,0,0,.06); color: var(--ink); }
 
 .mode-note {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--ink-soft);
   margin: 0;
 }
@@ -337,7 +338,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 
 .card-title {
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 600;
   color: var(--ink);
   margin: 0;
@@ -345,7 +346,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 
 .card-intro {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--ink-soft);
   margin: 0 0 12px;
   line-height: 1.5;
@@ -378,7 +379,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 
 .choice-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-soft);
   text-transform: uppercase;
@@ -396,7 +397,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   border: 1.5px solid var(--cream-border);
   border-radius: 8px;
   padding: 6px 8px;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--ink);
   background: #fff;
@@ -405,8 +406,8 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 .unit-input input:focus { outline: none; border-color: var(--green-2); }
 .unit-input input::placeholder { font-size: 13px; font-weight: 400; }
-.unit-input em { font-style: normal; font-size: 13px; color: var(--ink-muted); }
-.unit-input.unit-sm input { width: 88px; font-size: 14px; }
+.unit-input em { font-style: normal; font-size: 14px; color: var(--ink-muted); }
+.unit-input.unit-sm input { width: 88px; font-size: 15px; }
 
 .field-icon {
   width: 26px;
@@ -436,7 +437,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   border: 1.5px solid var(--cream-border);
   background: var(--cream);
   color: var(--ink-mid);
-  font-size: 12.5px;
+  font-size: 14px;
   cursor: pointer;
   transition: border-color .12s, background .12s, color .12s;
   display: flex;
@@ -465,7 +466,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 .tea-row:last-child { border-bottom: none; }
 
 .tea-row-head {
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ink-muted);
   text-transform: uppercase;
@@ -504,7 +505,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   padding: 4px 7px;
   background: var(--cream);
   color: var(--ink);
-  font-size: 12.5px;
+  font-size: 14px;
   cursor: pointer;
 }
 .tea-type { min-width: 100px; }
@@ -522,7 +523,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   border-radius: 7px;
   padding: 4px 5px;
   background: var(--cream);
-  font-size: 12.5px;
+  font-size: 14px;
   text-align: center;
 }
 .tea-grams:focus, .tea-water:focus { outline: none; border-color: var(--green-2); }
@@ -554,7 +555,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   border-radius: 100px;
   background: transparent;
   color: var(--green-2);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: border-color .13s, background .13s;
@@ -583,7 +584,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   border-radius: 100px;
   background: var(--cream-mid);
   color: var(--ink-muted);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -616,7 +617,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   display: block;
 }
 .pellicle-card strong {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-mid);
   display: block;
@@ -631,7 +632,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink-mid);
   margin-bottom: 12px;
 }
@@ -664,7 +665,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--ink-soft);
   margin-bottom: 10px;
 }
@@ -699,14 +700,14 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   display: block;
 }
 .goal-card strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
   line-height: 1.25;
   display: block;
 }
 .goal-card small {
-  font-size: 10.5px;
+  font-size: 12.5px;
   color: var(--ink-muted);
   display: block;
 }
@@ -752,7 +753,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   border-radius: 10px;
   border: 1.5px solid var(--cream-border);
   background: var(--cream);
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--ink-muted);
   transition: border-color .13s;
 }
@@ -767,7 +768,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 
 .result-line {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--green-2);
   font-weight: 500;
   min-height: 1.4em;
@@ -775,14 +776,14 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 .warning-line {
   margin: 8px 0 0;
-  font-size: 12.5px;
+  font-size: 14px;
   color: var(--danger);
   min-height: 1.4em;
   line-height: 1.4;
 }
 .microcopy {
   margin: 7px 0 0;
-  font-size: 11.5px;
+  font-size: 13px;
   color: var(--ink-muted);
   font-style: italic;
 }
@@ -804,7 +805,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   border-radius: 24px;
   background: linear-gradient(148deg, var(--result-1) 0%, var(--result-2) 50%, var(--result-3) 100%);
   color: #fff;
-  font-family: "Cormorant Garamond", "Georgia", serif;
+  font-family: inherit;
   padding: 28px 24px 28px 28px;
   position: relative;
   display: flex;
@@ -843,7 +844,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 
 .result-kicker {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
@@ -852,19 +853,19 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 
 .result-title {
-  font-family: "Cormorant Garamond", "Georgia", serif;
+  font-family: inherit;
   font-size: clamp(22px, 2.6vw, 34px);
   font-weight: 700;
   line-height: 1.05;
   color: #fff;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: .01em;
+  letter-spacing: 0;
   word-break: break-word;
 }
 
 .result-text {
-  font-size: 13px;
+  font-size: 15px;
   color: rgba(255,255,255,.7);
   margin: 0;
   line-height: 1.55;
@@ -899,7 +900,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 .recommendation-item strong {
   display: block;
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -908,7 +909,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 .recommendation-item p {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 15px;
   color: rgba(255,255,255,.88);
   font-weight: 500;
   line-height: 1.35;
@@ -924,8 +925,8 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   text-orientation: mixed;
   background: var(--amber);
   color: #fff;
-  font-family: "DM Sans", sans-serif;
-  font-size: 9.5px;
+  font-family: inherit;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -960,7 +961,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 }
 
 .note-title {
-  font-size: 14.5px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--ink);
   margin: 6px 0 12px;
@@ -978,7 +979,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 14.5px;
   color: var(--ink-mid);
   line-height: 1.4;
 }
@@ -1014,7 +1015,7 @@ dialog::backdrop { background: rgba(17,22,15,.5); backdrop-filter: blur(4px); }
 
 .modal-card { padding: 34px; position: relative; }
 .modal-card h2 {
-  font-family: "Playfair Display", "Georgia", serif;
+  font-family: inherit;
   font-size: 24px;
   font-weight: 800;
   margin: 0 0 14px;

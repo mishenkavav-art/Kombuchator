@@ -571,14 +571,14 @@ function syncModeUI() {
     label.querySelector("input").checked = label.dataset.modeCard === state.mode;
   });
   els.goalStrip.hidden  = state.mode !== "classic";
-  els.tempPanel.hidden  = false;
+  els.tempPanel.hidden  = state.mode !== "experiment";
   els.sugarPanel.classList.toggle("visible", state.mode === "experiment");
   els.teaIntro.textContent = state.mode === "classic"
     ? "Vyber jen čaje, které chceš použít. Poměr vody i gramáž doporučí Kombuchátor."
     : "Zadej skutečný stav: typ čaje, gramáž a kolik vody opravdu použiješ.";
   els.modeNote.innerHTML = state.mode === "classic"
     ? "<strong>Klasická kalkulačka:</strong> vybereš cíl a Kombuchátor doporučí bezpečné poměry."
-    : "<strong>Hokus pokus:</strong> zadáváš reálné ingredience a Kombuchátor odhadne, co z toho vyleze.";
+    : "<strong>Experimentální laboratoř:</strong> zadáváš reálné ingredience a Kombuchátor odhadne, co z toho vyleze.";
   els.jarChoice.classList.toggle("active", state.volumeSource === "jar");
   els.targetChoice.classList.toggle("active", state.volumeSource === "target");
 }
