@@ -72,8 +72,8 @@ const state = {
   starterType: "normal",
   temperature: "unknown",
   teas: [
-    { id: createTeaId(), enabled: true, type: "black",  role: "main", grams: 6, waterMl: "" },
-    { id: createTeaId(), enabled: true, type: "green",  role: "main", grams: 5, waterMl: "" }
+    { id: createTeaId(), enabled: true, type: "black",  ratio: "", grams: 6 },
+    { id: createTeaId(), enabled: true, type: "green",  ratio: "", grams: 5 }
   ],
   pellicleSize: "pancake",
   pellicleCount: 1,
@@ -162,6 +162,9 @@ function displayWaterLiters(waterMl) {
   const ml = Number(waterMl);
   return ml > 0 ? String(Math.round((ml / 1000) * 10) / 10) : "";
 }
+function displayGramsValue(grams) {
+  return Number.isFinite(grams) && grams > 0 ? String(Math.round(grams * 10) / 10) : "";
+}
 function displayLitersValue(liters) {
   return Number.isFinite(liters) && liters > 0
     ? String(Math.round(liters * 10) / 10)
@@ -207,8 +210,8 @@ function renderTeas(calc = null) {
   els.teaList.classList.toggle("simple-tea-list", !showDetails);
   els.teaList.innerHTML = (showDetails ? `
     <div class="tea-row tea-row-head" aria-hidden="true">
-      <span></span><strong>Typ čaje</strong><strong>Role</strong>
-      <strong>Množství na litr</strong><strong>Voda v litrech</strong><span></span>
+      <span></span><strong>Typ čaje</strong><strong>Poměr</strong>
+      <strong>Voda v litrech</strong><strong>Množství na litr</strong><strong>Celkem</strong><span></span>
     </div>` : "") + state.teas.map(tea => `
     <div class="tea-row" data-tea-id="${tea.id}">
       <input class="tea-check" type="checkbox" ${tea.enabled ? "checked" : ""} aria-label="Použít čaj">
@@ -218,17 +221,21 @@ function renderTeas(calc = null) {
           ${Object.entries(teaTypes).map(([id, item]) => `<option value="${id}" ${tea.type === id ? "selected" : ""}>${item.label}</option>`).join("")}
         </select>
       </div>
-      <select class="tea-role ${showDetails ? "" : "visually-hidden"}" aria-label="Role čaje">
-        <option value="main"  ${tea.role === "main"  ? "selected" : ""}>hlavní</option>
-        <option value="extra" ${tea.role === "extra" ? "selected" : ""}>přídavný</option>
-      </select>
-      <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-grams" type="number" min="0" step="0.5" value="${tea.grams}" aria-label="Gramáž g/l">
-        <em>g</em>
+      <div class="inline-unit tea-ratio-unit ${showDetails ? "" : "visually-hidden"}">
+        <input class="tea-ratio" type="number" min="0" max="100" step="1" value="${tea.ratio || displayGramsValue(autoTeaById.get(tea.id)?.ratio)}" aria-label="Poměr čaje v procentech">
+        <em>%</em>
       </div>
       <div class="inline-unit tea-water-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-water" type="number" min="0" step="0.1" value="${displayWaterLiters(tea.waterMl || autoTeaById.get(tea.id)?.waterMl)}" data-auto-water="${tea.waterMl ? "false" : "true"}" aria-label="Voda v litrech">
+        <input class="tea-water" type="number" min="0" step="0.1" value="${displayWaterLiters(autoTeaById.get(tea.id)?.waterMl)}" aria-label="Voda v litrech" readonly>
         <em>l</em>
+      </div>
+      <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
+        <input class="tea-grams" type="number" min="0" step="0.5" value="${tea.grams}" aria-label="Gramáž g/l">
+        <em>g/l</em>
+      </div>
+      <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
+        <input class="tea-total-grams" type="number" min="0" step="0.5" value="${displayGramsValue(autoTeaById.get(tea.id)?.gramsTotal)}" aria-label="Čaj celkem v gramech">
+        <em>g</em>
       </div>
       <button class="remove-tea" type="button" aria-label="Odebrat čaj">×</button>
     </div>`).join("");
@@ -255,21 +262,30 @@ function buildClassicTeaItems(enabledTeas, freshTeaL) {
 }
 
 function buildExperimentTeaItems(enabledTeas, freshTeaL) {
-  const specified = enabledTeas.reduce((s, t) => s + (Number(t.waterMl) || 0), 0);
-  const blanks    = enabledTeas.filter(t => !(Number(t.waterMl) > 0));
-  const blankMain = blanks.filter(t => t.role === "main");
-  const blankExtra = blanks.filter(t => t.role !== "main");
-  const remainingMl = Math.max(0, freshTeaL * 1000 - specified);
-  const mainShare = blankMain.length && blankExtra.length ? 0.7 : 1;
-  const extraShare = blankMain.length && blankExtra.length ? 0.3 : 1;
-  return enabledTeas.map(t => {
-    let waterMl = Number(t.waterMl) > 0 ? Number(t.waterMl) : 0;
-    if (!waterMl && blanks.length) {
-      if (t.role === "main" && blankMain.length) waterMl = remainingMl * mainShare / blankMain.length;
-      else if (t.role !== "main" && blankExtra.length) waterMl = remainingMl * extraShare / blankExtra.length;
-      else waterMl = remainingMl / blanks.length;
+  const specifiedRatio = enabledTeas.reduce((s, t) => s + (Number(t.ratio) > 0 ? Number(t.ratio) : 0), 0);
+  const blankRatioTeas = enabledTeas.filter(t => !(Number(t.ratio) > 0));
+  const hasAnyRatio = specifiedRatio > 0;
+  const blankMain = blankRatioTeas.filter(t => teaTypes[t.type].main);
+  const blankExtra = blankRatioTeas.filter(t => !teaTypes[t.type].main);
+  const totalRatio = enabledTeas.reduce((s, t) => s + ratioForTea(t), 0) || 1;
+
+  function defaultRatioForBlank(t) {
+    const remaining = hasAnyRatio ? Math.max(0, 100 - specifiedRatio) : 100;
+    if (blankMain.length && blankExtra.length) {
+      return teaTypes[t.type].main ? (remaining * 0.7 / blankMain.length) : (remaining * 0.3 / blankExtra.length);
     }
-    return { ...t, waterMl, gramsTotal: waterMl / 1000 * (Number(t.grams) || teaTypes[t.type].grams) };
+    return blankRatioTeas.length ? remaining / blankRatioTeas.length : 0;
+  }
+  function ratioForTea(t) {
+    const explicit = Number(t.ratio);
+    return explicit > 0 ? explicit : defaultRatioForBlank(t);
+  }
+
+  return enabledTeas.map(t => {
+    const ratio = ratioForTea(t);
+    const waterMl = freshTeaL * 1000 * (ratio / totalRatio);
+    const grams = Number(t.grams) || teaTypes[t.type].grams;
+    return { ...t, ratio, grams, waterMl, gramsTotal: waterMl / 1000 * grams };
   });
 }
 
@@ -645,18 +661,16 @@ function updateTeaFromDom(event) {
     const icon = event.target.closest(".tea-picker")?.querySelector(".tea-icon");
     if (icon) icon.src = teaTypes[event.target.value]?.icon ?? "";
   }
-  const previousById = new Map(state.teas.map(t => [t.id, t]));
   state.teas = Array.from(document.querySelectorAll(".tea-row[data-tea-id]")).map(row => ({
     id:      row.dataset.teaId,
     enabled: row.querySelector(".tea-check").checked,
     type:    row.querySelector(".tea-type").value,
-    role:    row.querySelector(".tea-role").value,
-    grams:   Number(row.querySelector(".tea-grams").value) || teaTypes[row.querySelector(".tea-type").value].grams,
-    waterMl: event?.target.matches(".tea-water") || previousById.get(row.dataset.teaId)?.waterMl
-      ? parseWaterLiters(row.querySelector(".tea-water").value)
-      : ""
+    ratio:   Number(row.querySelector(".tea-ratio").value) > 0 ? Number(row.querySelector(".tea-ratio").value) : "",
+    grams:   event?.target.matches(".tea-total-grams")
+      ? Math.max(0, Number(row.querySelector(".tea-total-grams").value) / Math.max(parseWaterLiters(row.querySelector(".tea-water").value) / 1000, 0.1))
+      : (Number(row.querySelector(".tea-grams").value) || teaTypes[row.querySelector(".tea-type").value].grams)
   }));
-  render({ teas: false });
+  render();
 }
 
 function bindEvents() {
@@ -696,7 +710,7 @@ function bindEvents() {
   els.jarLiters.addEventListener("focus",    () => { state.volumeSource = "jar";    render(); });
   els.targetLiters.addEventListener("focus", () => { state.volumeSource = "target"; render(); });
   els.addTeaBtn.addEventListener("click", () => {
-    state.teas.push({ id: createTeaId(), enabled: true, type: "rooibos", role: "extra", grams: 6, waterMl: "" });
+    state.teas.push({ id: createTeaId(), enabled: true, type: "rooibos", ratio: "", grams: 6 });
     render();
   });
   els.teaList.addEventListener("input",  updateTeaFromDom);
