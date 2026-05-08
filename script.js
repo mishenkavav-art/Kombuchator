@@ -159,6 +159,14 @@ function approxRange(n, step = 5) {
   const high = Math.ceil((n + step / 2) / step) * step;
   return low === high ? `cca ${low} g` : `cca ${low}–${high} g`;
 }
+function displayWaterLiters(waterMl) {
+  const ml = Number(waterMl);
+  return ml > 0 ? String(Math.round((ml / 1000) * 100) / 100).replace(".", ",") : "";
+}
+function parseWaterLiters(value) {
+  const liters = Number(String(value).replace(",", "."));
+  return Number.isFinite(liters) && liters > 0 ? liters * 1000 : "";
+}
 
 // ═══ RENDER CHOICES ═══
 
@@ -195,7 +203,7 @@ function renderTeas() {
   els.teaList.innerHTML = (showDetails ? `
     <div class="tea-row tea-row-head" aria-hidden="true">
       <span></span><strong>Typ čaje</strong><strong>Role</strong>
-      <strong>Množství na litr</strong><strong>Voda</strong><span></span>
+      <strong>Množství na litr</strong><strong>Voda v litrech</strong><span></span>
     </div>` : "") + state.teas.map(tea => `
     <div class="tea-row" data-tea-id="${tea.id}">
       <input class="tea-check" type="checkbox" ${tea.enabled ? "checked" : ""} aria-label="Použít čaj">
@@ -213,7 +221,10 @@ function renderTeas() {
         <input class="tea-grams" type="number" min="0" step="0.5" value="${tea.grams}" aria-label="Gramáž g/l">
         <em>g</em>
       </div>
-      <input class="tea-water ${showDetails ? "" : "visually-hidden"}" type="number" min="0" step="50" value="${tea.waterMl}" placeholder="auto" aria-label="Voda ml">
+      <div class="inline-unit tea-water-unit ${showDetails ? "" : "visually-hidden"}">
+        <input class="tea-water" type="number" min="0" step="0.1" value="${displayWaterLiters(tea.waterMl)}" placeholder="auto" aria-label="Voda v litrech">
+        <em>l</em>
+      </div>
       <button class="remove-tea" type="button" aria-label="Odebrat čaj">×</button>
     </div>`).join("");
 }
@@ -612,7 +623,7 @@ function updateTeaFromDom(event) {
     type:    row.querySelector(".tea-type").value,
     role:    row.querySelector(".tea-role").value,
     grams:   Number(row.querySelector(".tea-grams").value) || teaTypes[row.querySelector(".tea-type").value].grams,
-    waterMl: row.querySelector(".tea-water").value
+    waterMl: parseWaterLiters(row.querySelector(".tea-water").value)
   }));
   render({ teas: false });
 }

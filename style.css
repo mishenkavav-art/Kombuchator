@@ -457,9 +457,11 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 
 .tea-row {
   display: grid;
-  grid-template-columns: 22px 1fr auto auto auto 26px;
+  grid-template-columns: 22px max-content max-content max-content max-content 26px;
   align-items: center;
-  gap: 6px;
+  justify-content: start;
+  column-gap: 8px;
+  row-gap: 6px;
   padding: 7px 0;
   border-bottom: 1px solid var(--cream-border);
 }
@@ -508,7 +510,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   font-size: 14px;
   cursor: pointer;
 }
-.tea-type { min-width: 100px; }
+.tea-type { width: 112px; }
 .tea-role { min-width: 86px; }
 .tea-type:focus, .tea-role:focus { outline: none; border-color: var(--green-2); }
 
@@ -526,6 +528,8 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   font-size: 14px;
   text-align: center;
 }
+.tea-water { width: 88px; }
+.tea-water-unit { gap: 5px; }
 .tea-grams:focus, .tea-water:focus { outline: none; border-color: var(--green-2); }
 
 .remove-tea {
