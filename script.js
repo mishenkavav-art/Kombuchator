@@ -95,7 +95,8 @@ const els = {
   volumeHint:         document.querySelector("#volumeHint"),
   starterMl:          document.querySelector("#starterMl"),
   starterType:        document.querySelector("#starterType"),
-  starterHint:        document.querySelector("#starterHint"),
+  starterAmountHint:  document.querySelector("#starterAmountHint"),
+  starterTypeHint:    document.querySelector("#starterTypeHint"),
   teaIntro:           document.querySelector("#teaIntro"),
   teaList:            document.querySelector("#teaList"),
   addTeaBtn:          document.querySelector("#addTeaBtn"),
@@ -430,29 +431,34 @@ function updateVolumeHint(calc) {
 }
 
 function updateStarter(calc) {
-  if (calc.workingLiters <= 0) { els.starterHint.textContent = ""; return; }
+  if (calc.workingLiters <= 0) {
+    els.starterAmountHint.textContent = "";
+    els.starterTypeHint.textContent = "";
+    return;
+  }
   const minPct = formatPercent(calc.starterMin, 0);
   const tgtLow = formatPercent(calc.starterType.target[0], 0);
   const tgtHigh = formatPercent(calc.starterType.target[1], 0);
-  let hint = `${calc.starterType.text} Máš ${formatPercent(calc.starterRatio)}. Minimum pro ${calc.starterType.label} startér je ${minPct}, ideál ${tgtLow}-${tgtHigh}.`;
+  els.starterTypeHint.textContent = calc.starterType.text;
+  let amountHint = `Máš ${formatPercent(calc.starterRatio)}. Minimum pro ${calc.starterType.label} startér je ${minPct}, ideál ${tgtLow}-${tgtHigh}.`;
 
   if (calc.starterSeverity === "STOP") {
     const maxB   = starterFixRange(calc) || "menší várku";
     const needMn = kitchenStarterAmount(calc.requiredStarterMinL);
     const needT0 = kitchenStarterAmount(calc.requiredStarterTargetL[0]);
     const needT1 = kitchenStarterAmount(calc.requiredStarterTargetL[1]);
-    hint += ` Stopka: potřebuješ aspoň ${needMn}, ideálně ${needT0}-${needT1}. Nebo zmenši várku na cca ${maxB}.`;
-    if (calc.pellicleEnabled) hint += " Placka trochu pomůže, ale tenhle objem nezachrání.";
+    amountHint += ` Stopka: potřebuješ aspoň ${needMn}, ideálně ${needT0}-${needT1}. Nebo zmenši várku na cca ${maxB}.`;
+    if (calc.pellicleEnabled) amountHint += " Placka trochu pomůže, ale tenhle objem nezachrání.";
   } else if (calc.starterSeverity === "RED") {
-    hint += ` Výrazně pod minimem - dlouhý rozjezd, vyšší riziko. Přidej aspoň ${kitchenStarterAmount(calc.requiredStarterMinL)}.`;
+    amountHint += ` Výrazně pod minimem - dlouhý rozjezd, vyšší riziko. Přidej aspoň ${kitchenStarterAmount(calc.requiredStarterMinL)}.`;
   } else if (calc.starterSeverity === "YELLOW") {
-    hint += " Na hraně – ochutnávej a sleduj, jestli se kyselost opravdu rozjíždí.";
+    amountHint += " Na hraně - sleduj, jestli se kyselost opravdu rozjíždí.";
   } else if (calc.starterSeverity === "FAST") {
-    hint += " Pojede to svižně. Ochutnávej dřív, ať neskončíš u octa.";
+    amountHint += " Pojede to svižně. Ochutnávej dřív, ať neskončíš u octa.";
   } else if (calc.starterSeverity === "TOO_MUCH") {
-    hint += " Hodně startéru. Výsledek může být ostrý a kyselý.";
+    amountHint += " Hodně startéru. Výsledek může být ostrý a kyselý.";
   }
-  els.starterHint.textContent = hint;
+  els.starterAmountHint.textContent = amountHint;
 }
 
 function updateTea(calc) {
