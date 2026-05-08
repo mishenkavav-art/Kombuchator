@@ -160,7 +160,7 @@ function approxRange(n, step = 5) {
 }
 function displayWaterLiters(waterMl) {
   const ml = Number(waterMl);
-  return ml > 0 ? String(Math.round((ml / 1000) * 100) / 100).replace(".", ",") : "";
+  return ml > 0 ? String(Math.round((ml / 1000) * 10) / 10) : "";
 }
 function displayLitersValue(liters) {
   return Number.isFinite(liters) && liters > 0
