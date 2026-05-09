@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="128" viewBox="0 0 96 128" fill="none">
+  <g filter="url(#shadow)">
+    <path d="M38.8 57.5L30.5 112.5C30.1 115.2 33.8 116.4 35 114L58.8 64.2L38.8 57.5Z" fill="url(#needle)"/>
+    <path d="M40.6 57.9L35.2 94.5L51.2 61.5L40.6 57.9Z" fill="#F7E8C9" opacity=".42"/>
+    <path d="M26.3 16.5C34.8 6.8 49.9 5.3 60.9 12.9C72.4 20.8 76.8 35.5 71.2 47.8C65.5 60.3 50.9 66.1 37.5 61.3C23.7 56.3 17.2 26.8 26.3 16.5Z" fill="url(#head)"/>
+    <path d="M32.4 20.3C38.4 13.6 49 12.5 56.9 17.9C65.4 23.7 68.6 34.7 64.5 43.7C60.3 52.8 49.6 57.2 39.8 53.6C29.6 49.9 25.5 28 32.4 20.3Z" fill="url(#highlight)" opacity=".9"/>
+    <ellipse cx="47.4" cy="35.2" rx="10.5" ry="12.2" transform="rotate(-20 47.4 35.2)" fill="#C63B2F" opacity=".55"/>
+    <ellipse cx="42.5" cy="24.4" rx="12.8" ry="7.2" transform="rotate(-18 42.5 24.4)" fill="#FFB1A0" opacity=".7"/>
+  </g>
+  <defs>
+    <filter id="shadow" x="13" y="5" width="68" height="118" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#3B2A18" flood-opacity=".24"/>
+    </filter>
+    <linearGradient id="head" x1="31" y1="12" x2="65" y2="59" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F15B46"/>
+      <stop offset=".48" stop-color="#D53B2F"/>
+      <stop offset="1" stop-color="#9D251F"/>
+    </linearGradient>
+    <linearGradient id="highlight" x1="35" y1="17" x2="58" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF9A86"/>
+      <stop offset="1" stop-color="#B72D25"/>
+    </linearGradient>
+    <linearGradient id="needle" x1="42" y1="58" x2="29" y2="115" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B7B0A4"/>
+      <stop offset=".45" stop-color="#EEE3CF"/>
+      <stop offset="1" stop-color="#81766B"/>
+    </linearGradient>
+  </defs>
+</svg>
