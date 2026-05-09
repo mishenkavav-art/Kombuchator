@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=31">
+  <link rel="stylesheet" href="style.css?v=32">
 </head>
 <body>
   <div class="app-layout">
@@ -240,6 +240,13 @@
               <p class="result-text" id="predictionText">Jakmile budou základní poměry dávat smysl, Kombuchátor ukáže předpověď.</p>
               <div class="intensity-row" id="intensityDots"></div>
               <div class="result-metrics" id="recommendations"></div>
+              <div class="recipe-actions" id="currentRecipeActions">
+                <button class="recipe-action primary" id="saveRecipeBtn" type="button" title="Nejdřív oprav recept, ať neukládáš kombuchový průšvih.">Uložit recept</button>
+                <button class="recipe-action" id="shareWhatsAppBtn" type="button" title="Nejdřív doplň recept, ať neposíláš polotovar.">WhatsApp</button>
+                <button class="recipe-action" id="shareMessengerBtn" type="button" title="Nejdřív doplň recept, ať neposíláš polotovar.">Messenger</button>
+                <button class="recipe-action" id="copyRecipeBtn" type="button" title="Nejdřív doplň recept, ať neposíláš polotovar.">Kopírovat text</button>
+              </div>
+              <p class="action-feedback" id="currentActionFeedback" aria-live="polite"></p>
             </div>
             <div class="result-side-tab">Ochutnávkový<br>režim</div>
           </article>
@@ -254,6 +261,18 @@
         </div><!-- /result-col -->
 
       </div><!-- /content-grid -->
+
+      <section class="saved-recipes-section" id="savedRecipesSection">
+        <div class="saved-recipes-head">
+          <div>
+            <h2>Uložené recepty</h2>
+            <p>Tady si necháš recepty, které chceš zopakovat, doladit nebo poslat dál.</p>
+            <small>Zápisník si pamatuje recepty jen tady v prohlížeči. Když přijdeš z jiného zařízení, nemusí tu být.</small>
+          </div>
+          <strong id="savedRecipesCount">Uložené recepty: 0</strong>
+        </div>
+        <div class="saved-recipes-list" id="savedRecipesList"></div>
+      </section>
     </div><!-- /main-area -->
   </div><!-- /app-layout -->
 
@@ -273,6 +292,34 @@
     </div>
   </dialog>
 
-  <script src="script.js?v=31"></script>
+  <dialog id="saveRecipeDialog">
+    <form class="modal-card recipe-name-dialog" method="dialog">
+      <button class="close-button" id="cancelSaveRecipeX" type="button" aria-label="Zavřít">×</button>
+      <h2>Jak si chceš recept pojmenovat?</h2>
+      <p>Dej mu název, ať ho pak poznáš v zápisníku.</p>
+      <label>
+        <span>Název receptu</span>
+        <input id="recipeNameInput" type="text" placeholder="Třeba: první povedená várka, jemná kombucha, kyselý startér…">
+      </label>
+      <p class="microcopy" id="recipeNameHint">Název si můžeš kdykoliv změnit.</p>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelSaveRecipeBtn" type="button">Zrušit</button>
+        <button class="recipe-action primary" id="confirmSaveRecipeBtn" type="button">Uložit</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="deleteRecipeDialog">
+    <form class="modal-card" method="dialog">
+      <h2>Smazat tenhle recept?</h2>
+      <p>Tenhle lístek zmizí z kombuchového zápisníku.</p>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelDeleteRecipeBtn" type="button">Nechat</button>
+        <button class="recipe-action danger" id="confirmDeleteRecipeBtn" type="button">Smazat</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="script.js?v=32"></script>
 </body>
 </html>
