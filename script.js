@@ -126,6 +126,7 @@ const els = {
   intensityDots:      document.querySelector("#intensityDots"),
   recommendations:    document.querySelector("#recommendations"),
   saveRecipeBtn:      document.querySelector("#saveRecipeBtn"),
+  resetCalcBtn:       document.querySelector("#resetCalcBtn"),
   shareWhatsAppBtn:   document.querySelector("#shareWhatsAppBtn"),
   shareMessengerBtn:  document.querySelector("#shareMessengerBtn"),
   copyRecipeBtn:      document.querySelector("#copyRecipeBtn"),
@@ -1186,6 +1187,30 @@ function confirmSaveRecipe() {
   showActionFeedback("Recept máš uložený.");
 }
 
+function resetCalculator() {
+  state.mode = "classic";
+  state.goal = "balanced";
+  state.volumeSource = "jar";
+  state.starterType = "normal";
+  state.temperature = "room";
+  state.pellicleSize = "pancake";
+  state.pellicleCount = 1;
+  state.sugarSource = "perLiter";
+  state.teas = [
+    { id: createTeaId(), enabled: true, type: "black", ratio: "", grams: 6 },
+    { id: createTeaId(), enabled: true, type: "green", ratio: "", grams: 5 }
+  ];
+  els.jarLiters.value       = "3";
+  els.targetLiters.value    = "";
+  els.starterMl.value       = "300";
+  els.pellicleGrams.value   = "";
+  els.temperatureInput.value = "";
+  els.sugarPerLiter.value   = "65";
+  els.sugarTotal.value      = "";
+  els.usePellicle.checked   = true;
+  renderChoices();
+  render();
+}
 function cancelSaveRecipe() {
   pendingRecipeSnapshot = null;
   els.saveRecipeDialog.close();
@@ -1339,6 +1364,7 @@ function bindEvents() {
     switchView("zapisnik");
   });
   els.saveRecipeBtn?.addEventListener("click", openSaveRecipeDialog);
+  els.resetCalcBtn?.addEventListener("click", resetCalculator);
   els.saveCurrentRecipeBtn?.addEventListener("click", openSaveRecipeDialog);
   els.shareWhatsAppBtn.addEventListener("click", () => {
     const snapshot = currentSnapshotForSharing();
