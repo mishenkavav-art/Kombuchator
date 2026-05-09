@@ -654,7 +654,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   width: 96px;
   cursor: pointer;
 }
-.tea-ratio { width: 50px; }
+.tea-ratio { width: 64px; }
 .tea-grams, .tea-total-grams { width: 58px; }
 .tea-type:focus,
 .tea-ratio:focus,
@@ -1620,10 +1620,13 @@ body::before {
   border-color: #496E32;
   background: linear-gradient(160deg, rgba(228,234,216,.96), rgba(255,249,237,.78));
 }
-.unit-input input {
-  min-height: 38px;
+.unit-input input,
+.tea-type, .tea-ratio, .tea-grams, .tea-water, .tea-total-grams {
   font-weight: 800;
   font-size: 16px;
+}
+.unit-input input {
+  min-height: 38px;
 }
 .field-icon {
   width: 30px;

@@ -128,7 +128,6 @@ const els = {
   saveRecipeBtn:      document.querySelector("#saveRecipeBtn"),
   resetCalcBtn:       document.querySelector("#resetCalcBtn"),
   shareWhatsAppBtn:   document.querySelector("#shareWhatsAppBtn"),
-  shareMessengerBtn:  document.querySelector("#shareMessengerBtn"),
   copyRecipeBtn:      document.querySelector("#copyRecipeBtn"),
   currentActionFeedback: document.querySelector("#currentActionFeedback"),
   saveCurrentRecipeBtn: document.querySelector("#saveCurrentRecipeBtn"),
@@ -406,9 +405,6 @@ async function copyText(text, message = "Zkopírováno. Teď to můžeš poslat,
 function shareWhatsApp(text) {
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
 }
-function shareMessengerFallback(text) {
-  copyText(text, "Text máš zkopírovaný. Teď ho vlož do Messengeru.");
-}
 function switchView(viewName) {
   const isCalc = viewName === "calculator";
   if (els.calculatorView)  els.calculatorView.hidden  = !isCalc;
@@ -609,7 +605,7 @@ function calculate() {
   const goal          = goals.find(g => g.id === state.goal) || goals[1];
 
   // Starter
-  const starterType   = starterTypes[state.starterType];
+  const starterType   = starterTypes[state.starterType] || starterTypes.normal;
   const starterMl     = numberValue(els.starterMl, 0);
   const starterLiters = starterMl / 1000;
   const freshTeaL     = Math.max(0, workingLiters - starterLiters);
@@ -800,8 +796,8 @@ function updateStarter(calc) {
   const minPct = formatPercent(calc.starterMin, 0);
   const tgtLow = formatPercent(calc.starterTarget[0], 0);
   const tgtHigh = formatPercent(calc.starterTarget[1], 0);
-  const typeStatus = state.starterType === "normal" ? "ok" : state.starterType === "vinegary" ? "warn" : "warn";
-  setFeedback(els.starterTypeHint, calc.starterType.text, typeStatus);
+  const typeStatus = (!state.starterType || state.starterType === "normal") ? "ok" : state.starterType === "vinegary" ? "warn" : "warn";
+  setFeedback(els.starterTypeHint, state.starterType ? calc.starterType.text : "", typeStatus);
   const amountParts = [{ text: `Máš ${formatPercent(calc.starterRatio)} startéru.`, status: "ok" }];
   let amountStatus = "ok";
 
@@ -1070,7 +1066,7 @@ function updateCurrentRecipeActions(calc) {
     btn.classList.toggle("disabled", disabled);
     btn.title = saveTitle;
   });
-  [els.shareWhatsAppBtn, els.shareMessengerBtn, els.copyRecipeBtn].forEach(btn => {
+  [els.shareWhatsAppBtn, els.copyRecipeBtn].forEach(btn => {
     if (!btn) return;
     btn.disabled = disabled;
     btn.classList.toggle("disabled", disabled);
@@ -1116,7 +1112,6 @@ function renderSavedRecipes() {
       <p class="saved-card-feedback" aria-live="polite"></p>
       <div class="saved-card-actions">
         <button class="recipe-action share-whatsapp" type="button">WhatsApp</button>
-        <button class="recipe-action share-messenger" type="button">Messenger</button>
         <button class="recipe-action copy-share" type="button">Kopírovat</button>
         <button class="recipe-action edit-title" type="button">Změnit název</button>
         <button class="recipe-action load-to-calc" type="button">Nahrát do kalkulačky</button>
@@ -1189,14 +1184,14 @@ function confirmSaveRecipe() {
 
 function defaultModeSnap() {
   return {
-    goal: "balanced", volumeSource: "jar", starterType: "normal",
-    temperature: "room", pellicleSize: "pancake", pellicleCount: 1, sugarSource: "perLiter",
+    goal: null, volumeSource: "jar", starterType: null,
+    temperature: null, pellicleSize: "pancake", pellicleCount: 1, sugarSource: "perLiter",
     teas: [
       { id: createTeaId(), enabled: true, type: "black", ratio: "", grams: 6 },
       { id: createTeaId(), enabled: true, type: "green", ratio: "", grams: 5 }
     ],
-    jarLiters: "3", targetLiters: "", starterMl: "300", pellicleGrams: "",
-    temperatureInput: "", sugarPerLiter: "65", sugarTotal: "", usePellicle: true,
+    jarLiters: "", targetLiters: "", starterMl: "", pellicleGrams: "",
+    temperatureInput: "", sugarPerLiter: "", sugarTotal: "", usePellicle: false,
   };
 }
 
@@ -1229,10 +1224,10 @@ function restoreModeState(snap) {
 }
 
 function resetCalculator() {
-  state.goal = "balanced";
+  state.goal = null;
   state.volumeSource = "jar";
-  state.starterType = "normal";
-  state.temperature = "room";
+  state.starterType = null;
+  state.temperature = null;
   state.pellicleSize = "pancake";
   state.pellicleCount = 1;
   state.sugarSource = "perLiter";
@@ -1240,14 +1235,14 @@ function resetCalculator() {
     { id: createTeaId(), enabled: true, type: "black", ratio: "", grams: 6 },
     { id: createTeaId(), enabled: true, type: "green", ratio: "", grams: 5 }
   ];
-  els.jarLiters.value       = "3";
+  els.jarLiters.value       = "";
   els.targetLiters.value    = "";
-  els.starterMl.value       = "300";
+  els.starterMl.value       = "";
   els.pellicleGrams.value   = "";
   els.temperatureInput.value = "";
-  els.sugarPerLiter.value   = "65";
+  els.sugarPerLiter.value   = "";
   els.sugarTotal.value      = "";
-  els.usePellicle.checked   = true;
+  els.usePellicle.checked   = false;
   modeSnapshots[state.mode] = null;
   renderChoices();
   render();
@@ -1421,10 +1416,6 @@ function bindEvents() {
     const snapshot = currentSnapshotForSharing();
     if (snapshot) shareWhatsApp(snapshot.shareText);
   });
-  els.shareMessengerBtn.addEventListener("click", () => {
-    const snapshot = currentSnapshotForSharing();
-    if (snapshot) shareMessengerFallback(snapshot.shareText);
-  });
   els.copyRecipeBtn.addEventListener("click", () => {
     const snapshot = currentSnapshotForSharing();
     if (snapshot) copyText(snapshot.shareText);
@@ -1464,11 +1455,6 @@ function bindEvents() {
     if (e.target.closest(".share-whatsapp")) {
       refreshRecipeShareText(recipe);
       shareWhatsApp(recipe.shareText);
-      return;
-    }
-    if (e.target.closest(".share-messenger")) {
-      refreshRecipeShareText(recipe);
-      shareMessengerFallback(recipe.shareText);
       return;
     }
     if (e.target.closest(".copy-share")) {
