@@ -297,7 +297,7 @@ function renderRecipeNeeds(recipe) {
   const teaLines = recipe.teas.map(t => {
     const lbl = teaTypes[t.type]?.label || t.type;
     const icon = teaTypes[t.type]?.icon || "";
-    return `<li class="needs-tea-item"><img src="${escapeHtml(icon)}" alt="" aria-hidden="true"><span class="needs-tea-detail"><strong class="needs-tea-label">${escapeHtml(lbl[0].toUpperCase() + lbl.slice(1))} čaj</strong><span class="needs-tea-water">${roundLiters(t.waterMl / 1000)} vody</span><span class="needs-tea-grams">${approxRange(t.totalGrams, 1)} čaje</span></span></li>`;
+    return `<li class="needs-tea-item"><img src="${escapeHtml(icon)}" alt="" aria-hidden="true"><span class="needs-tea-detail"><strong class="needs-tea-label">${escapeHtml(lbl[0].toUpperCase() + lbl.slice(1))} čaj:</strong><span class="needs-tea-water">${roundLiters(t.waterMl / 1000)} vody</span><span class="needs-tea-grams">${approxRange(t.totalGrams, 1)} čaje</span></span></li>`;
   }).join("");
   const pellicleLine = recipe.pellicleEnabled && recipe.pellicleType
     ? `<li><img src="${escapeHtml(pellicles[recipe.pellicleType]?.icon || "")}" alt="" aria-hidden="true"><span><strong>Placka:</strong> ${recipe.pellicleCount || 1}× ${escapeHtml(pellicles[recipe.pellicleType]?.label || "placka")}${recipe.pellicleGrams ? `, přesně ${Math.round(recipe.pellicleGrams)} g` : ""}</span></li>`
@@ -993,7 +993,7 @@ function updateOutputs(calc) {
   // Needs list
   const teaLines = calc.teaItems.map(t => {
     const lbl = teaTypes[t.type].label;
-    return `<li class="needs-tea-item"><img src="${teaTypes[t.type].icon}" alt="" aria-hidden="true"><span class="needs-tea-detail"><strong class="needs-tea-label">${lbl[0].toUpperCase()}${lbl.slice(1)} čaj</strong><span class="needs-tea-water">${roundLiters(t.waterMl / 1000)} vody</span><span class="needs-tea-grams">${approxRange(t.gramsTotal, 1)} čaje</span></span></li>`;
+    return `<li class="needs-tea-item"><img src="${teaTypes[t.type].icon}" alt="" aria-hidden="true"><span class="needs-tea-detail"><strong class="needs-tea-label">${lbl[0].toUpperCase()}${lbl.slice(1)} čaj:</strong><span class="needs-tea-water">${roundLiters(t.waterMl / 1000)} vody</span><span class="needs-tea-grams">${approxRange(t.gramsTotal, 1)} čaje</span></span></li>`;
   }).join("");
   const pellicleLine = calc.pellicleEnabled && calc.hasExactPellicleGrams
     ? `<li><img src="${pellicles[state.pellicleSize].icon}" alt="" aria-hidden="true"><span><strong>Placka:</strong> přesně zadaná gramáž ${Math.round(calc.pellicleGrams)} g (nenahrazuje startér)</span></li>`
