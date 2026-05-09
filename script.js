@@ -297,7 +297,10 @@ function renderRecipeNeeds(recipe) {
   const teaLines = recipe.teas.map(t => {
     const lbl = teaTypes[t.type]?.label || t.type;
     const icon = teaTypes[t.type]?.icon || "";
-    return `<li class="needs-tea-item"><img src="${escapeHtml(icon)}" alt="" aria-hidden="true"><span class="needs-tea-detail"><strong class="needs-tea-label">${escapeHtml(lbl[0].toUpperCase() + lbl.slice(1))} čaj:</strong><span class="needs-tea-water">${roundLiters(t.waterMl / 1000)} vody</span><span class="needs-tea-grams">${approxRange(t.totalGrams, 1)} čaje</span></span></li>`;
+    const gramsStr = recipe.mode === "experiment"
+      ? `${Math.round(t.totalGrams)} g`
+      : approxRange(t.totalGrams, 1);
+    return `<li class="needs-tea-item"><img src="${escapeHtml(icon)}" alt="" aria-hidden="true"><span><strong>${escapeHtml(lbl[0].toUpperCase() + lbl.slice(1))} čaj:</strong> ${roundLiters(t.waterMl / 1000)} vody, <span class="needs-tea-grams">${gramsStr} čaje</span></span></li>`;
   }).join("");
   const pellicleLine = recipe.pellicleEnabled && recipe.pellicleType
     ? `<li><img src="${escapeHtml(pellicles[recipe.pellicleType]?.icon || "")}" alt="" aria-hidden="true"><span><strong>Placka:</strong> ${recipe.pellicleCount || 1}× ${escapeHtml(pellicles[recipe.pellicleType]?.label || "placka")}${recipe.pellicleGrams ? `, přesně ${Math.round(recipe.pellicleGrams)} g` : ""}</span></li>`
@@ -308,7 +311,7 @@ function renderRecipeNeeds(recipe) {
   return `<ul class="needs-list">
     <li><img src="ikony/kombucha.png" alt="" aria-hidden="true"><span><strong>Sladký čaj celkem:</strong> ${roundLiters(recipe.teaLiters)}</span></li>
     ${teaLines}
-    <li><img src="ikony/cukr.png" alt="" aria-hidden="true"><span><strong>Cukr:</strong> ${approxRange(recipe.sugarTotalGrams, 5)}</span></li>
+    <li><img src="ikony/cukr.png" alt="" aria-hidden="true"><span><strong>Cukr:</strong> ${recipe.mode === "experiment" ? `${Math.round(recipe.sugarTotalGrams)} g` : approxRange(recipe.sugarTotalGrams, 5)}</span></li>
     <li><img src="ikony/startér pro příště.png" alt="" aria-hidden="true"><span><strong>Startér:</strong> ${roundMl(recipe.starterMl)}</span></li>
     ${pellicleLine}
     ${tempLine}
@@ -993,7 +996,10 @@ function updateOutputs(calc) {
   // Needs list
   const teaLines = calc.teaItems.map(t => {
     const lbl = teaTypes[t.type].label;
-    return `<li class="needs-tea-item"><img src="${teaTypes[t.type].icon}" alt="" aria-hidden="true"><span class="needs-tea-detail"><strong class="needs-tea-label">${lbl[0].toUpperCase()}${lbl.slice(1)} čaj:</strong><span class="needs-tea-water">${roundLiters(t.waterMl / 1000)} vody</span><span class="needs-tea-grams">${approxRange(t.gramsTotal, 1)} čaje</span></span></li>`;
+    const gramsStr = state.mode === "experiment"
+      ? `${Math.round(t.gramsTotal)} g`
+      : approxRange(t.gramsTotal, 1);
+    return `<li class="needs-tea-item"><img src="${teaTypes[t.type].icon}" alt="" aria-hidden="true"><span><strong>${lbl[0].toUpperCase()}${lbl.slice(1)} čaj:</strong> ${roundLiters(t.waterMl / 1000)} vody, <span class="needs-tea-grams">${gramsStr} čaje</span></span></li>`;
   }).join("");
   const pellicleLine = calc.pellicleEnabled && calc.hasExactPellicleGrams
     ? `<li><img src="${pellicles[state.pellicleSize].icon}" alt="" aria-hidden="true"><span><strong>Placka:</strong> přesně zadaná gramáž ${Math.round(calc.pellicleGrams)} g (nenahrazuje startér)</span></li>`
@@ -1006,7 +1012,7 @@ function updateOutputs(calc) {
   els.needsList.innerHTML = `
     <li><img src="ikony/kombucha.png"            alt="" aria-hidden="true"><span><strong>Sladký čaj celkem:</strong> ${roundLiters(calc.teaLiters)}</span></li>
     ${teaLines}
-    <li><img src="ikony/cukr.png"               alt="" aria-hidden="true"><span><strong>Cukr:</strong> ${approxRange(calc.sugarTotal, 5)}</span></li>
+    <li><img src="ikony/cukr.png"               alt="" aria-hidden="true"><span><strong>Cukr:</strong> ${state.mode === "experiment" ? `${Math.round(calc.sugarTotal)} g` : approxRange(calc.sugarTotal, 5)}</span></li>
     <li><img src="ikony/startér pro příště.png" alt="" aria-hidden="true"><span><strong>Startér:</strong> ${roundMl(calc.starterMl)}</span></li>
     ${pellicleLine}
     ${safeBatchLine}`;
