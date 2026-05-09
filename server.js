@@ -14,6 +14,8 @@ const types = {
   ".jpeg": "image/jpeg",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
+  ".json": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 };
 

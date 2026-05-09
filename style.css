@@ -75,7 +75,19 @@ body::before {
 }
 
 button, input, select { font: inherit; }
-input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
+
+/* ── Cross-browser number input: hide spinners so narrow columns stay intact ── */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+/* ── Select: reset appearance for consistent cross-browser look ── */
+select { appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23827565'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center; padding-right: 24px; }
+
+/* ── Font smoothing ── */
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 .visually-hidden {
   position: absolute; width: 1px; height: 1px;
   overflow: hidden; clip: rect(0 0 0 0);

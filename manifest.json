@@ -1,0 +1,26 @@
+{
+  "name": "Kombuchátor",
+  "short_name": "Kombuchátor",
+  "description": "Kalkulačka pro vaření kombuchy – spočítá nálev, odhadne hrozící průšvih a řekne, kdy ochutnat.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F6EEDF",
+  "theme_color": "#132416",
+  "lang": "cs",
+  "icons": [
+    {
+      "src": "/ikony/kombucha.png",
+      "sizes": "625x625",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ikony/kombucha.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
