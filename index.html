@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=32">
+  <link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
   <div class="app-layout">
@@ -19,14 +19,14 @@
           <img src="ikony/kombucha.png" alt="Kombuchátor">
         </div>
         <nav class="sidebar-nav">
-          <a class="nav-item active" href="#" aria-current="page">
+          <a class="nav-item active" href="#" id="navCalculator" aria-current="page">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
             <span>Kalkulačka</span>
           </a>
-          <a class="nav-item nav-item-disabled" href="#" aria-disabled="true">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 8c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"/><path d="M9 6V4m6 2V4"/><path d="M5 11h14"/></svg>
-            <span>Moje várky</span>
-            <small>připravujeme</small>
+          <a class="nav-item" href="#" id="navZapisnik">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+            <span>Zápisník</span>
+            <span class="nav-badge" id="navSavedBadge" hidden>0</span>
           </a>
         </nav>
       </div>
@@ -52,6 +52,8 @@
           Jak to funguje?
         </button>
       </header>
+
+      <div id="calculatorView">
 
       <!-- MODE SWITCH -->
       <div class="mode-bar">
@@ -241,7 +243,6 @@
               <div class="intensity-row" id="intensityDots"></div>
               <div class="result-metrics" id="recommendations"></div>
               <div class="recipe-actions" id="currentRecipeActions">
-                <button class="recipe-action primary" id="saveRecipeBtn" type="button" title="Nejdřív oprav recept, ať neukládáš kombuchový průšvih.">Uložit recept</button>
                 <button class="recipe-action" id="shareWhatsAppBtn" type="button" title="Nejdřív doplň recept, ať neposíláš polotovar.">WhatsApp</button>
                 <button class="recipe-action" id="shareMessengerBtn" type="button" title="Nejdřív doplň recept, ať neposíláš polotovar.">Messenger</button>
                 <button class="recipe-action" id="copyRecipeBtn" type="button" title="Nejdřív doplň recept, ať neposíláš polotovar.">Kopírovat text</button>
@@ -262,17 +263,20 @@
 
       </div><!-- /content-grid -->
 
-      <section class="saved-recipes-section" id="savedRecipesSection">
-        <div class="saved-recipes-head">
-          <div>
-            <h2>Uložené recepty</h2>
+      </div><!-- /calculatorView -->
+
+      <div id="savedRecipesView" hidden>
+        <div class="saved-view-header">
+          <div class="saved-view-header-text">
+            <h2>Zápisník</h2>
             <p>Tady si necháš recepty, které chceš zopakovat, doladit nebo poslat dál.</p>
-            <small>Zápisník si pamatuje recepty jen tady v prohlížeči. Když přijdeš z jiného zařízení, nemusí tu být.</small>
+            <small>Zápisník si pamatuje recepty jen v tomhle prohlížeči.</small>
           </div>
-          <strong id="savedRecipesCount">Uložené recepty: 0</strong>
+          <button class="recipe-action primary" id="saveCurrentRecipeBtn" type="button">Uložit aktuální recept</button>
         </div>
         <div class="saved-recipes-list" id="savedRecipesList"></div>
-      </section>
+      </div><!-- /savedRecipesView -->
+
     </div><!-- /main-area -->
   </div><!-- /app-layout -->
 
@@ -320,6 +324,6 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=32"></script>
+  <script src="script.js?v=33"></script>
 </body>
 </html>

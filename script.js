@@ -125,13 +125,17 @@ const els = {
   predictionText:     document.querySelector("#predictionText"),
   intensityDots:      document.querySelector("#intensityDots"),
   recommendations:    document.querySelector("#recommendations"),
-  saveRecipeBtn:      document.querySelector("#saveRecipeBtn"),
   shareWhatsAppBtn:   document.querySelector("#shareWhatsAppBtn"),
   shareMessengerBtn:  document.querySelector("#shareMessengerBtn"),
   copyRecipeBtn:      document.querySelector("#copyRecipeBtn"),
   currentActionFeedback: document.querySelector("#currentActionFeedback"),
-  savedRecipesCount:  document.querySelector("#savedRecipesCount"),
+  saveCurrentRecipeBtn: document.querySelector("#saveCurrentRecipeBtn"),
   savedRecipesList:   document.querySelector("#savedRecipesList"),
+  navCalculator:      document.querySelector("#navCalculator"),
+  navZapisnik:        document.querySelector("#navZapisnik"),
+  navSavedBadge:      document.querySelector("#navSavedBadge"),
+  calculatorView:     document.querySelector("#calculatorView"),
+  savedRecipesView:   document.querySelector("#savedRecipesView"),
   saveRecipeDialog:   document.querySelector("#saveRecipeDialog"),
   recipeNameInput:    document.querySelector("#recipeNameInput"),
   recipeNameHint:     document.querySelector("#recipeNameHint"),
@@ -291,46 +295,26 @@ function buildShareText(recipe) {
   const teaLines = recipe.teas.map(t =>
     `- ${teaTypes[t.type]?.label || t.type}: ${roundLiters(t.waterMl / 1000)} vody, ${Math.round(t.gramsPerLiter * 10) / 10} g/l, ${Math.round(t.totalGrams * 10) / 10} g`
   );
-  const pellicleText = recipe.pellicleEnabled
-    ? `${recipe.pellicleCount || 1}x ${pellicles[recipe.pellicleType]?.label || "placka"}${recipe.pellicleGrams ? `, přesná gramáž ${Math.round(recipe.pellicleGrams)} g` : ""}`
-    : "nezohledněná";
-  const riskLine = recipe.status === "stop"
-    ? "\nPozor: tenhle recept je označený jako STOP. Ber ho jako poznámku, ne jako návod.\n"
-    : recipe.status === "risk"
-      ? "\nPozor: tenhle recept je označený jako rizikový.\n"
-      : "";
-  const noteLine = recipe.userNote ? `\nMoje poznámka:\n${recipe.userNote}\n` : "";
-  return [
+  const lines = [
     `🧪 ${recipe.recipeName}`,
     "",
-    `Režim: ${modeLabel(recipe.mode)}`,
-    `Cíl: ${recipe.target || "neuvedeno"}`,
-    `Množství: ${roundLiters(recipe.workingVolumeL)}`,
-    recipe.vesselVolumeL ? `Nádoba: ${roundLiters(recipe.vesselVolumeL)}` : "",
-    riskLine.trim(),
-    "Budeš potřebovat:",
-    `- ${roundLiters(recipe.teaLiters)} sladkého čaje`,
-    `- ${Math.round(recipe.sugarTotalGrams)} g cukru (${Math.round(recipe.sugarGramsPerLiter)} g/l)`,
-    `- ${roundMl(recipe.starterMl)} startéru`,
-    `- Startér: ${recipe.starterType}`,
-    ...teaLines,
-    `- Placka: ${pellicleText}`,
-    `- Teplota: ${recipe.temperatureC !== null ? `${recipe.temperatureC} °C` : "neuvedeno"}`,
-    "",
-    "Verdikt:",
     recipe.verdictText,
     "",
-    "Chuť:",
-    recipe.tastePredictionText,
-    "",
-    "Fermentace:",
-    recipe.fermentationAdviceText,
-    "",
-    "F2:",
-    recipe.f2SuitabilityText,
-    noteLine.trim(),
-    "Vytvořeno v Kombuchátoru."
-  ].filter(Boolean).join("\n");
+    "Budeš potřebovat:",
+    `- ${roundLiters(recipe.teaLiters)} sladkého čaje celkem`,
+    ...teaLines,
+    `- ${Math.round(recipe.sugarTotalGrams)} g cukru (${Math.round(recipe.sugarGramsPerLiter)} g/l)`,
+    `- ${roundMl(recipe.starterMl)} startéru (${recipe.starterType}ho)`,
+  ];
+  if (recipe.pellicleEnabled && recipe.pellicleType) {
+    const pLabel = pellicles[recipe.pellicleType]?.label || "placka";
+    lines.push(`- Placka: ${recipe.pellicleCount || 1}x ${pLabel}${recipe.pellicleGrams ? `, ${Math.round(recipe.pellicleGrams)} g` : ""}`);
+  }
+  if (recipe.userNote) {
+    lines.push("", "Moje poznámka:", recipe.userNote);
+  }
+  lines.push("", "Vytvořeno v Kombuchátoru.");
+  return lines.join("\n");
 }
 function createRecipeSnapshot(calc, recipeName = "") {
   const defaultName = defaultRecipeName(calc);
@@ -342,6 +326,9 @@ function createRecipeSnapshot(calc, recipeName = "") {
     recipeName: recipeName.trim() || defaultName,
     defaultRecipeName: defaultName,
     mode: state.mode,
+    goalId: state.mode === "classic" ? state.goal : null,
+    starterTypeKey: state.starterType,
+    volumeSource: state.volumeSource,
     target: state.mode === "classic" ? calc.goal.title : null,
     vesselVolumeL: calc.jarLiters || null,
     workingVolumeL: calc.workingLiters,
@@ -356,6 +343,7 @@ function createRecipeSnapshot(calc, recipeName = "") {
       waterMl: t.waterMl,
       totalGrams: t.gramsTotal
     })),
+    teaStates: state.teas.map(t => ({ ...t })),
     teaLiters: calc.teaLiters,
     sugarGramsPerLiter: calc.sugarPerLiter,
     sugarTotalGrams: calc.sugarTotal,
@@ -397,6 +385,44 @@ function shareWhatsApp(text) {
 }
 function shareMessengerFallback(text) {
   copyText(text, "Text máš zkopírovaný. Teď ho vlož do Messengeru.");
+}
+function switchView(viewName) {
+  const isCalc = viewName === "calculator";
+  if (els.calculatorView)  els.calculatorView.hidden  = !isCalc;
+  if (els.savedRecipesView) els.savedRecipesView.hidden = isCalc;
+  if (els.navCalculator) {
+    els.navCalculator.classList.toggle("active", isCalc);
+    els.navCalculator.ariaCurrent = isCalc ? "page" : null;
+  }
+  if (els.navZapisnik) {
+    els.navZapisnik.classList.toggle("active", !isCalc);
+    els.navZapisnik.ariaCurrent = isCalc ? null : "page";
+  }
+}
+function loadRecipeIntoCalculator(recipe) {
+  state.mode = recipe.mode || "classic";
+  state.goal = recipe.goalId || "balanced";
+  state.starterType = recipe.starterTypeKey || "normal";
+  state.volumeSource = recipe.volumeSource || "jar";
+  if (recipe.vesselVolumeL) els.jarLiters.value = recipe.vesselVolumeL;
+  if (recipe.desiredOutputL) els.targetLiters.value = recipe.desiredOutputL;
+  els.starterMl.value = recipe.starterMl || 0;
+  els.usePellicle.checked = recipe.pellicleEnabled ?? true;
+  if (recipe.pellicleType) state.pellicleSize = recipe.pellicleType;
+  state.pellicleCount = recipe.pellicleCount || 1;
+  els.pellicleGrams.value = recipe.pellicleGrams || "";
+  if (recipe.teaStates && recipe.teaStates.length) {
+    state.teas = recipe.teaStates.map(t => ({ ...t, id: createTeaId() }));
+  } else if (recipe.teas && recipe.teas.length) {
+    state.teas = recipe.teas.map(t => ({
+      id: createTeaId(), enabled: true, type: t.type,
+      ratio: "", waterMl: state.mode === "experiment" ? t.waterMl : "",
+      grams: t.gramsPerLiter, gramsTotal: "", lastEditedTeaField: ""
+    }));
+  }
+  switchView("calculator");
+  renderChoices();
+  render();
 }
 
 // ═══ RENDER CHOICES ═══
@@ -1011,30 +1037,33 @@ function updateOutputs(calc) {
 
 function updateCurrentRecipeActions(calc) {
   const disabled = calc.errors.length > 0;
-  [els.saveRecipeBtn, els.shareWhatsAppBtn, els.shareMessengerBtn, els.copyRecipeBtn].forEach(btn => {
+  [els.shareWhatsAppBtn, els.shareMessengerBtn, els.copyRecipeBtn].forEach(btn => {
     if (!btn) return;
     btn.disabled = disabled;
     btn.classList.toggle("disabled", disabled);
+    btn.title = disabled ? "Nejdřív doplň recept, ať neposíláš polotovar." : "";
   });
-  if (els.saveRecipeBtn) {
-    els.saveRecipeBtn.title = disabled
-      ? "Nejdřív oprav recept, ať neukládáš kombuchový průšvih."
+  if (els.saveCurrentRecipeBtn) {
+    els.saveCurrentRecipeBtn.disabled = disabled;
+    els.saveCurrentRecipeBtn.classList.toggle("disabled", disabled);
+    els.saveCurrentRecipeBtn.title = disabled
+      ? "Nejdřív doplň recept v kalkulačce."
       : (calc.starterSeverity === "STOP" ? "Ukládáš rizikový recept. Ber ho jako poznámku, ne jako návod." : "");
   }
-  [els.shareWhatsAppBtn, els.shareMessengerBtn, els.copyRecipeBtn].forEach(btn => {
-    if (btn) btn.title = disabled ? "Nejdřív doplň recept, ať neposíláš polotovar." : "";
-  });
 }
 
 function renderSavedRecipes() {
   if (!els.savedRecipesList) return;
   const sorted = [...savedRecipes].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  els.savedRecipesCount.textContent = `Uložené recepty: ${sorted.length}`;
+  if (els.navSavedBadge) {
+    els.navSavedBadge.textContent = sorted.length || "";
+    els.navSavedBadge.hidden = sorted.length === 0;
+  }
   if (!sorted.length) {
     els.savedRecipesList.innerHTML = `
       <div class="saved-empty">
-        <strong>Kombuchový zápisník je zatím prázdný.</strong>
-        <p>Ulož první recept a začne to tu žít.</p>
+        <strong>Zápisník je zatím prázdný.</strong>
+        <p>Ulož první recept z kalkulačky a začne to tu žít.</p>
       </div>`;
     return;
   }
@@ -1043,7 +1072,6 @@ function renderSavedRecipes() {
       <div class="saved-card-top">
         <div class="saved-title-row">
           <h3 data-title>${escapeHtml(recipe.recipeName)}</h3>
-          <button class="icon-action edit-title" type="button" aria-label="Upravit název">✎</button>
         </div>
         <div class="saved-badges">
           <span>${escapeHtml(modeLabel(recipe.mode))}</span>
@@ -1056,17 +1084,21 @@ function renderSavedRecipes() {
         <strong>Verdikt</strong>
         <p>${escapeHtml(recipe.verdictText)}</p>
       </div>
-      <pre class="share-text-preview">${escapeHtml(buildShareText(recipe))}</pre>
-      <label class="recipe-note">
-        <span>Poznámka</span>
-        <textarea placeholder="Co si k tomu chceš poznamenat? Třeba chuť, datum stáčení, bublinky nebo co příště změnit…">${escapeHtml(recipe.userNote || "")}</textarea>
-      </label>
       <p class="saved-card-feedback" aria-live="polite"></p>
       <div class="saved-card-actions">
         <button class="recipe-action share-whatsapp" type="button">WhatsApp</button>
         <button class="recipe-action share-messenger" type="button">Messenger</button>
-        <button class="recipe-action copy-share" type="button">Kopírovat text</button>
-        <button class="recipe-action danger delete-recipe" type="button">Smazat recept</button>
+        <button class="recipe-action copy-share" type="button">Kopírovat</button>
+        <button class="recipe-action edit-title" type="button">Změnit název</button>
+        <button class="recipe-action load-to-calc" type="button">Nahrát do kalkulačky</button>
+        <button class="recipe-action toggle-note" type="button">${recipe.userNote ? "Poznámka ✓" : "Přidat poznámku"}</button>
+        <button class="recipe-action danger delete-recipe" type="button">Smazat</button>
+      </div>
+      <div class="recipe-note-area" hidden>
+        <label class="recipe-note">
+          <span>Poznámka</span>
+          <textarea placeholder="Co si k tomu chceš poznamenat? Třeba chuť, datum stáčení nebo co příště změnit…">${escapeHtml(recipe.userNote || "")}</textarea>
+        </label>
       </div>
     </article>
   `).join("");
@@ -1122,6 +1154,7 @@ function confirmSaveRecipe() {
   pendingRecipeSnapshot = null;
   els.saveRecipeDialog.close();
   renderSavedRecipes();
+  switchView("zapisnik");
   showActionFeedback("Recept máš uložený.");
 }
 
@@ -1155,7 +1188,7 @@ function confirmDeleteRecipe() {
   persistSavedRecipes();
   els.deleteRecipeDialog.close();
   renderSavedRecipes();
-  showActionFeedback("Recept je pryč.");
+  showActionFeedback("Recept je pryč. Místo v zápisníku.");
 }
 
 // ═══ SYNC MODE UI ═══
@@ -1200,7 +1233,6 @@ function render(options = {}) {
   updateTemperature();
   updateSugar(calc);
   updateOutputs(calc);
-  renderSavedRecipes();
 }
 
 // ═══ EVENTS ═══
@@ -1258,7 +1290,7 @@ function updateTeaFromDom(event) {
       id,
       enabled: row.querySelector(".tea-check").checked,
       type,
-      ratio: ratio === "" ? "" : Math.max(0, Math.min(100, Number(ratio))),
+      ratio: ratio === "" ? "" : Math.round(Math.max(0, Math.min(100, Number(ratio)))),
       waterMl,
       grams: resolvedGrams,
       gramsTotal: resolvedTotalGrams,
@@ -1271,7 +1303,15 @@ function updateTeaFromDom(event) {
 }
 
 function bindEvents() {
-  els.saveRecipeBtn.addEventListener("click", openSaveRecipeDialog);
+  // Sidebar navigation
+  els.navCalculator?.addEventListener("click", e => { e.preventDefault(); switchView("calculator"); });
+  els.navZapisnik?.addEventListener("click", e => {
+    e.preventDefault();
+    renderSavedRecipes();
+    switchView("zapisnik");
+  });
+  // Save current recipe (from zápisník section)
+  els.saveCurrentRecipeBtn?.addEventListener("click", openSaveRecipeDialog);
   els.shareWhatsAppBtn.addEventListener("click", () => {
     const snapshot = currentSnapshotForSharing();
     if (snapshot) shareWhatsApp(snapshot.shareText);
@@ -1328,7 +1368,24 @@ function bindEvents() {
     }
     if (e.target.closest(".copy-share")) {
       refreshRecipeShareText(recipe);
-      copyText(recipe.shareText);
+      copyText(recipe.shareText, "Zkopírováno.");
+      return;
+    }
+    if (e.target.closest(".load-to-calc")) {
+      loadRecipeIntoCalculator(recipe);
+      return;
+    }
+    if (e.target.closest(".toggle-note")) {
+      const btn = e.target.closest(".toggle-note");
+      const noteArea = card.querySelector(".recipe-note-area");
+      const isHidden = noteArea.hidden;
+      noteArea.hidden = !isHidden;
+      if (!isHidden) {
+        btn.textContent = recipe.userNote ? "Poznámka ✓" : "Přidat poznámku";
+      } else {
+        btn.textContent = "Skrýt poznámku";
+        noteArea.querySelector("textarea")?.focus();
+      }
       return;
     }
     if (e.target.closest(".delete-recipe")) {
@@ -1357,6 +1414,8 @@ function bindEvents() {
     recipe.userNote = e.target.value;
     refreshRecipeShareText(recipe);
     persistSavedRecipes();
+    const toggleBtn = card.querySelector(".toggle-note");
+    if (toggleBtn) toggleBtn.textContent = recipe.userNote ? "Skrýt poznámku" : "Přidat poznámku";
     showCardFeedback(card, "Poznámka uložená.");
   });
   document.querySelectorAll("input[name='mode']").forEach(input => {
@@ -1424,8 +1483,26 @@ function bindEvents() {
   els.pelliclePlus.addEventListener("click",  () => { state.pellicleCount += 1; render(); });
   els.howItWorksBtn.addEventListener("click",  () => els.howItWorksDialog.showModal());
   els.closeDialog.addEventListener("click",    () => els.howItWorksDialog.close());
+
+  // Prevent negative values + enforce integer ratios — runs before other handlers (capture phase)
+  document.addEventListener("keydown", e => {
+    if (e.target.type !== "number") return;
+    if (e.key === "-" || e.key === "e" || e.key === "E") { e.preventDefault(); return; }
+    if (e.target.classList.contains("tea-ratio") && (e.key === "." || e.key === ",")) e.preventDefault();
+  }, true);
+  document.addEventListener("input", e => {
+    const inp = e.target;
+    if (inp.type !== "number" || inp.value === "") return;
+    const num = parseFloat(String(inp.value).replace(",", "."));
+    if (!isFinite(num)) return;
+    const floor = inp.min !== "" ? parseFloat(inp.min) : 0;
+    let result = Math.max(isFinite(floor) ? floor : 0, num);
+    if (inp.classList.contains("tea-ratio")) result = Math.round(result);
+    if (result !== num) inp.value = result;
+  }, true);
 }
 
 renderChoices();
 bindEvents();
 render();
+renderSavedRecipes();

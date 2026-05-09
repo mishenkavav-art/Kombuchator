@@ -188,16 +188,26 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   transform: rotate(-.4deg);
 }
 .nav-icon { width: 20px; height: 20px; flex-shrink: 0; }
-.nav-item-disabled {
-  pointer-events: none;
-  opacity: .58;
-}
 .nav-item small {
   display: block;
   margin-top: -2px;
   font-size: 8.5px;
   line-height: 1.1;
   color: rgba(251,246,236,.62);
+}
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--amber);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 4px;
+  margin-top: -2px;
 }
 
 /* ═══ MAIN AREA — offset for fixed sidebar ═══ */
@@ -2175,11 +2185,56 @@ body::before {
   font: inherit;
 }
 
+/* ═══ SAVED RECIPES VIEW (sidebar tab) ═══ */
+
+#savedRecipesView {
+  padding-top: 4px;
+}
+
+.saved-view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.saved-view-header-text h2 {
+  margin: 0 0 4px;
+  font-size: 25px;
+  line-height: 1.1;
+}
+.saved-view-header-text p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+.saved-view-header-text small {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+/* ═══ SAVED CARD ACTIONS — wrap nicely ═══ */
+
+.saved-card-actions {
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.recipe-note-area {
+  margin-top: 10px;
+}
+
+/* result-panel actions — keep on one row */
+.recipe-actions {
+  flex-wrap: nowrap;
+}
+
 @media (max-width: 760px) {
-  .saved-recipes-section {
-    padding: 18px 14px;
+  .saved-view-header {
+    flex-direction: column;
   }
-  .saved-recipes-head,
   .saved-card-top {
     flex-direction: column;
   }
