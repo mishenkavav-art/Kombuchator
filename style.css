@@ -221,7 +221,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 .header-brand { flex: 1; min-width: 0; position: relative; }
 
 .brand-title {
-  font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+  font-family: "Intro Rust", "Intro Rust G Base", "Intro Rust Base", "Intro Rust H2 Base", "DM Sans", "Segoe UI", system-ui, sans-serif;
   font-size: clamp(40px, 4vw, 68px);
   font-weight: 800;
   line-height: .92;
