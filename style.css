@@ -549,7 +549,12 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   display: grid;
   grid-template-columns: max-content minmax(150px, 1fr);
   gap: 14px;
-  align-items: end;
+  align-items: start;
+}
+.starter-amount-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .starter-amount-hint {
@@ -1640,6 +1645,7 @@ body::before {
 .starter-amount-row {
   grid-template-columns: max-content 1fr;
   gap: 30px;
+  align-items: start;
 }
 .starter-amount-hint,
 .starter-type-hint,
@@ -2126,6 +2132,7 @@ body::before {
   padding: 10px 12px;
   border-radius: 12px;
   background: rgba(228,234,216,.55);
+  border: 1px solid rgba(111,150,89,.22);
 }
 .saved-verdict strong {
   display: block;
@@ -2224,6 +2231,18 @@ body::before {
   border-radius: 12px;
   background: rgba(228,234,216,.48);
   border: 1px solid rgba(111,150,89,.22);
+}
+.saved-recipe-card.status-borderline .saved-needs-block,
+.saved-recipe-card.status-borderline .saved-verdict {
+  background: rgba(244,180,67,.16);
+  border-color: rgba(232,154,32,.35);
+}
+.saved-recipe-card.status-risk .saved-needs-block,
+.saved-recipe-card.status-stop .saved-needs-block,
+.saved-recipe-card.status-risk .saved-verdict,
+.saved-recipe-card.status-stop .saved-verdict {
+  background: rgba(159,61,53,.09);
+  border-color: rgba(159,61,53,.30);
 }
 .saved-section-label {
   display: block;

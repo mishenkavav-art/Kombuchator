@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=38">
+  <link rel="stylesheet" href="style.css?v=39">
 </head>
 <body>
   <div class="app-layout">
@@ -111,15 +111,17 @@
             </div>
             <div class="starter-layout">
               <div class="starter-amount-row">
-                <label>
-                  <span class="choice-label">Množství startéru</span>
-                  <div class="unit-input">
-                    <img class="field-icon" src="ikony/startér pro příště.png" alt="" aria-hidden="true">
-                    <input id="starterMl" type="number" min="0" step="10" value="300">
-                    <em>ml</em>
-                  </div>
-                </label>
-                <p class="microcopy">Minimum startéru je 10 % z celkového plánovaného objemu, ideál 10–15 %.</p>
+                <div class="starter-amount-left">
+                  <label>
+                    <span class="choice-label">Množství startéru</span>
+                    <div class="unit-input">
+                      <img class="field-icon" src="ikony/startér pro příště.png" alt="" aria-hidden="true">
+                      <input id="starterMl" type="number" min="0" step="10" value="300">
+                      <em>ml</em>
+                    </div>
+                  </label>
+                  <p class="microcopy">Minimum startéru je 10 % z celkového plánovaného objemu, ideál 10–15 %.</p>
+                </div>
                 <p class="result-line starter-amount-hint" id="starterAmountHint"></p>
               </div>
               <div>
@@ -257,7 +259,7 @@
           <!-- PINNED NOTE -->
           <div class="pinned-note">
             <img class="note-pin" src="ikony/pin.svg" alt="" aria-hidden="true">
-            <h3 class="note-title">Budeš potřebovat</h3>
+            <h3 class="note-title">Ingredience</h3>
             <ul class="needs-list" id="needsList"></ul>
           </div>
 
@@ -274,7 +276,6 @@
             <p>Tady si necháš recepty, které chceš zopakovat, doladit nebo poslat dál.</p>
             <small>Zápisník si pamatuje recepty jen v tomhle prohlížeči.</small>
           </div>
-          <button class="recipe-action primary" id="saveCurrentRecipeBtn" type="button">Uložit aktuální recept</button>
         </div>
         <div class="saved-recipes-list" id="savedRecipesList"></div>
       </div><!-- /savedRecipesView -->
@@ -326,6 +327,6 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=38"></script>
+  <script src="script.js?v=39"></script>
 </body>
 </html>

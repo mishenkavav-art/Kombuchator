@@ -130,7 +130,6 @@ const els = {
   shareWhatsAppBtn:   document.querySelector("#shareWhatsAppBtn"),
   copyRecipeBtn:      document.querySelector("#copyRecipeBtn"),
   currentActionFeedback: document.querySelector("#currentActionFeedback"),
-  saveCurrentRecipeBtn: document.querySelector("#saveCurrentRecipeBtn"),
   savedRecipesList:   document.querySelector("#savedRecipesList"),
   navCalculator:      document.querySelector("#navCalculator"),
   navZapisnik:        document.querySelector("#navZapisnik"),
@@ -307,8 +306,8 @@ function renderRecipeNeeds(recipe) {
   return `<ul class="needs-list">
     <li><img src="ikony/kombucha.png" alt="" aria-hidden="true"><span><strong>Sladký čaj celkem:</strong> ${roundLiters(recipe.teaLiters)}</span></li>
     ${teaLines}
-    <li><img src="ikony/cukr.png" alt="" aria-hidden="true"><span><strong>Cukr:</strong> ${approxRange(recipe.sugarTotalGrams, 5)} (${Math.round(recipe.sugarGramsPerLiter)} g/l)</span></li>
-    <li><img src="ikony/startér pro příště.png" alt="" aria-hidden="true"><span><strong>Startér:</strong> ${roundMl(recipe.starterMl)} (${escapeHtml(recipe.starterType)}ho)</span></li>
+    <li><img src="ikony/cukr.png" alt="" aria-hidden="true"><span><strong>Cukr:</strong> ${approxRange(recipe.sugarTotalGrams, 5)}</span></li>
+    <li><img src="ikony/startér pro příště.png" alt="" aria-hidden="true"><span><strong>Startér:</strong> ${roundMl(recipe.starterMl)}</span></li>
     ${pellicleLine}
     ${tempLine}
   </ul>`;
@@ -322,11 +321,11 @@ function buildShareText(recipe) {
     "",
     recipe.verdictText,
     "",
-    "Budeš potřebovat:",
+    "Ingredience:",
     `- ${roundLiters(recipe.teaLiters)} sladkého čaje celkem`,
     ...teaLines,
-    `- ${Math.round(recipe.sugarTotalGrams)} g cukru (${Math.round(recipe.sugarGramsPerLiter)} g/l)`,
-    `- ${roundMl(recipe.starterMl)} startéru (${recipe.starterType}ho)`,
+    `- ${Math.round(recipe.sugarTotalGrams)} g cukru`,
+    `- ${roundMl(recipe.starterMl)} startéru`,
   ];
   if (recipe.pellicleEnabled && recipe.pellicleType) {
     const pLabel = pellicles[recipe.pellicleType]?.label || "placka";
@@ -993,8 +992,8 @@ function updateOutputs(calc) {
   els.needsList.innerHTML = `
     <li><img src="ikony/kombucha.png"            alt="" aria-hidden="true"><span><strong>Sladký čaj celkem:</strong> ${roundLiters(calc.teaLiters)}</span></li>
     ${teaLines}
-    <li><img src="ikony/cukr.png"               alt="" aria-hidden="true"><span><strong>Cukr:</strong> ${approxRange(calc.sugarTotal, 5)} (${Math.round(calc.sugarPerLiter)} g/l)</span></li>
-    <li><img src="ikony/startér pro příště.png" alt="" aria-hidden="true"><span><strong>Startér:</strong> ${roundMl(calc.starterMl)} (${Math.round(calc.starterRatio * 100)} % objemu)</span></li>
+    <li><img src="ikony/cukr.png"               alt="" aria-hidden="true"><span><strong>Cukr:</strong> ${approxRange(calc.sugarTotal, 5)}</span></li>
+    <li><img src="ikony/startér pro příště.png" alt="" aria-hidden="true"><span><strong>Startér:</strong> ${roundMl(calc.starterMl)}</span></li>
     ${pellicleLine}
     ${safeBatchLine}`;
 
@@ -1060,7 +1059,7 @@ function updateCurrentRecipeActions(calc) {
   const saveTitle = disabled
     ? "Nejdřív oprav recept, ať neukládáš kombuchový průšvih."
     : (calc.starterSeverity === "STOP" ? "Ukládáš rizikový recept. Ber ho jako poznámku, ne jako návod." : "");
-  [els.saveRecipeBtn, els.saveCurrentRecipeBtn].forEach(btn => {
+  [els.saveRecipeBtn].forEach(btn => {
     if (!btn) return;
     btn.disabled = disabled;
     btn.classList.toggle("disabled", disabled);
@@ -1102,7 +1101,7 @@ function renderSavedRecipes() {
       </div>
       <p class="saved-date">Uloženo: ${escapeHtml(formatDateTime(recipe.createdAt))}</p>
       <div class="saved-needs-block">
-        <strong class="saved-section-label">Budeš potřebovat</strong>
+        <strong class="saved-section-label">Ingredience</strong>
         ${renderRecipeNeeds(recipe)}
       </div>
       <div class="saved-verdict">
@@ -1411,7 +1410,6 @@ function bindEvents() {
   });
   els.saveRecipeBtn?.addEventListener("click", openSaveRecipeDialog);
   els.resetCalcBtn?.addEventListener("click", resetCalculator);
-  els.saveCurrentRecipeBtn?.addEventListener("click", openSaveRecipeDialog);
   els.shareWhatsAppBtn.addEventListener("click", () => {
     const snapshot = currentSnapshotForSharing();
     if (snapshot) shareWhatsApp(snapshot.shareText);
