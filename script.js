@@ -191,8 +191,24 @@ function pellicleScoreFromGrams(grams) {
   return 2;
 }
 function setFeedback(el, text, status = "ok") {
-  el.className = `feedback-line is-${status}`;
+  el.className = "feedback-line";
+  if (Array.isArray(text)) {
+    el.innerHTML = text
+      .filter(item => item && item.text)
+      .map(item => `<span class="feedback-line-part is-${item.status || "ok"}">${escapeHtml(item.text)}</span>`)
+      .join("");
+    return;
+  }
+  el.classList.add(`is-${status}`);
   el.textContent = text;
+}
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // ═══ RENDER CHOICES ═══
@@ -548,7 +564,7 @@ function updateStarter(calc) {
   const tgtHigh = formatPercent(calc.starterTarget[1], 0);
   const typeStatus = state.starterType === "normal" ? "ok" : state.starterType === "vinegary" ? "warn" : "warn";
   setFeedback(els.starterTypeHint, calc.starterType.text, typeStatus);
-  let amountHint = `Máš ${formatPercent(calc.starterRatio)} startéru. Minimum je ${minPct}, ideál ${tgtLow}-${tgtHigh}.`;
+  const amountParts = [{ text: `Máš ${formatPercent(calc.starterRatio)} startéru. Minimum je ${minPct}, ideál ${tgtLow}-${tgtHigh}.`, status: "ok" }];
   let amountStatus = "ok";
 
   if (calc.starterSeverity === "STOP") {
@@ -557,25 +573,29 @@ function updateStarter(calc) {
     const needMn = kitchenStarterAmount(calc.requiredStarterMinL);
     const needT0 = kitchenStarterAmount(calc.requiredStarterTargetL[0]);
     const needT1 = kitchenStarterAmount(calc.requiredStarterTargetL[1]);
-    amountHint += ` Takhle ji nezakládej. Potřebuješ aspoň ${needMn}; zmenši várku na cca ${maxB}, nebo přidej startér.`;
-    if (calc.pellicleEnabled) amountHint += " Placka to nezachrání.";
+    amountParts[0].status = "danger";
+    amountParts.push({ text: `Takhle ji nezakládej. Potřebuješ aspoň ${needMn}; zmenši várku na cca ${maxB}, nebo přidej startér.`, status: "danger" });
+    if (calc.pellicleEnabled) amountParts.push({ text: "Placka to nezachrání.", status: "danger" });
   } else if (calc.starterSeverity === "RED") {
     amountStatus = "danger";
     const missing = Math.max(0, calc.requiredStarterMinL - calc.starterLiters);
-    amountHint += ` Přidej aspoň na ${kitchenStarterAmount(calc.requiredStarterMinL)}. Chybí cca ${kitchenStarterAmount(missing)}.`;
+    amountParts[0].status = "danger";
+    amountParts.push({ text: `Přidej aspoň na ${kitchenStarterAmount(calc.requiredStarterMinL)}. Chybí cca ${kitchenStarterAmount(missing)}.`, status: "danger" });
   } else if (calc.starterSeverity === "YELLOW") {
     amountStatus = "warn";
-    amountHint += " Lehce pod doporučením. Hlídej chuť dřív.";
+    amountParts[0].status = "warn";
+    amountParts.push({ text: "Lehce pod doporučením. Hlídej chuť dřív.", status: "warn" });
   } else if (calc.starterSeverity === "FAST") {
     amountStatus = "warn";
-    amountHint += " Pojede rychleji. Ochutnávej dřív.";
+    amountParts.push({ text: "Pojede rychleji. Ochutnávej dřív.", status: "warn" });
   } else if (calc.starterSeverity === "TOO_MUCH") {
     amountStatus = "danger";
-    amountHint += " Hodně startéru. Počítej s ostřejší chutí.";
+    amountParts[0].status = "danger";
+    amountParts.push({ text: "Hodně startéru. Počítej s ostřejší chutí.", status: "danger" });
   } else {
-    amountHint += " Tak akorát.";
+    amountParts.push({ text: "Tak akorát.", status: "ok" });
   }
-  setFeedback(els.starterAmountHint, amountHint, amountStatus);
+  setFeedback(els.starterAmountHint, amountParts, amountStatus);
 }
 
 function updateTea(calc) {
@@ -604,40 +624,46 @@ function updateTea(calc) {
   }
 
   if (!calc.teaItems.length) {
-    msgs.push("Čaj nemáš vyplněný. Doplň čajový základ, jinak není co počítat.");
+    msgs.push({ text: "Čaj nemáš vyplněný. Doplň čajový základ, jinak není co počítat.", status: "danger" });
     status = "danger";
   }
   if (calc.onlyExtraTea) {
-    msgs.push(calc.avgTeaStrength > 9
-      ? "Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej pravý čaj. Navíc máš nálev extrémně silný, takže chuť může být přestřelená."
-      : "Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej černý, zelený, bílý čaj nebo oolong.");
+    msgs.push({
+      text: calc.avgTeaStrength > 9
+        ? "Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej pravý čaj."
+        : "Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej černý, zelený, bílý čaj nebo oolong.",
+      status: "danger"
+    });
+    if (calc.avgTeaStrength > 9) {
+      msgs.push({ text: "Navíc máš nálev extrémně silný, takže chuť může být přestřelená.", status: "danger" });
+    }
     status = "danger";
   }
   if (calc.teaItems.length && !calc.onlyExtraTea) {
     const mainTypes = calc.teaItems.filter(t => teaTypes[t.type].main).map(t => teaTypes[t.type].label);
     const teaBase = mainTypes.join(" + ");
     if (greenWhiteTooStrong && mainTypes.some(t => t === "zelený" || t === "bílý")) {
-      msgs.push(`${teaBase[0].toUpperCase()}${teaBase.slice(1)} čaj je pro F1 v pohodě, ale máš ho moc silný.`);
+      msgs.push({ text: `${teaBase[0].toUpperCase()}${teaBase.slice(1)} čaj je pro F1 v pohodě.`, status: "ok" });
     } else {
-      msgs.push(`${teaBase[0].toUpperCase()}${teaBase.slice(1)} čaj máš jako stabilní základ pro F1.`);
+      msgs.push({ text: `${teaBase[0].toUpperCase()}${teaBase.slice(1)} čaj máš jako stabilní základ pro F1.`, status: "ok" });
     }
-    if (strengthMessage) msgs.push(strengthMessage);
+    if (strengthMessage) msgs.push({ text: strengthMessage, status: strengthStatus });
     if (strengthStatus === "danger") status = "danger";
     else if (strengthStatus === "warn" && status !== "danger") status = "warn";
   }
   if (state.mode === "experiment" && calc.teaWaterDiffL < -0.1) {
-    msgs.push(`Do plánované várky ti chybí cca ${roundLiters(Math.abs(calc.teaWaterDiffL))} čajového nálevu. Doplň vodu u čajů, nebo zmenši cílový objem.`);
+    msgs.push({ text: `Do plánované várky ti chybí cca ${roundLiters(Math.abs(calc.teaWaterDiffL))} čajového nálevu. Doplň vodu u čajů, nebo zmenši cílový objem.`, status: "warn" });
     if (status !== "danger") status = "warn";
   }
   if (state.mode === "experiment" && calc.teaWaterDiffL > 0.1) {
-    msgs.push(`Přebývá ti cca ${roundLiters(calc.teaWaterDiffL)} čajového nálevu. Uber vodu u čajů, zmenši startér, nebo zvětši plánovaný objem.`);
+    msgs.push({ text: `Přebývá ti cca ${roundLiters(calc.teaWaterDiffL)} čajového nálevu. Uber vodu u čajů, zmenši startér, nebo zvětši plánovaný objem.`, status: "warn" });
     if (status !== "danger") status = "warn";
   }
   if (calc.teaNeedsWaterForGrams) {
-    msgs.push("Nejdřív zadej vodu u čaje, ať můžu přepočítat gramáž.");
+    msgs.push({ text: "Nejdřív zadej vodu u čaje, ať můžu přepočítat gramáž.", status: "warn" });
     if (status !== "danger") status = "warn";
   }
-  setFeedback(els.teaWarning, msgs.join(" "), status);
+  setFeedback(els.teaWarning, msgs, status);
 }
 
 function updatePellicle(calc) {
@@ -672,8 +698,9 @@ function updatePellicle(calc) {
     text = "Placek máš hodně vzhledem k velikosti várky. Hlídej místo v nádobě a správný poměr tekutého startéru.";
     status = "warn";
   } else text = "Placka je pomocník, hlavní motor je kyselý startér.";
-  const gramsText = exactGrams > 0 ? ` Máš zadanou přesnou gramáž všech placek: ${Math.round(exactGrams)} g.` : "";
-  setFeedback(els.pellicleHint, `${text}${gramsText}`, status);
+  const parts = [{ text, status }];
+  if (exactGrams > 0) parts.push({ text: `Máš zadanou přesnou gramáž všech placek: ${Math.round(exactGrams)} g.`, status: "ok" });
+  setFeedback(els.pellicleHint, parts, status);
 }
 
 function updateTemperature() {
@@ -707,8 +734,8 @@ function updateSugar(calc) {
 
 function updateOutputs(calc) {
   if (calc.errors.length) {
-    els.needsList.innerHTML         = calc.errors.map(t => `<li><strong>Pozor:</strong> ${t}</li>`).join("");
-    els.predictionTitle.textContent = "Nejdřív doplň vstupy.";
+    els.needsList.innerHTML         = calc.errors.map(t => `<li class="needs-alert"><span><strong>Pozor:</strong> ${escapeHtml(t)}</span></li>`).join("");
+    els.predictionTitle.textContent = "Nejdřív doplň vstupy";
     els.predictionText.textContent  = "Jakmile budou základní poměry dávat smysl, Kombuchátor ukáže předpověď.";
     els.intensityDots.innerHTML     = "";
     els.recommendations.innerHTML   = calc.warnings.map(t => `<div class="recommendation-item warning"><strong>Pozor</strong><p>${t}</p></div>`).join("");
@@ -777,12 +804,16 @@ function updateOutputs(calc) {
   const f2 = f2Tags[calc.f2Key];
   const tempNote = state.mode === "experiment" && calc.tempBand.text ? ` (${calc.tempBand.text})` : "";
 
-  els.recommendations.innerHTML = [
+  const recommendationRows = [
     ["Start várky",           severityLabel, (calc.starterSeverity === "STOP" || calc.starterSeverity === "RED") ? " danger" : ""],
-    ["Kdy ochutnávat",        calc.tasteWindow + tempNote, ""],
-    ["Cukr",                  `${Math.round(calc.sugarPerLiter)} g/l – ${sugarLabel}`, (calc.sugarBand === "zero" || calc.sugarBand === "extreme") ? " danger" : ""],
-    [f2.tag,                  f2.text, calc.f2Key === "stop" ? " danger" : ""]
-  ].map(([title, text, className]) =>
+    ["Kdy ochutnávat",        calc.tasteWindow + tempNote, ""]
+  ];
+  if (state.mode === "experiment") {
+    recommendationRows.push(["Cukr", `${Math.round(calc.sugarPerLiter)} g/l – ${sugarLabel}`, (calc.sugarBand === "zero" || calc.sugarBand === "extreme") ? " danger" : ""]);
+  }
+  recommendationRows.push([f2.tag, f2.text, calc.f2Key === "stop" ? " danger" : ""]);
+
+  els.recommendations.innerHTML = recommendationRows.map(([title, text, className]) =>
     `<div class="recommendation-item${className}"><strong>${title}</strong><p>${text}</p></div>`
   ).join("") + calc.warnings.map(t =>
     `<div class="recommendation-item warning"><strong>Pozor</strong><p>${t}</p></div>`
