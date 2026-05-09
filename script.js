@@ -1307,6 +1307,16 @@ function updateTeaFromDom(event) {
     : "";
   const previousById = new Map(state.teas.map(t => [t.id, t]));
 
+  // When editing a ratio, clear other pinned ratios if total would exceed 100
+  let clearOtherRatios = false;
+  if (editedId && editedField === "ratio") {
+    const editedRatioVal = Math.round(parseFloat(target?.value || "0") || 0);
+    const otherPinnedSum = state.teas
+      .filter(t => t.id !== editedId && t.ratio !== "" && Number(t.ratio) > 0)
+      .reduce((s, t) => s + Number(t.ratio), 0);
+    clearOtherRatios = editedRatioVal + otherPinnedSum > 100;
+  }
+
   const teas = rows.map(row => {
     const id = row.dataset.teaId;
     const type = row.querySelector(".tea-type").value;
@@ -1321,7 +1331,7 @@ function updateTeaFromDom(event) {
       : previous.lastEditedTeaField;
     const ratio = isEdited && editedField === "ratio"
       ? ratioInput
-      : (previous.ratio ?? "");
+      : (clearOtherRatios ? "" : (previous.ratio ?? ""));
     const waterMl = isEdited && editedField === "water"
       ? (waterInputLiters === "" ? "" : Math.max(0, waterInputLiters * 1000))
       : (lastEditedTeaField === "water" ? (previous.waterMl ?? "") : "");
