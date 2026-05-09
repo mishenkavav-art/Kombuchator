@@ -802,18 +802,18 @@ function updateStarter(calc) {
   const tgtHigh = formatPercent(calc.starterTarget[1], 0);
   const typeStatus = state.starterType === "normal" ? "ok" : state.starterType === "vinegary" ? "warn" : "warn";
   setFeedback(els.starterTypeHint, calc.starterType.text, typeStatus);
-  const amountParts = [{ text: `Máš ${formatPercent(calc.starterRatio)} startéru. Minimum je ${minPct}, ideál ${tgtLow}-${tgtHigh}.`, status: "ok" }];
+  const amountParts = [{ text: `Máš ${formatPercent(calc.starterRatio)} startéru.`, status: "ok" }];
   let amountStatus = "ok";
 
   if (calc.starterSeverity === "STOP") {
     amountStatus = "danger";
-    const maxB   = starterFixRange(calc) || "menší várku";
+    const maxB   = starterFixRange(calc);
     const needMn = kitchenStarterAmount(calc.requiredStarterMinL);
-    const needT0 = kitchenStarterAmount(calc.requiredStarterTargetL[0]);
-    const needT1 = kitchenStarterAmount(calc.requiredStarterTargetL[1]);
     amountParts[0].status = "danger";
-    amountParts.push({ text: `Takhle ji nezakládej. Potřebuješ aspoň ${needMn}; zmenši várku na cca ${maxB}, nebo přidej startér.`, status: "danger" });
-    if (calc.pellicleEnabled) amountParts.push({ text: "Placka to nezachrání.", status: "danger" });
+    const fixSuggestion = maxB
+      ? `Zmenši várku na ${maxB}, nebo přidej aspoň ${needMn} startéru.`
+      : `Přidej aspoň ${needMn} startéru, nebo zmenši várku.`;
+    amountParts.push({ text: `Takhle ji nezakládej. ${fixSuggestion}`, status: "danger" });
   } else if (calc.starterSeverity === "RED") {
     amountStatus = "danger";
     const missing = Math.max(0, calc.requiredStarterMinL - calc.starterLiters);
@@ -1187,8 +1187,48 @@ function confirmSaveRecipe() {
   showActionFeedback("Recept máš uložený.");
 }
 
+function defaultModeSnap() {
+  return {
+    goal: "balanced", volumeSource: "jar", starterType: "normal",
+    temperature: "room", pellicleSize: "pancake", pellicleCount: 1, sugarSource: "perLiter",
+    teas: [
+      { id: createTeaId(), enabled: true, type: "black", ratio: "", grams: 6 },
+      { id: createTeaId(), enabled: true, type: "green", ratio: "", grams: 5 }
+    ],
+    jarLiters: "3", targetLiters: "", starterMl: "300", pellicleGrams: "",
+    temperatureInput: "", sugarPerLiter: "65", sugarTotal: "", usePellicle: true,
+  };
+}
+
+const modeSnapshots = { classic: null, experiment: null };
+
+function snapshotModeState() {
+  return {
+    goal: state.goal, volumeSource: state.volumeSource, starterType: state.starterType,
+    temperature: state.temperature, pellicleSize: state.pellicleSize,
+    pellicleCount: state.pellicleCount, sugarSource: state.sugarSource,
+    teas: state.teas.map(t => ({ ...t })),
+    jarLiters: els.jarLiters.value, targetLiters: els.targetLiters.value,
+    starterMl: els.starterMl.value, pellicleGrams: els.pellicleGrams.value,
+    temperatureInput: els.temperatureInput.value, sugarPerLiter: els.sugarPerLiter.value,
+    sugarTotal: els.sugarTotal.value, usePellicle: els.usePellicle.checked,
+  };
+}
+
+function restoreModeState(snap) {
+  state.goal = snap.goal; state.volumeSource = snap.volumeSource;
+  state.starterType = snap.starterType; state.temperature = snap.temperature;
+  state.pellicleSize = snap.pellicleSize; state.pellicleCount = snap.pellicleCount;
+  state.sugarSource = snap.sugarSource;
+  state.teas = snap.teas.map(t => ({ ...t }));
+  els.jarLiters.value = snap.jarLiters; els.targetLiters.value = snap.targetLiters;
+  els.starterMl.value = snap.starterMl; els.pellicleGrams.value = snap.pellicleGrams;
+  els.temperatureInput.value = snap.temperatureInput;
+  els.sugarPerLiter.value = snap.sugarPerLiter; els.sugarTotal.value = snap.sugarTotal;
+  els.usePellicle.checked = snap.usePellicle;
+}
+
 function resetCalculator() {
-  state.mode = "classic";
   state.goal = "balanced";
   state.volumeSource = "jar";
   state.starterType = "normal";
@@ -1208,6 +1248,7 @@ function resetCalculator() {
   els.sugarPerLiter.value   = "65";
   els.sugarTotal.value      = "";
   els.usePellicle.checked   = true;
+  modeSnapshots[state.mode] = null;
   renderChoices();
   render();
 }
@@ -1483,7 +1524,15 @@ function bindEvents() {
     showCardFeedback(card, "Poznámka uložená.");
   });
   document.querySelectorAll("input[name='mode']").forEach(input => {
-    input.addEventListener("change", () => { state.mode = input.value; render(); });
+    input.addEventListener("change", () => {
+      const newMode = input.value;
+      if (newMode === state.mode) return;
+      modeSnapshots[state.mode] = snapshotModeState();
+      state.mode = newMode;
+      restoreModeState(modeSnapshots[newMode] || defaultModeSnap());
+      renderChoices();
+      render();
+    });
   });
   els.goalGrid.addEventListener("click", e => {
     const card = e.target.closest("[data-goal]");
