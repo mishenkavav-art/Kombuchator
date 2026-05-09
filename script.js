@@ -162,6 +162,9 @@ function displayWaterLiters(waterMl) {
   const ml = Number(waterMl);
   return ml > 0 ? String(Math.round((ml / 1000) * 10) / 10) : "";
 }
+function displayRatioValue(ratio) {
+  return Number.isFinite(Number(ratio)) && Number(ratio) > 0 ? String(Math.round(Number(ratio) * 10) / 10) : "";
+}
 function displayGramsValue(grams) {
   return Number.isFinite(grams) && grams > 0 ? String(Math.round(grams * 10) / 10) : "";
 }
@@ -173,6 +176,12 @@ function displayLitersValue(liters) {
 function parseWaterLiters(value) {
   const liters = Number(String(value).replace(",", "."));
   return Number.isFinite(liters) && liters > 0 ? liters * 1000 : "";
+}
+function parseOptionalNumber(value) {
+  const normalized = String(value ?? "").replace(",", ".").trim();
+  if (normalized === "") return "";
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : "";
 }
 function pellicleScoreFromGrams(grams) {
   if (!(grams > 0)) return 0;
@@ -225,7 +234,7 @@ function renderTeas(calc = null) {
   els.teaList.innerHTML = (showDetails ? `
     <div class="tea-row tea-row-head" aria-hidden="true">
       <span></span><strong>Typ čaje</strong><strong>Poměr %</strong>
-      <strong>Dopočtená voda</strong><strong>Množství g/l</strong><strong>Celkem g</strong><span></span>
+      <strong>Voda v litrech</strong><strong>Množství g/l</strong><strong>Celkem g</strong><span></span>
     </div>` : "") + state.teas.map(tea => `
     <div class="tea-row" data-tea-id="${tea.id}">
       <input class="tea-check" type="checkbox" ${tea.enabled ? "checked" : ""} aria-label="Použít čaj">
@@ -236,16 +245,16 @@ function renderTeas(calc = null) {
         </select>
       </div>
       <div class="inline-unit tea-ratio-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-ratio" type="number" min="0" max="100" step="1" value="${tea.ratio || displayGramsValue(autoTeaById.get(tea.id)?.ratio)}" aria-label="Poměr čaje v procentech">
+        <input class="tea-ratio" type="number" min="0" max="100" step="1" placeholder="%" value="${displayRatioValue(autoTeaById.get(tea.id)?.ratio ?? tea.ratio)}" aria-label="Poměr čaje v procentech">
       </div>
       <div class="inline-unit tea-water-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-water" type="number" min="0" step="0.1" value="${displayWaterLiters(autoTeaById.get(tea.id)?.waterMl)}" aria-label="Dopočtená voda" readonly>
+        <input class="tea-water" type="number" min="0" step="0.1" placeholder="l" value="${displayWaterLiters(autoTeaById.get(tea.id)?.waterMl ?? tea.waterMl)}" aria-label="Voda v litrech">
       </div>
       <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-grams" type="number" min="0" step="0.5" value="${tea.grams}" aria-label="Gramáž g/l">
+        <input class="tea-grams" type="number" min="0" step="0.5" placeholder="g/l" value="${displayGramsValue(autoTeaById.get(tea.id)?.grams ?? tea.grams)}" aria-label="Gramáž g/l">
       </div>
       <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-total-grams" type="number" min="0" step="0.5" value="${displayGramsValue(autoTeaById.get(tea.id)?.gramsTotal)}" aria-label="Čaj celkem v gramech">
+        <input class="tea-total-grams" type="number" min="0" step="0.5" placeholder="g" value="${displayGramsValue(autoTeaById.get(tea.id)?.gramsTotal ?? tea.gramsTotal)}" aria-label="Čaj celkem v gramech">
       </div>
       <button class="remove-tea" type="button" aria-label="Odebrat čaj">×</button>
     </div>`).join("");
@@ -272,30 +281,66 @@ function buildClassicTeaItems(enabledTeas, freshTeaL) {
 }
 
 function buildExperimentTeaItems(enabledTeas, freshTeaL) {
-  const specifiedRatio = enabledTeas.reduce((s, t) => s + (Number(t.ratio) > 0 ? Number(t.ratio) : 0), 0);
-  const blankRatioTeas = enabledTeas.filter(t => !(Number(t.ratio) > 0));
-  const hasAnyRatio = specifiedRatio > 0;
-  const blankMain = blankRatioTeas.filter(t => teaTypes[t.type].main);
-  const blankExtra = blankRatioTeas.filter(t => !teaTypes[t.type].main);
-  const totalRatio = enabledTeas.reduce((s, t) => s + ratioForTea(t), 0) || 1;
+  const freshTeaMl = Math.max(0, freshTeaL * 1000);
+  const waterEditedTeas = enabledTeas.filter(t => Number(t.waterMl) > 0);
+  const usesWaterMode = waterEditedTeas.length > 0 || enabledTeas.some(t => t.lastEditedTeaField === "water");
+  let waterById = new Map();
+  let ratioById = new Map();
 
-  function defaultRatioForBlank(t) {
-    const remaining = hasAnyRatio ? Math.max(0, 100 - specifiedRatio) : 100;
-    if (blankMain.length && blankExtra.length) {
-      return teaTypes[t.type].main ? (remaining * 0.7 / blankMain.length) : (remaining * 0.3 / blankExtra.length);
-    }
-    return blankRatioTeas.length ? remaining / blankRatioTeas.length : 0;
+  function distributeBlankRatio(blanks, remainingRatio) {
+    const blankRatioTotal = blanks.reduce((sum, t) => sum + (Number(t.ratio) > 0 ? Number(t.ratio) : 0), 0);
+    return new Map(blanks.map(t => {
+      const share = blankRatioTotal > 0
+        ? (Number(t.ratio) || 0) / blankRatioTotal
+        : 1 / blanks.length;
+      return [t.id, Math.max(0, remainingRatio) * share];
+    }));
   }
-  function ratioForTea(t) {
-    const explicit = Number(t.ratio);
-    return explicit > 0 ? explicit : defaultRatioForBlank(t);
+
+  if (usesWaterMode) {
+    const enteredWaterMl = waterEditedTeas.reduce((sum, t) => sum + Number(t.waterMl), 0);
+    const blankWaterTeas = enabledTeas.filter(t => !(Number(t.waterMl) > 0));
+    const remainingWaterMl = Math.max(0, freshTeaMl - enteredWaterMl);
+    const blankRatioTotal = blankWaterTeas.reduce((sum, t) => sum + (Number(t.ratio) > 0 ? Number(t.ratio) : 0), 0);
+
+    enabledTeas.forEach(t => {
+      if (Number(t.waterMl) > 0) {
+        waterById.set(t.id, Number(t.waterMl));
+        return;
+      }
+      const share = blankWaterTeas.length
+        ? (blankRatioTotal > 0 ? (Number(t.ratio) || 0) / blankRatioTotal : 1 / blankWaterTeas.length)
+        : 0;
+      waterById.set(t.id, remainingWaterMl * share);
+    });
+
+    const totalWaterMl = enabledTeas.reduce((sum, t) => sum + (waterById.get(t.id) || 0), 0);
+    enabledTeas.forEach(t => {
+      ratioById.set(t.id, totalWaterMl > 0 ? (waterById.get(t.id) || 0) / totalWaterMl * 100 : 0);
+    });
+  } else {
+    const specifiedRatio = enabledTeas.reduce((sum, t) => sum + (Number(t.ratio) > 0 ? Number(t.ratio) : 0), 0);
+    const blankRatioTeas = enabledTeas.filter(t => !(Number(t.ratio) > 0));
+    const blankRatios = distributeBlankRatio(blankRatioTeas, Math.max(0, 100 - specifiedRatio));
+
+    enabledTeas.forEach(t => {
+      const ratio = Number(t.ratio) > 0 ? Number(t.ratio) : (blankRatios.get(t.id) || 0);
+      ratioById.set(t.id, ratio);
+      waterById.set(t.id, freshTeaMl * ratio / 100);
+    });
   }
 
   return enabledTeas.map(t => {
-    const ratio = ratioForTea(t);
-    const waterMl = freshTeaL * 1000 * (ratio / totalRatio);
-    const grams = Number(t.grams) || teaTypes[t.type].grams;
-    return { ...t, ratio, grams, waterMl, gramsTotal: waterMl / 1000 * grams };
+    const waterMl = waterById.get(t.id) || 0;
+    const waterL = waterMl / 1000;
+    const ratio = ratioById.get(t.id) || 0;
+    const totalEdited = t.lastEditedTeaField === "totalGrams" && Number(t.gramsTotal) > 0;
+    const gramsTotal = totalEdited ? Number(t.gramsTotal) : waterL * (Number(t.grams) || teaTypes[t.type].grams);
+    const grams = totalEdited && waterL > 0
+      ? gramsTotal / waterL
+      : (Number(t.grams) || teaTypes[t.type].grams);
+    const needsWaterForGrams = totalEdited && !(waterL > 0);
+    return { ...t, ratio, waterMl, grams, gramsTotal, needsWaterForGrams };
   });
 }
 
@@ -363,6 +408,8 @@ function calculate() {
   const hasHibiscus   = teaItems.some(t => t.type === "hibiscus" && t.waterMl > 0);
   const onlyExtraTea  = teaItems.length > 0 && mainTeaMl === 0;
   const avgTeaStrength = teaLiters > 0 ? teaTotalGrams / teaLiters : 0;
+  const teaWaterDiffL = state.mode === "experiment" ? teaLiters - freshTeaL : 0;
+  const teaNeedsWaterForGrams = state.mode === "experiment" && teaItems.some(t => t.needsWaterForGrams);
 
   // Sugar
   const recSugar = { gentle: 55, balanced: 60, tangy: 65, starter: 65, enemy: 55 };
@@ -436,6 +483,12 @@ function calculate() {
 
   if (onlyExtraTea)
     warnings.push("Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej černý, zelený, bílý čaj nebo oolong.");
+  if (state.mode === "experiment" && teaWaterDiffL < -0.1)
+    warnings.push(`Máš zadaného méně čajového nálevu, než odpovídá plánované várce. Buď doplň vodu u čajů, nebo zmenši cílový objem. Do plánované várky ti chybí cca ${roundLiters(Math.abs(teaWaterDiffL))} čajového nálevu.`);
+  if (state.mode === "experiment" && teaWaterDiffL > 0.1)
+    warnings.push(`Máš zadaného víc čajového nálevu, než se do plánované várky vejde. Uber vodu u čajů, zmenši startér, nebo zvětši plánovaný objem. Přebývá ti cca ${roundLiters(teaWaterDiffL)} čajového nálevu.`);
+  if (teaNeedsWaterForGrams)
+    warnings.push("Nejdřív zadej vodu u čaje, ať můžu přepočítat gramáž.");
   if (state.mode === "classic" && state.goal === "enemy")
     warnings.push("Chceš kyselinu pro nepřítele. Počítej s extrémní kyselostí. Na běžné pití to nepoužívej.");
   if (sugarBand === "tlamolep")
@@ -474,7 +527,7 @@ function calculate() {
     starterMin, starterTarget, starterGap, starterSeverity,
     recommendedMaxBatchL, requiredStarterMinL, requiredStarterTargetL,
     pellicleEnabled, pellicleGrams, hasExactPellicleGrams, pellicleScore, pellicleBonusScore, idealPellicleMax,
-    teaLiters, teaItems, teaTotalGrams, onlyExtraTea, avgTeaStrength,
+    teaLiters, teaItems, teaTotalGrams, onlyExtraTea, avgTeaStrength, teaWaterDiffL, teaNeedsWaterForGrams,
     sugarPerLiter, sugarTotal, sugarBand,
     tempBand, tasteWindow,
     predKey, f2Key,
@@ -528,16 +581,61 @@ function updateStarter(calc) {
 function updateTea(calc) {
   const msgs = [];
   let status = "ok";
-  if (!calc.teaItems.length) msgs.push("Čaj nemáš vyplněný. Doplň čajový základ, jinak není co počítat.");
-  if (!calc.teaItems.length) status = "danger";
+  const greenWhiteTooStrong = calc.teaItems.some(t => (t.type === "green" || t.type === "white") && Number(t.grams) > 7);
+  let strengthMessage = "";
+  let strengthStatus = "ok";
+
+  if (calc.teaItems.length) {
+    if (greenWhiteTooStrong) {
+      strengthMessage = "Zeleného nebo bílého čaje máš moc. Budeš to mít hořké, tak uber čaj nebo zkrať louhování.";
+      strengthStatus = "danger";
+    } else if (calc.avgTeaStrength < 4) {
+      strengthMessage = "Čaje máš málo. Budeš to mít vodovější a chuťově slabší. Přidej trochu čaje, pokud chceš výraznější kombuchu.";
+      strengthStatus = "warn";
+    } else if (calc.avgTeaStrength <= 7) {
+      strengthMessage = "Čaj máš tak akorát, chuť by neměla být ani vodová, ani trpká.";
+    } else if (calc.avgTeaStrength <= 9) {
+      strengthMessage = "Čaje máš hodně. Budeš to mít výraznější, s větším tělem, ale může se objevit trpkost. Uber gramáž, pokud chceš jemnější výsledek.";
+      strengthStatus = "warn";
+    } else {
+      strengthMessage = "Čaje máš extrémně moc. Budeš to mít trpké jak ponožku z tělocviku. Uber gramáž.";
+      strengthStatus = "danger";
+    }
+  }
+
+  if (!calc.teaItems.length) {
+    msgs.push("Čaj nemáš vyplněný. Doplň čajový základ, jinak není co počítat.");
+    status = "danger";
+  }
   if (calc.onlyExtraTea) {
-    msgs.push("Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej černý, zelený, bílý čaj nebo oolong.");
+    msgs.push(calc.avgTeaStrength > 9
+      ? "Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej pravý čaj. Navíc máš nálev extrémně silný, takže chuť může být přestřelená."
+      : "Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej černý, zelený, bílý čaj nebo oolong.");
     status = "danger";
   }
   if (calc.teaItems.length && !calc.onlyExtraTea) {
     const mainTypes = calc.teaItems.filter(t => teaTypes[t.type].main).map(t => teaTypes[t.type].label);
     const teaBase = mainTypes.join(" + ");
-    msgs.push(`${teaBase[0].toUpperCase()}${teaBase.slice(1)} čaj máš jako stabilní základ pro F1.`);
+    if (greenWhiteTooStrong && mainTypes.some(t => t === "zelený" || t === "bílý")) {
+      msgs.push(`${teaBase[0].toUpperCase()}${teaBase.slice(1)} čaj je pro F1 v pohodě, ale máš ho moc silný.`);
+    } else {
+      msgs.push(`${teaBase[0].toUpperCase()}${teaBase.slice(1)} čaj máš jako stabilní základ pro F1.`);
+    }
+    if (strengthMessage) msgs.push(strengthMessage);
+    if (strengthStatus === "danger") status = "danger";
+    else if (strengthStatus === "warn" && status !== "danger") status = "warn";
+  }
+  if (state.mode === "experiment" && calc.teaWaterDiffL < -0.1) {
+    msgs.push(`Do plánované várky ti chybí cca ${roundLiters(Math.abs(calc.teaWaterDiffL))} čajového nálevu. Doplň vodu u čajů, nebo zmenši cílový objem.`);
+    if (status !== "danger") status = "warn";
+  }
+  if (state.mode === "experiment" && calc.teaWaterDiffL > 0.1) {
+    msgs.push(`Přebývá ti cca ${roundLiters(calc.teaWaterDiffL)} čajového nálevu. Uber vodu u čajů, zmenši startér, nebo zvětši plánovaný objem.`);
+    if (status !== "danger") status = "warn";
+  }
+  if (calc.teaNeedsWaterForGrams) {
+    msgs.push("Nejdřív zadej vodu u čaje, ať můžu přepočítat gramáž.");
+    if (status !== "danger") status = "warn";
   }
   setFeedback(els.teaWarning, msgs.join(" "), status);
 }
@@ -738,33 +836,66 @@ function render(options = {}) {
 // ═══ EVENTS ═══
 
 function updateTeaFromDom(event) {
+  const target = event?.target;
   if (event?.target.matches(".tea-type")) {
     const icon = event.target.closest(".tea-picker")?.querySelector(".tea-icon");
     if (icon) icon.src = teaTypes[event.target.value]?.icon ?? "";
   }
   const rows = Array.from(document.querySelectorAll(".tea-row[data-tea-id]"));
-  const editedRow = event?.target.matches(".tea-ratio") ? event.target.closest(".tea-row[data-tea-id]") : null;
-  const editedRatio = editedRow ? Math.min(100, Math.max(0, Number(event.target.value) || 0)) : null;
-  let teas = rows.map(row => ({
-    id:      row.dataset.teaId,
-    enabled: row.querySelector(".tea-check").checked,
-    type:    row.querySelector(".tea-type").value,
-    ratio:   Number(row.querySelector(".tea-ratio").value) > 0 ? Number(row.querySelector(".tea-ratio").value) : "",
-    grams:   event?.target.matches(".tea-total-grams")
-      ? Math.max(0, Number(row.querySelector(".tea-total-grams").value) / Math.max(parseWaterLiters(row.querySelector(".tea-water").value) / 1000, 0.1))
-      : (Number(row.querySelector(".tea-grams").value) || teaTypes[row.querySelector(".tea-type").value].grams)
-  }));
-  if (editedRow && teas.length > 1) {
-    const editedId = editedRow.dataset.teaId;
-    const others = teas.filter(t => t.id !== editedId);
-    const previousOthersTotal = others.reduce((sum, t) => sum + (Number(t.ratio) || 0), 0);
-    const remaining = Math.max(0, 100 - editedRatio);
-    teas = teas.map(t => {
-      if (t.id === editedId) return { ...t, ratio: editedRatio };
-      const share = previousOthersTotal > 0 ? (Number(t.ratio) || 0) / previousOthersTotal : 1 / others.length;
-      return { ...t, ratio: Math.round(remaining * share * 10) / 10 };
-    });
-  }
+  const editedRow = target?.closest?.(".tea-row[data-tea-id]");
+  const editedId = editedRow?.dataset.teaId;
+  const editedField = target?.matches?.(".tea-ratio") ? "ratio"
+    : target?.matches?.(".tea-water") ? "water"
+    : target?.matches?.(".tea-grams") ? "grams"
+    : target?.matches?.(".tea-total-grams") ? "totalGrams"
+    : target?.matches?.(".tea-type") || target?.matches?.(".tea-check") ? "type"
+    : "";
+  const previousById = new Map(state.teas.map(t => [t.id, t]));
+
+  const teas = rows.map(row => {
+    const id = row.dataset.teaId;
+    const type = row.querySelector(".tea-type").value;
+    const previous = previousById.get(id) || {};
+    const isEdited = id === editedId;
+    const ratioInput = parseOptionalNumber(row.querySelector(".tea-ratio").value);
+    const waterInputLiters = parseOptionalNumber(row.querySelector(".tea-water").value);
+    const gramsInput = parseOptionalNumber(row.querySelector(".tea-grams").value);
+    const gramsTotalInput = parseOptionalNumber(row.querySelector(".tea-total-grams").value);
+    const lastEditedTeaField = id === editedId && editedField && editedField !== "type"
+      ? editedField
+      : previous.lastEditedTeaField;
+    const ratio = isEdited && editedField === "ratio"
+      ? ratioInput
+      : (previous.ratio ?? "");
+    const waterMl = isEdited && editedField === "water"
+      ? (waterInputLiters === "" ? "" : Math.max(0, waterInputLiters * 1000))
+      : (lastEditedTeaField === "water" ? (previous.waterMl ?? "") : "");
+    const grams = isEdited && editedField === "grams"
+      ? gramsInput
+      : (previous.grams ?? gramsInput);
+    const gramsTotal = isEdited && editedField === "totalGrams"
+      ? gramsTotalInput
+      : (previous.gramsTotal ?? "");
+    const waterL = Number(waterMl) > 0 ? Number(waterMl) / 1000 : 0;
+    const resolvedGrams = lastEditedTeaField === "totalGrams" && Number(gramsTotal) > 0 && waterL > 0
+      ? Number(gramsTotal) / waterL
+      : (grams === "" ? (previous.grams || teaTypes[type].grams) : Math.max(0, Number(grams)));
+    const resolvedTotalGrams = lastEditedTeaField === "grams" && Number(resolvedGrams) > 0 && waterL > 0
+      ? resolvedGrams * waterL
+      : (gramsTotal === "" ? previous.gramsTotal : Math.max(0, Number(gramsTotal)));
+
+    return {
+      id,
+      enabled: row.querySelector(".tea-check").checked,
+      type,
+      ratio: ratio === "" ? "" : Math.max(0, Math.min(100, Number(ratio))),
+      waterMl,
+      grams: resolvedGrams,
+      gramsTotal: resolvedTotalGrams,
+      lastEditedTeaField
+    };
+  });
+
   state.teas = teas;
   render();
 }
@@ -806,7 +937,7 @@ function bindEvents() {
   els.jarLiters.addEventListener("focus",    () => { state.volumeSource = "jar";    render(); });
   els.targetLiters.addEventListener("focus", () => { state.volumeSource = "target"; render(); });
   els.addTeaBtn.addEventListener("click", () => {
-    state.teas.push({ id: createTeaId(), enabled: true, type: "rooibos", ratio: "", grams: 6 });
+    state.teas.push({ id: createTeaId(), enabled: true, type: "rooibos", ratio: "", waterMl: "", grams: 6, gramsTotal: "", lastEditedTeaField: "" });
     render();
   });
   els.teaList.addEventListener("input",  updateTeaFromDom);
