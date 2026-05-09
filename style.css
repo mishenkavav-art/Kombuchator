@@ -1627,8 +1627,8 @@ body::before {
 }
 .unit-input input,
 .tea-type, .tea-ratio, .tea-grams, .tea-water, .tea-total-grams {
-  font-weight: 800;
-  font-size: 16px;
+  font-weight: 500;
+  font-size: 15px;
 }
 .unit-input input {
   min-height: 38px;

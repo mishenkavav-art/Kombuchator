@@ -1185,10 +1185,7 @@ function defaultModeSnap() {
   return {
     goal: null, volumeSource: "jar", starterType: null,
     temperature: null, pellicleSize: "pancake", pellicleCount: 1, sugarSource: "perLiter",
-    teas: [
-      { id: createTeaId(), enabled: true, type: "black", ratio: "", grams: 6 },
-      { id: createTeaId(), enabled: true, type: "green", ratio: "", grams: 5 }
-    ],
+    teas: [],
     jarLiters: "", targetLiters: "", starterMl: "", pellicleGrams: "",
     temperatureInput: "", sugarPerLiter: "", sugarTotal: "", usePellicle: false,
   };
@@ -1230,10 +1227,7 @@ function resetCalculator() {
   state.pellicleSize = "pancake";
   state.pellicleCount = 1;
   state.sugarSource = "perLiter";
-  state.teas = [
-    { id: createTeaId(), enabled: true, type: "black", ratio: "", grams: 6 },
-    { id: createTeaId(), enabled: true, type: "green", ratio: "", grams: 5 }
-  ];
+  state.teas = [];
   els.jarLiters.value       = "";
   els.targetLiters.value    = "";
   els.starterMl.value       = "";
