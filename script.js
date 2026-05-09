@@ -180,7 +180,7 @@ function starterFixRange(calc) {
 function approxRange(n, step = 5) {
   const low  = Math.max(0, Math.floor((n - step / 2) / step) * step);
   const high = Math.ceil((n + step / 2) / step) * step;
-  return low === high ? `cca ${low} g` : `cca ${low}–${high} g`;
+  return low === high ? `${low} g` : `${low}–${high} g`;
 }
 function displayWaterLiters(waterMl) {
   const ml = Number(waterMl);
@@ -295,7 +295,7 @@ function renderRecipeNeeds(recipe) {
   const teaLines = recipe.teas.map(t => {
     const lbl = teaTypes[t.type]?.label || t.type;
     const icon = teaTypes[t.type]?.icon || "";
-    return `<li><img src="${escapeHtml(icon)}" alt="" aria-hidden="true"><span><strong>${escapeHtml(lbl[0].toUpperCase() + lbl.slice(1))} čaj:</strong> ${roundLiters(t.waterMl / 1000)} vody + ${approxRange(t.totalGrams, 1)} čaje</span></li>`;
+    return `<li class="needs-tea-item"><img src="${escapeHtml(icon)}" alt="" aria-hidden="true"><span class="needs-tea-detail"><strong class="needs-tea-label">${escapeHtml(lbl[0].toUpperCase() + lbl.slice(1))} čaj</strong><span class="needs-tea-water">${roundLiters(t.waterMl / 1000)} vody</span><span class="needs-tea-grams">${approxRange(t.totalGrams, 1)} čaje</span></span></li>`;
   }).join("");
   const pellicleLine = recipe.pellicleEnabled && recipe.pellicleType
     ? `<li><img src="${escapeHtml(pellicles[recipe.pellicleType]?.icon || "")}" alt="" aria-hidden="true"><span><strong>Placka:</strong> ${recipe.pellicleCount || 1}× ${escapeHtml(pellicles[recipe.pellicleType]?.label || "placka")}${recipe.pellicleGrams ? `, přesně ${Math.round(recipe.pellicleGrams)} g` : ""}</span></li>`
@@ -373,6 +373,7 @@ function createRecipeSnapshot(calc, recipeName = "") {
     pellicleCount: calc.pellicleEnabled ? state.pellicleCount : null,
     pellicleGrams: calc.hasExactPellicleGrams ? calc.pellicleGrams : null,
     temperatureC: state.mode === "experiment" && els.temperatureInput.value !== "" ? numberValue(els.temperatureInput, null) : null,
+    temperatureBand: state.temperature || null,
     status,
     verdictText: calc.starterSeverity === "STOP" ? "Stopka. Tohle takhle nezakládej bez úprav." : pred.text,
     tastePredictionText: pred.text,
@@ -433,9 +434,9 @@ function loadRecipeIntoCalculator(recipe) {
   if (recipe.pellicleType) state.pellicleSize = recipe.pellicleType;
   state.pellicleCount = recipe.pellicleCount || 1;
   els.pellicleGrams.value = recipe.pellicleGrams || "";
-  // Restore temperature (experiment mode only)
-  els.temperatureInput.value = recipe.temperatureC ?? "";
-  state.temperature = recipe.temperatureC ? null : (recipe.mode === "experiment" ? null : null);
+  // Restore temperature
+  els.temperatureInput.value = recipe.temperatureC != null ? String(recipe.temperatureC) : "";
+  state.temperature = recipe.temperatureBand || null;
   if (recipe.teaStates && recipe.teaStates.length) {
     state.teas = recipe.teaStates.map(t => ({ ...t, id: createTeaId() }));
   } else if (recipe.teas && recipe.teas.length) {
@@ -986,7 +987,7 @@ function updateOutputs(calc) {
   // Needs list
   const teaLines = calc.teaItems.map(t => {
     const lbl = teaTypes[t.type].label;
-    return `<li><img src="${teaTypes[t.type].icon}" alt="" aria-hidden="true"><span><strong>${lbl[0].toUpperCase()}${lbl.slice(1)} čaj:</strong> ${roundLiters(t.waterMl / 1000)} vody + ${approxRange(t.gramsTotal, 1)} čaje</span></li>`;
+    return `<li class="needs-tea-item"><img src="${teaTypes[t.type].icon}" alt="" aria-hidden="true"><span class="needs-tea-detail"><strong class="needs-tea-label">${lbl[0].toUpperCase()}${lbl.slice(1)} čaj</strong><span class="needs-tea-water">${roundLiters(t.waterMl / 1000)} vody</span><span class="needs-tea-grams">${approxRange(t.gramsTotal, 1)} čaje</span></span></li>`;
   }).join("");
   const pellicleLine = calc.pellicleEnabled && calc.hasExactPellicleGrams
     ? `<li><img src="${pellicles[state.pellicleSize].icon}" alt="" aria-hidden="true"><span><strong>Placka:</strong> přesně zadaná gramáž ${Math.round(calc.pellicleGrams)} g (nenahrazuje startér)</span></li>`
@@ -1043,7 +1044,7 @@ function updateOutputs(calc) {
   }[calc.sugarBand] || "";
 
   const f2 = f2Tags[calc.f2Key];
-  const tempNote = state.mode === "experiment" && calc.tempBand.text ? ` (${calc.tempBand.text})` : "";
+  const tempNote = state.mode === "experiment" && calc.tempBand.text ? `<br><span class="temp-note">${calc.tempBand.text}</span>` : "";
 
   const recommendationRows = [
     ["Start várky",           severityLabel, (calc.starterSeverity === "STOP" || calc.starterSeverity === "RED") ? " danger" : ""],
