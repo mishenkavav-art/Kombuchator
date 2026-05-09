@@ -9,10 +9,10 @@ const goals = [
 ];
 
 const starterTypes = {
-  sweet:    { label: "sladký",  emoji: "😋", activityMultiplier: 0.50, min: 0.18, target: [0.18, 0.25], tasteOffset: +2, text: "Tohle je ještě tlamolep – potřebuje víc kyselého startéru." },
-  weak:     { label: "slabý",   emoji: "😴", activityMultiplier: 0.70, min: 0.15, target: [0.15, 0.20], tasteOffset: +2, text: "Bude trvat, než se nakopne." },
-  normal:   { label: "běžný",   emoji: "🙂", activityMultiplier: 1.00, min: 0.10, target: [0.10, 0.15], tasteOffset:  0, text: "Takhle to má vypadat." },
-  vinegary: { label: "octový",  emoji: "😖", activityMultiplier: 1.25, min: 0.08, target: [0.08, 0.12], tasteOffset: -1, text: "Tohle vystřelí jak raketa." }
+  sweet:    { label: "sladký",  emoji: "😋", activityMultiplier: 0.50, min: 0.15, target: [0.15, 0.25], tasteOffset: +2, text: "Startér chutná sladce, takže počítej s pomalejším rozjezdem. Přidej víc kyselého startéru, nebo zmenši várku." },
+  weak:     { label: "slabý",   emoji: "😴", activityMultiplier: 0.70, min: 0.15, target: [0.15, 0.20], tasteOffset: +2, text: "Startér máš slabší. Hlídej vůni, hladinu a chuť dřív než obvykle." },
+  normal:   { label: "běžný",   emoji: "🙂", activityMultiplier: 1.00, min: 0.10, target: [0.10, 0.15], tasteOffset:  0, text: "Startér máš v běžném rozmezí. Kombucha by se měla rozjet bez zbytečného čekání." },
+  vinegary: { label: "octový",  emoji: "😖", activityMultiplier: 1.25, min: 0.08, target: [0.08, 0.12], tasteOffset: -1, text: "Startér máš hodně kyselý. Ochutnávej dřív, ať ti výsledek neujede do octa." }
 };
 
 const teaTypes = {
@@ -34,30 +34,30 @@ const pellicles = {
 };
 
 const temperatureBands = {
-  unknown: { label: "nevím",   emoji: "🤷", offset:  0, text: "" },
-  cold:    { label: "chladno", emoji: "🥶", offset: +2, text: "Pod 20 °C – várka se zpomaluje." },
-  room:    { label: "pokoj",   emoji: "🌡️", offset:  0, text: "20–25 °C. Ideální pásmo." },
-  warm:    { label: "teplo",   emoji: "☀️", offset: -1, text: "25–29 °C – pojede rychleji." },
-  hot:     { label: "hic",     emoji: "🔥", offset: -2, text: "Nad 29 °C! Ochutnávej dřív." }
+  unknown: { label: "nevím",   emoji: "🤷", offset:  0, text: "Teplotu nemáš vyplněnou. Počítáš s běžnou pokojovou teplotou, takže doporučené dny ber orientačně." },
+  cold:    { label: "chladno", emoji: "🥶", offset: +2, text: "Máš chladno, zhruba pod 20 °C. Fermentace ti pojede pomaleji a kombucha zůstane déle sladká." },
+  room:    { label: "pokoj",   emoji: "🌡️", offset:  0, text: "Teplota je v pohodě, zhruba 20–25 °C. Fermentace by měla běžet normálně." },
+  warm:    { label: "teplo",   emoji: "☀️", offset: -1, text: "Máš teplejší prostředí, zhruba 25–29 °C. Kombucha ti pojede rychleji, tak ochutnávej dřív." },
+  hot:     { label: "hic",     emoji: "🔥", offset: -2, text: "Máš moc teplo, zhruba nad 29 °C. Přesuň nádobu na klidnější a chladnější místo, jinak ti výsledek může ujet do kysela." }
 };
 
 const predictions = {
-  weak_start:    { title: "Tahle várka má slabý start.",     text: "Na zadaný objem máš málo aktivního startéru. Zmenši várku nebo přidej startér.",    intensity: 1 },
-  no_sugar:      { title: "Bez cukru to nepojede.",          text: "SCOBY nebude mít co jíst. F1 bez zkvasitelného cukru nedává smysl.",                 intensity: 1 },
-  tlamolep:      { title: "Dobrej tlamolep.",                text: "Bude sladší a déle se to bude kvasit. Ochutnávej a nedávej hned do F2.",             intensity: 2 },
-  gentle:        { title: "Jemný čajíček.",                  text: "Lehké a pitelné, ale méně výrazné. Dobré pro začátek nebo pitelnost bez kyselosti.", intensity: 1 },
-  balanced:      { title: "Kombucha jak má být.",            text: "Vyvážený standard – sladko-kyselé, přátelské pro začátečníka i zkušeného.",          intensity: 3 },
-  tangy:         { title: "Tohle má pořádný říz.",           text: "Výraznější kyselost, osvěžující, vhodné pro milovníky řízu.",                        intensity: 4 },
-  very_sour:     { title: "Tohle ti zkřiví tlamču.",         text: "Silně kyselé, ostrý dojezd. Na pití jen pokud to cíleně chceš.",                     intensity: 5 },
-  starter_batch: { title: "Gratuluju k výrobě startéru.",   text: "Výborný základ pro příští várku, ne primárně na pití.",                              intensity: 5 },
-  vinegar:       { title: "Tohle není pití, to je čistič.", text: "Extrémní kyselost. Jako startér výborný základ, jako nápoj opravdu ne.",             intensity: 5 }
+  weak_start:    { title: "Slabý start",                    text: "Startéru máš málo. Kultura se ti v tomhle objemu rozředí a sladký čaj zůstane dlouho málo kyselý. Zmenši várku, nebo přidej víc aktivního kyselého startéru.", intensity: 1 },
+  no_sugar:      { title: "Bez cukru to nepojede",          text: "Bez cukru to nebude fungovat. Kultura potřebuje cukr jako krmení. Přidej cukr, jinak F1 bezpečně nerozjedeš.", intensity: 1 },
+  tlamolep:      { title: "Sladký těžký základ",            text: "Cukru máš moc. Budeš to mít sladký jak cecek a může ti to dlouho připomínat spíš sladký čaj než kombuchu.", intensity: 2 },
+  gentle:        { title: "Jemný čajíček",                  text: "Chceš jemný čajíček. Drž kratší fermentaci, nepřeháněj startér a stáčej, jakmile je chuť příjemně sladko-kyselá.", intensity: 1 },
+  balanced:      { title: "Kombucha jak má být",            text: "Máš dobře nastavenou várku. Startér je v rozumném poměru, čajový základ drží a cukr sedí. Ochutnávej od doporučeného dne a stáčej, když ti chuť sedne.", intensity: 3 },
+  tangy:         { title: "Pořádný říz",                    text: "Budeš to mít s pořádným řízem. Hlídej, ať ti říz nepřejde do octa.", intensity: 4 },
+  very_sour:     { title: "Hodně kyselé",                   text: "Budeš to mít kyselé jak šlak. Použij to spíš v menším množství nebo jako startér.", intensity: 5 },
+  starter_batch: { title: "Startér pro příště",             text: "Chceš startér pro příště. Neřeš pitelnost, cílem je silnější kyselý základ pro další várku.", intensity: 5 },
+  vinegar:       { title: "Spíš ocet než pití",             text: "Budeš to mít spíš jako ocet než jako pití. Použij to na startér pro další várku.", intensity: 5 }
 };
 
 const f2Tags = {
-  f2_ok:     { tag: "vhodné pro F2",     text: "Tohle může jít na dokvašení. S ovocem opatrně, cukr dělá tlak." },
-  drink_now: { tag: "raději vypít hned", text: "Vypij nebo sleduj. Do lahve bych to zatím nehnal." },
-  starter:   { tag: "spíš startér",      text: "Na ovoce do F2 už to bude ostré. Lepší jako základ příští várky." },
-  stop:      { tag: "F2 stop",           text: "Tady by mohl být tlakový cirkus. F2 zatím nedoporučuju." }
+  f2_ok:     { tag: "vhodné na F2",             text: "Kombucha je dost rozjetá, ale ještě nepůsobí octově. Hlídej tlak, ovoce, cukr a teplo umí v lahvi udělat slušnou divočinu." },
+  drink_now: { tag: "na F2 zatím nespěchej",    text: "Ještě je to moc sladké nebo málo rozjeté. Nech F1 dál běžet a ochutnávej." },
+  starter:   { tag: "na F2 už moc kyselé",      text: "Použij to radši jako startér pro další várku." },
+  stop:      { tag: "na F2 zatím nedávej",      text: "Nejdřív musíš mít bezpečně rozjetou F1." }
 };
 
 // ═══ STATE ═══
@@ -70,7 +70,7 @@ const state = {
   goal: "balanced",
   volumeSource: "jar",
   starterType: "normal",
-  temperature: "unknown",
+  temperature: "room",
   teas: [
     { id: createTeaId(), enabled: true, type: "black",  ratio: "", grams: 6 },
     { id: createTeaId(), enabled: true, type: "green",  ratio: "", grams: 5 }
@@ -181,10 +181,16 @@ function pellicleScoreFromGrams(grams) {
   if (grams <= 250) return 1.5;
   return 2;
 }
+function setFeedback(el, text, status = "ok") {
+  el.className = `feedback-line is-${status}`;
+  el.textContent = text;
+}
 
 // ═══ RENDER CHOICES ═══
 
 function renderChoices() {
+  const hasExactTemp = els.temperatureInput && els.temperatureInput.value !== "";
+  const hasExactPellicle = els.pellicleGrams && numberValue(els.pellicleGrams, 0) > 0;
   els.goalGrid.innerHTML = goals.map(g => `
     <button class="goal-card ${state.goal === g.id ? "active" : ""}" type="button" data-goal="${g.id}">
       <img class="icon" src="${g.icon}" alt="" aria-hidden="true">
@@ -197,13 +203,13 @@ function renderChoices() {
       <span>${s.emoji}</span>${s.label}
     </button>`).join("");
 
-  els.tempBand.innerHTML = Object.entries(temperatureBands).map(([id, t]) => `
-    <button class="${state.temperature === id ? "active" : ""}" type="button" data-temp="${id}">
+  els.tempBand.innerHTML = Object.entries(temperatureBands).filter(([id]) => id !== "unknown").map(([id, t]) => `
+    <button class="${!hasExactTemp && state.temperature === id ? "active" : ""}" type="button" data-temp="${id}">
       <span>${t.emoji}</span>${t.label}
     </button>`).join("");
 
   els.pellicleSize.innerHTML = Object.entries(pellicles).map(([id, p]) => `
-    <button class="pellicle-card ${state.pellicleSize === id ? "active" : ""}" type="button" data-pellicle="${id}">
+    <button class="pellicle-card ${!hasExactPellicle && state.pellicleSize === id ? "active" : ""}" type="button" data-pellicle="${id}">
       <img class="icon" src="${p.icon}" alt="" aria-hidden="true">
       <strong>${p.label}</strong>
       <small>cca ${p.gramsRange}</small>
@@ -219,7 +225,7 @@ function renderTeas(calc = null) {
   els.teaList.innerHTML = (showDetails ? `
     <div class="tea-row tea-row-head" aria-hidden="true">
       <span></span><strong>Typ čaje</strong><strong>Poměr %</strong>
-      <strong>Voda v litrech</strong><strong>Množství g/l</strong><strong>Celkem g</strong><span></span>
+      <strong>Dopočtená voda</strong><strong>Množství g/l</strong><strong>Celkem g</strong><span></span>
     </div>` : "") + state.teas.map(tea => `
     <div class="tea-row" data-tea-id="${tea.id}">
       <input class="tea-check" type="checkbox" ${tea.enabled ? "checked" : ""} aria-label="Použít čaj">
@@ -233,7 +239,7 @@ function renderTeas(calc = null) {
         <input class="tea-ratio" type="number" min="0" max="100" step="1" value="${tea.ratio || displayGramsValue(autoTeaById.get(tea.id)?.ratio)}" aria-label="Poměr čaje v procentech">
       </div>
       <div class="inline-unit tea-water-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-water" type="number" min="0" step="0.1" value="${displayWaterLiters(autoTeaById.get(tea.id)?.waterMl)}" aria-label="Voda v litrech" readonly>
+        <input class="tea-water" type="number" min="0" step="0.1" value="${displayWaterLiters(autoTeaById.get(tea.id)?.waterMl)}" aria-label="Dopočtená voda" readonly>
       </div>
       <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
         <input class="tea-grams" type="number" min="0" step="0.5" value="${tea.grams}" aria-label="Gramáž g/l">
@@ -302,6 +308,7 @@ function calculate() {
   const usesTarget    = state.volumeSource === "target" && targetLiters > 0;
   const workingLiters = usesTarget ? targetLiters : Math.max(0, jarLiters * 0.9);
   const neededJar     = workingLiters / 0.9;
+  const goal          = goals.find(g => g.id === state.goal) || goals[1];
 
   // Starter
   const starterType   = starterTypes[state.starterType];
@@ -309,7 +316,12 @@ function calculate() {
   const starterLiters = starterMl / 1000;
   const freshTeaL     = Math.max(0, workingLiters - starterLiters);
   const starterRatio  = workingLiters > 0 ? starterLiters / workingLiters : 0;
-  const starterMin    = starterType.min;
+  const goalStarterMin = state.mode === "classic" ? goal.percent : 0;
+  const starterMin    = Math.max(starterType.min, goalStarterMin);
+  const starterTarget = [
+    Math.max(starterType.target[0], goalStarterMin),
+    Math.max(starterType.target[1], goalStarterMin)
+  ];
   const starterGap    = (starterMin > 0 && workingLiters > 0) ? starterRatio / starterMin : 999;
 
   const EPS = 1e-9;
@@ -317,27 +329,30 @@ function calculate() {
   if      (starterGap < 0.50 - EPS) starterSeverity = "STOP";
   else if (starterGap < 0.75 - EPS) starterSeverity = "RED";
   else if (starterGap < 1.00 - EPS) starterSeverity = "YELLOW";
-  else if (starterRatio > starterType.target[1] * 1.8) starterSeverity = "TOO_MUCH";
-  else if (starterGap > 1.30) starterSeverity = "FAST";
+  else if (starterRatio > starterTarget[1] * 1.8) starterSeverity = "TOO_MUCH";
+  else if (starterRatio > starterTarget[1] + EPS) starterSeverity = "FAST";
   else                        starterSeverity = "OK";
 
   const recommendedMaxBatchL   = starterMin > 0 ? starterLiters / starterMin : Infinity;
   const requiredStarterMinL    = workingLiters * starterMin;
-  const requiredStarterTargetL = [workingLiters * starterType.target[0], workingLiters * starterType.target[1]];
+  const requiredStarterTargetL = [workingLiters * starterTarget[0], workingLiters * starterTarget[1]];
 
   // Pellicle
   const pellicleEnabled = els.usePellicle.checked;
   const pellicleGrams   = numberValue(els.pellicleGrams, 0);
-  const basePellicleScore = pellicleGrams > 0
+  const hasExactPellicleGrams = pellicleGrams > 0;
+  const basePellicleScore = hasExactPellicleGrams
     ? pellicleScoreFromGrams(pellicleGrams)
     : (pellicleEnabled ? pellicles[state.pellicleSize].score : 0);
-  const pellicleScore   = pellicleEnabled ? basePellicleScore * state.pellicleCount : 0;
+  const pellicleScore   = pellicleEnabled
+    ? (hasExactPellicleGrams ? basePellicleScore : basePellicleScore * state.pellicleCount)
+    : 0;
   const pellicleBonusScore = pellicleScore;
+  const idealPellicleMax = workingLiters <= 1.5 ? 1 : workingLiters <= 3 ? 2 : workingLiters <= 5 ? 3 : 4;
 
   const effectiveStarterRatio = starterRatio * starterType.activityMultiplier;
 
   // Tea
-  const goal        = goals.find(g => g.id === state.goal) || goals[1];
   const enabledTeas = state.teas.filter(t => t.enabled);
   const teaItems    = state.mode === "classic"
     ? buildClassicTeaItems(enabledTeas, freshTeaL)
@@ -368,7 +383,9 @@ function calculate() {
   else                                      sugarBand = "extreme";
 
   // Temperature & tasting window
-  const tempBand = temperatureBands[state.temperature] || temperatureBands.unknown;
+  const tempBand = state.mode === "experiment"
+    ? (temperatureBands[state.temperature] || temperatureBands.room)
+    : temperatureBands.room;
   const baseDays  = goal.tasteDays;
   let tasteOffset = starterType.tasteOffset + tempBand.offset;
   if (hasHibiscus)  tasteOffset -= 1;
@@ -382,7 +399,7 @@ function calculate() {
 
   // Prediction key
   let predKey;
-  if      (starterSeverity === "STOP")                                      predKey = "weak_start";
+  if      (starterSeverity === "STOP" || starterSeverity === "RED")         predKey = "weak_start";
   else if (sugarBand === "zero" && state.mode === "experiment")             predKey = "no_sugar";
   else if (state.goal === "enemy")                                          predKey = "vinegar";
   else if (state.goal === "starter")                                        predKey = "starter_batch";
@@ -394,58 +411,69 @@ function calculate() {
 
   // F2 tag
   let f2Key;
-  if      (sugarBand === "tlamolep" || sugarBand === "extreme")                          f2Key = "stop";
-  else if (predKey === "weak_start" || predKey === "no_sugar")                           f2Key = "stop";
+  if      (starterSeverity === "STOP" || starterSeverity === "RED")                       f2Key = "stop";
+  else if (predKey === "weak_start" || predKey === "no_sugar" || sugarBand === "zero")    f2Key = "stop";
   else if (predKey === "vinegar" || predKey === "starter_batch" || predKey === "very_sour") f2Key = "starter";
-  else if (predKey === "gentle" || starterSeverity === "YELLOW" || starterSeverity === "RED") f2Key = "drink_now";
+  else if (sugarBand === "tlamolep" || sugarBand === "extreme")                           f2Key = "drink_now";
+  else if (predKey === "gentle" || starterSeverity === "YELLOW")                          f2Key = "drink_now";
   else                                                                                   f2Key = "f2_ok";
 
   // Errors & warnings
   const errors = [], warnings = [];
   if (workingLiters <= 0)
-    errors.push("Doplň nádobu nebo množství. Bez toho nevaříme ani čaj.");
+    errors.push("Chybí ti důležitý údaj. Doplň nádobu nebo množství, jinak není co počítat.");
+  if (workingLiters > 0 && starterMl <= 0)
+    errors.push("Chybí ti tekutý startér. Placka samotná nestačí. Přidej aktivní kyselý startér.");
   if (workingLiters > 0 && starterLiters >= workingLiters)
-    errors.push("Startér zabral celou sklenici. Uber startér nebo změň objem.");
+    errors.push("Startér nemůže být větší než celkový objem várky. Zkontroluj čísla.");
   if (!enabledTeas.length)
-    errors.push("Bez čaje to nebude kombucha.");
+    errors.push("Čaj nemáš vyplněný. Doplň čajový základ, jinak není co počítat.");
   if (sugarBand === "zero" && state.mode === "experiment")
-    errors.push("SCOBY nebude mít co jíst. Přidej cukr.");
+    errors.push("Bez cukru to nebude fungovat. Kultura potřebuje cukr jako krmení.");
   const totalLiquidLiters = starterLiters + teaLiters;
   if (!usesTarget && workingLiters > 0 && totalLiquidLiters > jarLiters * 1.03)
-    errors.push("Startér a voda se nevejdou do nádoby.");
+    errors.push("Čaj a startér se ti do plánovaného objemu nevejdou. Uprav množství vody, startéru nebo velikost várky.");
 
   if (onlyExtraTea)
-    warnings.push("Za tohle ruku do ohně nedám. SCOBY rádo plave v černém, zeleném, bílém čaji nebo oolong.");
+    warnings.push("Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej černý, zelený, bílý čaj nebo oolong.");
   if (state.mode === "classic" && state.goal === "enemy")
-    warnings.push("Tenhle cíl není doporučený jako pitný výsledek.");
+    warnings.push("Chceš kyselinu pro nepřítele. Počítej s extrémní kyselostí. Na běžné pití to nepoužívej.");
   if (sugarBand === "tlamolep")
-    warnings.push("Moc cukru. SCOBY dostane cukrovku a při lahvování může hrozit exploze.");
+    warnings.push("Cukru máš moc. Budeš to mít sladký jak cecek a může ti to dlouho připomínat spíš sladký čaj než kombuchu.");
   if (sugarBand === "extreme")
-    warnings.push("Extrémní dávka cukru. Silně nedoporučuju začátečníkovi.");
+    warnings.push("Cukru máš extrémně moc. Uber cukr, jinak budeš mít sladký těžký základ.");
   if (state.mode === "experiment" && state.temperature === "hot")
-    warnings.push("Hic! Ochutnávej dříve – ferment může rychle utéct.");
+    warnings.push("Máš moc teplo. Přesuň nádobu na klidnější a chladnější místo, jinak ti výsledek může ujet do kysela.");
   if (hasHibiscus && (state.goal === "tangy" || state.goal === "enemy"))
-    warnings.push("Ibišek je sám o sobě kyselý – nezaměňuj chuť kyselosti s hotovou fermentací.");
+    warnings.push("Ibišek je sám o sobě kyselý. Hlídej chuť, ať si kyselost ibišku nespleteš s bezpečně rozjetou fermentací.");
   if ((state.starterType === "weak" || state.starterType === "sweet") && sugarBand === "tlamolep")
-    warnings.push("Slabý startér + hodně cukru = tlamolep, co se bude dlouho rozkopávat.");
+    warnings.push("Hodně cukru a slabý startér je špatná kombinace. Sladký čaj bude dlouho málo kyselý. Přidej startér, nebo zmenši várku.");
   if ((state.starterType === "weak" || state.starterType === "sweet") && sugarBand === "very_low")
-    warnings.push("Nešetři zároveň startér i cukr. Kultura má slabý rozjezd a málo paliva.");
+    warnings.push("Šetříš startér i cukr zároveň. Kultura má slabý rozjezd a málo krmení. Přidej cukr nebo víc kyselého startéru.");
   if (starterSeverity === "STOP" || starterSeverity === "RED")
-    warnings.push(`Máš ${formatPercent(starterRatio)} startéru. Pro ${starterType.label} startér potřebuješ aspoň ${formatPercent(starterMin, 0)}, ideálně ${formatPercent(starterType.target[0], 0)}-${formatPercent(starterType.target[1], 0)}.`);
+    warnings.push(`Startéru máš málo. Máš ${formatPercent(starterRatio)} startéru, ale pro tohle nastavení potřebuješ aspoň ${formatPercent(starterMin, 0)}, ideálně ${formatPercent(starterTarget[0], 0)}-${formatPercent(starterTarget[1], 0)}. Zmenši várku, nebo přidej aktivní kyselý startér.`);
+  if (pellicleEnabled && pellicleScore > idealPellicleMax * 2)
+    warnings.push("Placek máš extrémně hodně vzhledem k velikosti várky. Zaberou místo v nádobě, ale startér nenahradí. Uber placky a drž správný poměr tekutého startéru.");
+  else if (pellicleEnabled && pellicleScore > idealPellicleMax)
+    warnings.push("Placek máš hodně vzhledem k velikosti várky. Hlídej místo v nádobě a správný poměr tekutého startéru.");
+  if (teaItems.length && avgTeaStrength < 4)
+    warnings.push("Čaje máš málo. Budeš to mít vodovější a chuťově slabší.");
+  if (avgTeaStrength >= 7 && avgTeaStrength <= 9)
+    warnings.push("Čaje máš hodně. Budeš to mít výrazné, možná trpké.");
   if (avgTeaStrength > 9)
-    warnings.push("Tohle bude silný jak noha od stolu.");
+    warnings.push("Čaje máš extrémně moc. Budeš to mít trpké jak ponožku z tělocviku. Uber gramáž.");
   teaItems.forEach(t => {
     const g = Number(t.grams) || teaTypes[t.type].grams;
     if ((t.type === "green" || t.type === "white") && g > 7)
-      warnings.push("Zelený/bílý čaj nad 7 g/l – hlídat hořkost a trpkost.");
+      warnings.push("Zeleného nebo bílého čaje máš moc. Budeš to mít hořké, tak uber čaj nebo zkrať louhování.");
   });
 
   return {
     jarLiters, targetLiters, usesTarget, workingLiters, neededJar, freshTeaL,
     goal, starterType, starterMl, starterLiters, starterRatio, effectiveStarterRatio,
-    starterMin, starterGap, starterSeverity,
+    starterMin, starterTarget, starterGap, starterSeverity,
     recommendedMaxBatchL, requiredStarterMinL, requiredStarterTargetL,
-    pellicleEnabled, pellicleScore, pellicleBonusScore,
+    pellicleEnabled, pellicleGrams, hasExactPellicleGrams, pellicleScore, pellicleBonusScore, idealPellicleMax,
     teaLiters, teaItems, teaTotalGrams, onlyExtraTea, avgTeaStrength,
     sugarPerLiter, sugarTotal, sugarBand,
     tempBand, tasteWindow,
@@ -458,48 +486,68 @@ function calculate() {
 
 function updateStarter(calc) {
   if (calc.workingLiters <= 0) {
-    els.starterAmountHint.textContent = "";
-    els.starterTypeHint.textContent = "";
+    setFeedback(els.starterAmountHint, "", "ok");
+    setFeedback(els.starterTypeHint, "", "ok");
     return;
   }
   const minPct = formatPercent(calc.starterMin, 0);
-  const tgtLow = formatPercent(calc.starterType.target[0], 0);
-  const tgtHigh = formatPercent(calc.starterType.target[1], 0);
-  els.starterTypeHint.textContent = calc.starterType.text;
-  let amountHint = `Máš ${formatPercent(calc.starterRatio)}. Minimum pro ${calc.starterType.label} startér je ${minPct}, ideál ${tgtLow}-${tgtHigh}.`;
+  const tgtLow = formatPercent(calc.starterTarget[0], 0);
+  const tgtHigh = formatPercent(calc.starterTarget[1], 0);
+  const typeStatus = state.starterType === "normal" ? "ok" : state.starterType === "vinegary" ? "warn" : "warn";
+  setFeedback(els.starterTypeHint, calc.starterType.text, typeStatus);
+  let amountHint = `Máš ${formatPercent(calc.starterRatio)} startéru. Minimum je ${minPct}, ideál ${tgtLow}-${tgtHigh}.`;
+  let amountStatus = "ok";
 
   if (calc.starterSeverity === "STOP") {
+    amountStatus = "danger";
     const maxB   = starterFixRange(calc) || "menší várku";
     const needMn = kitchenStarterAmount(calc.requiredStarterMinL);
     const needT0 = kitchenStarterAmount(calc.requiredStarterTargetL[0]);
     const needT1 = kitchenStarterAmount(calc.requiredStarterTargetL[1]);
-    amountHint += ` Stopka: potřebuješ aspoň ${needMn}, ideálně ${needT0}-${needT1}. Nebo zmenši várku na cca ${maxB}.`;
-    if (calc.pellicleEnabled) amountHint += " Placka trochu pomůže, ale tenhle objem nezachrání.";
+    amountHint += ` Takhle ji nezakládej. Potřebuješ aspoň ${needMn}; zmenši várku na cca ${maxB}, nebo přidej startér.`;
+    if (calc.pellicleEnabled) amountHint += " Placka to nezachrání.";
   } else if (calc.starterSeverity === "RED") {
+    amountStatus = "danger";
     const missing = Math.max(0, calc.requiredStarterMinL - calc.starterLiters);
-    amountHint += ` Výrazně pod minimem - změň množství startéru na alespoň ${kitchenStarterAmount(calc.requiredStarterMinL)}. Teď chybí cca ${kitchenStarterAmount(missing)}.`;
+    amountHint += ` Přidej aspoň na ${kitchenStarterAmount(calc.requiredStarterMinL)}. Chybí cca ${kitchenStarterAmount(missing)}.`;
   } else if (calc.starterSeverity === "YELLOW") {
-    amountHint += " Na hraně - sleduj, jestli se kyselost opravdu rozjíždí.";
+    amountStatus = "warn";
+    amountHint += " Lehce pod doporučením. Hlídej chuť dřív.";
   } else if (calc.starterSeverity === "FAST") {
-    amountHint += " Pojede to svižně. Ochutnávej dřív, ať neskončíš u octa.";
+    amountStatus = "warn";
+    amountHint += " Pojede rychleji. Ochutnávej dřív.";
   } else if (calc.starterSeverity === "TOO_MUCH") {
-    amountHint += " Hodně startéru. Výsledek může být ostrý a kyselý.";
+    amountStatus = "danger";
+    amountHint += " Hodně startéru. Počítej s ostřejší chutí.";
+  } else {
+    amountHint += " Tak akorát.";
   }
-  els.starterAmountHint.textContent = amountHint;
+  setFeedback(els.starterAmountHint, amountHint, amountStatus);
 }
 
 function updateTea(calc) {
   const msgs = [];
-  if (!calc.teaItems.length) msgs.push("Doplň čaj.");
-  if (calc.onlyExtraTea)     msgs.push("Tímhle SCOBY nenakrmíš. Přidej černý, zelený, bílý čaj nebo oolong.");
-  els.teaWarning.textContent = msgs.join(" ");
+  let status = "ok";
+  if (!calc.teaItems.length) msgs.push("Čaj nemáš vyplněný. Doplň čajový základ, jinak není co počítat.");
+  if (!calc.teaItems.length) status = "danger";
+  if (calc.onlyExtraTea) {
+    msgs.push("Pouze rooibos, ibišek, ovocný nebo bylinný čaj jako hlavní základ nepoužívej. Přidej černý, zelený, bílý čaj nebo oolong.");
+    status = "danger";
+  }
+  if (calc.teaItems.length && !calc.onlyExtraTea) {
+    const mainTypes = calc.teaItems.filter(t => teaTypes[t.type].main).map(t => teaTypes[t.type].label);
+    const teaBase = mainTypes.join(" + ");
+    msgs.push(`${teaBase[0].toUpperCase()}${teaBase.slice(1)} čaj máš jako stabilní základ pro F1.`);
+  }
+  setFeedback(els.teaWarning, msgs.join(" "), status);
 }
 
 function updatePellicle(calc) {
-  els.pellicleControls.hidden = !els.usePellicle.checked;
+  els.pellicleControls.hidden = false;
+  els.pellicleControls.classList.toggle("inactive", !els.usePellicle.checked);
   els.pellicleCountLabel.textContent = state.pellicleCount;
   if (!els.usePellicle.checked) {
-    els.pellicleHint.textContent = "Bez placky to jde, když máš kvalitní kyselý startér.";
+    setFeedback(els.pellicleHint, "Placku nepočítáš, ale to nevadí. Když máš dost kyselého startéru, kombucha pojede i bez ní.", "ok");
     return;
   }
   const score    = calc.pellicleScore;
@@ -508,38 +556,55 @@ function updatePellicle(calc) {
   const idealMin = calc.workingLiters <= 1.5 ? 0.5 : calc.workingLiters <= 3 ? 1 : calc.workingLiters <= 5 ? 2 : 3;
   const idealMax = calc.workingLiters <= 1.5 ? 1   : calc.workingLiters <= 3 ? 2 : calc.workingLiters <= 5 ? 3 : 4;
   let text;
-  if (calc.starterSeverity === "STOP" || calc.starterSeverity === "RED") text = "Placka je fajn parťák, ale hlavní motor je kyselý startér.";
-  else if (exactGrams > 0) text = "Zvážená placka je přesnější než naše kombuchová zoologie.";
-  else if (score < idealMin) text = "Malá placka nevadí, když máš dost silného startéru.";
-  else if (score > idealMax) text = "Obří placka vypadá impozantně, ale startér za ni práci neodmaká.";
-  else text = "Ber to orientačně. Placka může být tenká blána nebo nacucaná deka.";
-  const gramsText = exactGrams > 0
-    ? `${Math.round(exactGrams)} g mokré placky -> ${pellicleScoreFromGrams(exactGrams)} bodu na placku`
-    : `cca ${p.gramsRange} mokré placky, pro výpočet počítáme ${p.defaultGrams} g`;
-  els.pellicleHint.textContent = `${text} ${gramsText}. Síla placky: ${score} bodu. Bonus je jen doplňkový a nenahrazuje startér.`;
+  let status = "ok";
+  if (calc.starterSeverity === "STOP" || calc.starterSeverity === "RED") {
+    text = "Velká placka ti málo startéru nezachrání. Hlavní motor fermentace je kyselá tekutina.";
+    status = "danger";
+  } else if (score > calc.idealPellicleMax * 2) {
+    text = "Placek máš extrémně hodně vzhledem k velikosti várky. Zaberou místo v nádobě, ale startér nenahradí.";
+    status = "danger";
+  } else if (exactGrams > 0) {
+    text = "Zvážená placka je přesnější než odhad podle obrázku.";
+  } else if (state.pellicleSize === "tractor") {
+    text = "Placku máš hodně velkou. Hlídej místo v nádobě a drž správný poměr tekutého startéru.";
+    status = "warn";
+  } else if (score < idealMin) {
+    text = "Malá placka nevadí, když máš dost silného startéru.";
+  } else if (score > idealMax) {
+    text = "Placek máš hodně vzhledem k velikosti várky. Hlídej místo v nádobě a správný poměr tekutého startéru.";
+    status = "warn";
+  } else text = "Placka je pomocník, hlavní motor je kyselý startér.";
+  const gramsText = exactGrams > 0 ? ` Máš zadanou přesnou gramáž všech placek: ${Math.round(exactGrams)} g.` : "";
+  setFeedback(els.pellicleHint, `${text}${gramsText}`, status);
 }
 
 function updateTemperature() {
   const band = temperatureBands[state.temperature] || temperatureBands.unknown;
-  els.tempHint.textContent = band.text;
+  const status = state.temperature === "hot" ? "danger" : (state.temperature === "cold" || state.temperature === "warm" ? "warn" : "ok");
+  setFeedback(els.tempHint, band.text, status);
 }
 
 function updateSugar(calc) {
   if (state.mode === "experiment") {
     if (state.sugarSource === "total") {
       els.sugarPerLiter.value = Math.round(calc.sugarPerLiter);
-      els.sugarSlider.value = Math.min(110, Math.max(20, Math.round(calc.sugarPerLiter / 5) * 5));
     } else {
       els.sugarTotal.value = Math.round(calc.sugarTotal / 5) * 5;
     }
   }
-  const statuses = [
-    { icon: "☹️", text: "SCOBY na dietě",             active: calc.sugarBand === "very_low" || calc.sugarBand === "low"  },
-    { icon: "🙂", text: "Tady si SCOBY pomlaskává",   active: calc.sugarBand === "safe"                                   },
-    { icon: "😅", text: "Sladší základ, ale v pohodě", active: calc.sugarBand === "sweeter"                               },
-    { icon: "😨", text: "SCOBY dostane cukrovku",      active: calc.sugarBand === "tlamolep" || calc.sugarBand === "extreme" }
-  ];
-  els.sugarStatus.innerHTML = statuses.map(s => `<div class="${s.active ? "active" : ""}">${s.icon}<br>${s.text}</div>`).join("");
+  const sugarMessages = {
+    zero: "Bez cukru to nebude fungovat. Kultura potřebuje cukr jako krmení.",
+    very_low: "Cukru máš málo. Budeš to mít sušší, tenčí a možná rychleji kyselé.",
+    low: "Cukr máš na spodní hraně. Pro lehčí kombuchu je to v pohodě, ale drž kratší fermentaci a ochutnávej.",
+    safe: "Cukr máš tak akorát. Tohle je dobrý základ pro vyváženou chuť.",
+    sweeter: "Cukru máš trochu víc. Budeš to mít sladší a fermentace může potřebovat víc času.",
+    tlamolep: "Cukru máš moc. Budeš to mít sladký jak cecek a dlouho spíš jako sladký čaj.",
+    extreme: "Cukru máš extrémně moc. Uber cukr, jinak budeš mít sladký těžký základ."
+  };
+  const status = ["zero", "extreme"].includes(calc.sugarBand) ? "danger"
+    : ["very_low", "low", "sweeter", "tlamolep"].includes(calc.sugarBand) ? "warn"
+    : "ok";
+  setFeedback(els.sugarStatus, sugarMessages[calc.sugarBand] || "", status);
 }
 
 function updateOutputs(calc) {
@@ -557,11 +622,13 @@ function updateOutputs(calc) {
     const lbl = teaTypes[t.type].label;
     return `<li><img src="${teaTypes[t.type].icon}" alt="" aria-hidden="true"><span><strong>${lbl[0].toUpperCase()}${lbl.slice(1)} čaj:</strong> ${roundLiters(t.waterMl / 1000)} vody + ${approxRange(t.gramsTotal, 1)} čaje</span></li>`;
   }).join("");
-  const pellicleLine = calc.pellicleEnabled
-    ? `<li><img src="${pellicles[state.pellicleSize].icon}" alt="" aria-hidden="true"><span><strong>Placka:</strong> ${state.pellicleCount}× ${pellicles[state.pellicleSize].label} (${calc.pellicleScore} bodu, nenahrazuje startér)</span></li>`
+  const pellicleLine = calc.pellicleEnabled && calc.hasExactPellicleGrams
+    ? `<li><img src="${pellicles[state.pellicleSize].icon}" alt="" aria-hidden="true"><span><strong>Placka:</strong> přesně zadaná gramáž ${Math.round(calc.pellicleGrams)} g (nenahrazuje startér)</span></li>`
+    : calc.pellicleEnabled
+      ? `<li><img src="${pellicles[state.pellicleSize].icon}" alt="" aria-hidden="true"><span><strong>Placka:</strong> ${state.pellicleCount}× ${pellicles[state.pellicleSize].label} (nenahrazuje startér)</span></li>`
     : "";
   const safeBatchLine = calc.starterSeverity === "STOP"
-    ? `<li class="fix-line"><span><strong>Bezpečnější posilovací várka:</strong> s tímhle startérem jdi spíš na ${starterFixRange(calc)}. Pro původní objem potřebuješ aspoň ${kitchenStarterAmount(calc.requiredStarterMinL)}, ideálně ${kitchenStarterAmount(calc.requiredStarterTargetL[0])}-${kitchenStarterAmount(calc.requiredStarterTargetL[1])} startéru.</span></li>`
+    ? `<li class="fix-line"><span><strong>Bezpečnější posilovací várka:</strong> s tímhle množstvím ${calc.starterType.label}ho startéru udělej radši maximálně cca ${starterFixRange(calc)}. Pro původní objem potřebuješ aspoň ${kitchenStarterAmount(calc.requiredStarterMinL)}, ideálně ${kitchenStarterAmount(calc.requiredStarterTargetL[0])}-${kitchenStarterAmount(calc.requiredStarterTargetL[1])} startéru.</span></li>`
     : "";
   els.needsList.innerHTML = `
     <li><img src="ikony/kombucha.png"            alt="" aria-hidden="true"><span><strong>Sladký čaj celkem:</strong> ${roundLiters(calc.teaLiters)}</span></li>
@@ -576,8 +643,11 @@ function updateOutputs(calc) {
   if (calc.starterSeverity === "STOP") {
     const needT0 = kitchenStarterAmount(calc.requiredStarterTargetL[0]);
     const needT1 = kitchenStarterAmount(calc.requiredStarterTargetL[1]);
-    els.predictionTitle.textContent = "Stopka. Tohle je slabý start.";
-    els.predictionText.textContent  = `Na ${roundLiters(calc.workingLiters)} máš jen ${formatPercent(calc.starterRatio)} ${calc.starterType.label}ho startéru. Minimum je ${formatPercent(calc.starterMin, 0)}, tedy aspoň ${kitchenStarterAmount(calc.requiredStarterMinL)}, ideálně ${needT0}-${needT1}. ${calc.onlyExtraTea ? "Čaj je navíc experiment." : "Čajový základ je v pořádku."} ${calc.pellicleEnabled ? "Placka trochu pomůže, ale tenhle poměr startéru nezachrání." : ""}`;
+    els.predictionTitle.textContent = "Stopka. Tohle je slabý start";
+    els.predictionText.textContent  = `Tuhle várku takhle nezakládej. Na ${roundLiters(calc.workingLiters)} máš jen ${formatPercent(calc.starterRatio)} ${calc.starterType.label}ho startéru. Minimum je ${formatPercent(calc.starterMin, 0)}, tedy aspoň ${kitchenStarterAmount(calc.requiredStarterMinL)}, ideálně ${needT0}-${needT1}. ${calc.onlyExtraTea ? "Čajový základ není ideální." : "Čajový základ je v pořádku."} ${calc.pellicleEnabled ? "Placka trochu pomůže, ale špatný poměr startéru nezachrání." : ""} Zmenši várku, nebo přidej víc aktivního kyselého startéru.`;
+  } else if (calc.starterSeverity === "YELLOW") {
+    els.predictionTitle.textContent = "Hraniční start";
+    els.predictionText.textContent  = `Startéru máš lehce pod doporučením. Může to vyjít, ale hlídej vůni, hladinu a chuť dřív než obvykle. ${calc.onlyExtraTea ? "Čajový základ není ideální, přidej pravý čaj." : "Čajový základ je v pořádku."} Na F2 zatím nespěchej.`;
   } else {
     els.predictionTitle.textContent = pred.title;
     els.predictionText.textContent  = pred.text;
@@ -587,35 +657,35 @@ function updateOutputs(calc) {
 
   // Severity label
   const severityLabel = {
-    STOP:     "🛑 Stopka – málo startéru",
-    RED:      "🔴 Výrazně pod minimem",
-    YELLOW:   "🟡 Hraniční start",
-    OK:       "🟢 Poměr startéru OK",
-    FAST:     "🟠 Rychlý kyselý směr",
-    TOO_MUCH: "🔴 Příliš mnoho startéru"
+    STOP:     "🛑 Stopka. Tohle takhle nezakládej.",
+    RED:      "🔴 Startéru máš málo. Přidej startér nebo zmenši várku.",
+    YELLOW:   "🟡 Startér máš lehce pod doporučením. Hlídej chuť dřív.",
+    OK:       "🟢 Startér máš tak akorát.",
+    FAST:     "🟠 Pojede ti to rychle do kysela. Ochutnávej dřív.",
+    TOO_MUCH: "🔴 Startéru máš hodně. Počítej s ostrým výsledkem."
   }[calc.starterSeverity] || "";
 
   // Sugar label
   const sugarLabel = {
-    zero:     "žádný cukr ⛔",
-    very_low: "SCOBY na dietě",
-    low:      "sušší základ",
-    safe:     "bezpečný základ",
-    sweeter:  "sladší základ",
-    tlamolep: "hrozí tlamolep ⚠️",
-    extreme:  "extrém ⛔"
+    zero:     "bez cukru to nebude fungovat ⛔",
+    very_low: "cukru máš málo",
+    low:      "cukr máš na spodní hraně",
+    safe:     "cukr máš tak akorát",
+    sweeter:  "cukru máš trochu víc",
+    tlamolep: "cukru máš moc ⚠️",
+    extreme:  "cukru máš extrémně moc ⛔"
   }[calc.sugarBand] || "";
 
   const f2 = f2Tags[calc.f2Key];
-  const tempNote = calc.tempBand.text ? ` (${calc.tempBand.text})` : "";
+  const tempNote = state.mode === "experiment" && calc.tempBand.text ? ` (${calc.tempBand.text})` : "";
 
   els.recommendations.innerHTML = [
-    ["Start várky",           severityLabel],
-    ["Kdy ochutnávat",        calc.tasteWindow + tempNote],
-    ["Cukr",                  `${Math.round(calc.sugarPerLiter)} g/l – ${sugarLabel}`],
-    [f2.tag,                  f2.text]
-  ].map(([title, text]) =>
-    `<div class="recommendation-item"><strong>${title}</strong><p>${text}</p></div>`
+    ["Start várky",           severityLabel, (calc.starterSeverity === "STOP" || calc.starterSeverity === "RED") ? " danger" : ""],
+    ["Kdy ochutnávat",        calc.tasteWindow + tempNote, ""],
+    ["Cukr",                  `${Math.round(calc.sugarPerLiter)} g/l – ${sugarLabel}`, (calc.sugarBand === "zero" || calc.sugarBand === "extreme") ? " danger" : ""],
+    [f2.tag,                  f2.text, calc.f2Key === "stop" ? " danger" : ""]
+  ].map(([title, text, className]) =>
+    `<div class="recommendation-item${className}"><strong>${title}</strong><p>${text}</p></div>`
   ).join("") + calc.warnings.map(t =>
     `<div class="recommendation-item warning"><strong>Pozor</strong><p>${t}</p></div>`
   ).join("");
@@ -636,7 +706,7 @@ function syncModeUI() {
     : "Zadej skutečný stav: typ čaje, gramáž a kolik vody opravdu použiješ.";
   els.modeNote.innerHTML = state.mode === "classic"
     ? "<strong>Klasická kalkulačka:</strong> vybereš cíl a Kombuchátor doporučí bezpečné poměry."
-    : "<strong>Experimentální laboratoř:</strong> zadáváš reálné ingredience a Kombuchátor odhadne, co z toho vyleze.";
+    : "<strong>Experimentální laboratoř:</strong> zadáš reálné ingredience a Kombuchátor odhadne, co z toho vyleze.";
   els.jarChoice.classList.toggle("active", state.volumeSource === "jar");
   els.targetChoice.classList.toggle("active", state.volumeSource === "target");
 }
@@ -723,12 +793,12 @@ function bindEvents() {
     if (!btn) return;
     state.pellicleSize = btn.dataset.pellicle; renderChoices(); render();
   });
-  [els.jarLiters, els.targetLiters, els.starterMl, els.pellicleGrams, els.sugarPerLiter, els.sugarTotal, els.sugarSlider].forEach(input => {
+  [els.jarLiters, els.targetLiters, els.starterMl, els.pellicleGrams, els.sugarPerLiter, els.sugarTotal].forEach(input => {
     input.addEventListener("input", () => {
       if (input === els.jarLiters)     state.volumeSource = "jar";
       if (input === els.targetLiters)  state.volumeSource = "target";
-      if (input === els.sugarSlider)   els.sugarPerLiter.value = input.value;
-      if (input === els.sugarPerLiter) { state.sugarSource = "perLiter"; els.sugarSlider.value = input.value || 65; }
+      if (input === els.pellicleGrams) renderChoices();
+      if (input === els.sugarPerLiter) state.sugarSource = "perLiter";
       if (input === els.sugarTotal)    state.sugarSource = "total";
       render();
     });
@@ -749,13 +819,15 @@ function bindEvents() {
   });
   els.temperatureInput.addEventListener("input", () => {
     const c = Number(els.temperatureInput.value);
-    if (Number.isFinite(c) && els.temperatureInput.value !== "") {
+    if (els.temperatureInput.value === "") {
+      state.temperature = "room";
+    } else if (Number.isFinite(c)) {
       if      (c < 20) state.temperature = "cold";
       else if (c <= 25) state.temperature = "room";
       else if (c <= 29) state.temperature = "warm";
       else              state.temperature = "hot";
-      renderChoices();
     }
+    renderChoices();
     render();
   });
   els.usePellicle.addEventListener("change", render);
