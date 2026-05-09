@@ -99,6 +99,8 @@ const els = {
   starterType:        document.querySelector("#starterType"),
   starterAmountHint:  document.querySelector("#starterAmountHint"),
   starterTypeHint:    document.querySelector("#starterTypeHint"),
+  starterCardTitle:   document.querySelector("#starterCardTitle"),
+  teaCardTitle:       document.querySelector("#teaCardTitle"),
   teaIntro:           document.querySelector("#teaIntro"),
   teaList:            document.querySelector("#teaList"),
   addTeaBtn:          document.querySelector("#addTeaBtn"),
@@ -456,6 +458,10 @@ function loadRecipeIntoCalculator(recipe) {
 function renderChoices() {
   const hasExactTemp = els.temperatureInput && els.temperatureInput.value !== "";
   const hasExactPellicle = els.pellicleGrams && numberValue(els.pellicleGrams, 0) > 0;
+
+  if (els.starterCardTitle) els.starterCardTitle.textContent = state.mode === "experiment" ? "Čím to nastartujeme?" : "Kolik máš startéru?";
+  if (els.teaCardTitle) els.teaCardTitle.textContent = state.mode === "experiment" ? "V čem bude SCOBY plavat?" : "Jaký chceš použít čaj?";
+
   els.goalGrid.innerHTML = goals.map(g => `
     <button class="goal-card ${state.goal === g.id ? "active" : ""}" type="button" data-goal="${g.id}">
       <img class="icon" src="${g.icon}" alt="" aria-hidden="true">

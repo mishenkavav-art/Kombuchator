@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=42">
+  <link rel="stylesheet" href="style.css?v=43">
 </head>
 <body>
   <div class="app-layout">
@@ -107,7 +107,7 @@
           <article class="card">
             <div class="card-head">
               <span class="card-badge">2</span>
-              <h2 class="card-title">Kolik máš startéru?</h2>
+              <h2 class="card-title" id="starterCardTitle">Kolik máš startéru?</h2>
             </div>
             <div class="starter-layout">
               <div class="starter-amount-col">
@@ -134,7 +134,7 @@
           <article class="card">
             <div class="card-head">
               <span class="card-badge">3</span>
-              <h2 class="card-title">Jaký chceš použít čaj?</h2>
+              <h2 class="card-title" id="teaCardTitle">Jaký chceš použít čaj?</h2>
             </div>
             <p class="card-intro" id="teaIntro"></p>
             <div class="tea-list" id="teaList"></div>
@@ -149,7 +149,7 @@
                 <span class="card-badge">4</span>
                 <label class="checkbox-row">
                   <input id="usePellicle" type="checkbox" checked>
-                  <span class="card-title">Chci zohlednit placku</span>
+                  <span class="card-title">Chceš zohlednit placku?</span>
                 </label>
               </div>
               <small class="optional-badge">volitelné</small>
@@ -180,15 +180,19 @@
               <span class="card-badge">5</span>
               <h2 class="card-title">Jak je doma teplo?</h2>
             </div>
-            <span class="choice-label">Teplota prostoru</span>
-            <div class="starter-seg" id="tempBand"></div>
-            <label class="grams-row">
-              <span>Nebo zadej přesnou teplotu</span>
-              <div class="unit-input unit-sm">
-                <input id="temperatureInput" type="number" min="0" max="50" step="1" placeholder="volitelné">
-                <em>°C</em>
+            <div class="temp-body">
+              <div class="temp-band-col">
+                <span class="choice-label">Teplota prostoru</span>
+                <div class="starter-seg" id="tempBand"></div>
               </div>
-            </label>
+              <div class="temp-exact-col">
+                <span class="choice-label">Přesná teplota</span>
+                <div class="unit-input unit-sm">
+                  <input id="temperatureInput" type="number" min="0" max="50" step="1" placeholder="volitelné">
+                  <em>°C</em>
+                </div>
+              </div>
+            </div>
             <p class="result-line" id="tempHint"></p>
           </article>
 
@@ -325,6 +329,6 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=42"></script>
+  <script src="script.js?v=43"></script>
 </body>
 </html>

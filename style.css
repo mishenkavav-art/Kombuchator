@@ -775,13 +775,13 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   display: block;
 }
 .pellicle-card strong {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-mid);
   display: block;
 }
 .pellicle-card small {
-  font-size: 10.5px;
+  font-size: 12px;
   line-height: 1.2;
   color: var(--ink-muted);
 }
@@ -2469,9 +2469,25 @@ body::before {
   margin-bottom: 12px;
 }
 
-#tempPanel .grams-row {
+.temp-body {
+  display: flex;
+  gap: 20px;
   align-items: flex-start;
   flex-wrap: wrap;
+}
+
+.temp-band-col {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.temp-exact-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 #teaWarning { font-weight: 600; }
