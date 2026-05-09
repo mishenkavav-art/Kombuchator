@@ -35,6 +35,7 @@ const pellicles = {
 
 const temperatureBands = {
   unknown: { label: "nevím",   emoji: "🤷", offset:  0, text: "Teplotu nemáš vyplněnou. Počítáš s běžnou pokojovou teplotou, takže doporučené dny ber orientačně." },
+  frost:   { label: "mráz",    emoji: "🧊", offset: +7, text: "Kombuchce je krutá zima. Pod 15 °C SCOBY usne a fermentace se prakticky zastaví. Přesuň nádobu na teplejší místo – jinak budeš čekat do jara." },
   cold:    { label: "chladno", emoji: "🥶", offset: +2, text: "Máš chladno, zhruba pod 20 °C. Fermentace ti pojede pomaleji a kombucha zůstane déle sladká." },
   room:    { label: "pokoj",   emoji: "🌡️", offset:  0, text: "Teplota je v pohodě, zhruba 20–25 °C. Fermentace by měla běžet normálně." },
   warm:    { label: "teplo",   emoji: "☀️", offset: -1, text: "Máš teplejší prostředí, zhruba 25–29 °C. Kombucha ti pojede rychleji, tak ochutnávej dřív." },
@@ -763,6 +764,8 @@ function calculate() {
     warnings.push("Cukru máš extrémně moc. Uber cukr, jinak budeš mít sladký těžký základ.");
   if (state.mode === "experiment" && state.temperature === "hot")
     warnings.push("Máš moc teplo. Přesuň nádobu na klidnější a chladnější místo, jinak ti výsledek může ujet do kysela.");
+  if (state.mode === "experiment" && state.temperature === "frost")
+    warnings.push("Kombuchce je krutá zima. Pod 15 °C fermentace skoro zamrzne. Přesuň nádobu na teplejší místo.");
   if (hasHibiscus && (state.goal === "tangy" || state.goal === "enemy"))
     warnings.push("Ibišek je sám o sobě kyselý. Hlídej chuť, ať si kyselost ibišku nespleteš s bezpečně rozjetou fermentací.");
   if ((state.starterType === "weak" || state.starterType === "sweet") && sugarBand === "tlamolep")
@@ -955,7 +958,7 @@ function updatePellicle(calc) {
 
 function updateTemperature() {
   const band = temperatureBands[state.temperature] || temperatureBands.unknown;
-  const status = state.temperature === "hot" ? "danger" : (state.temperature === "cold" || state.temperature === "warm" ? "warn" : "ok");
+  const status = (state.temperature === "hot" || state.temperature === "frost") ? "danger" : (state.temperature === "cold" || state.temperature === "warm" ? "warn" : "ok");
   setFeedback(els.tempHint, band.text, status);
 }
 
@@ -1581,7 +1584,8 @@ function bindEvents() {
     if (els.temperatureInput.value === "") {
       state.temperature = "room";
     } else if (Number.isFinite(c)) {
-      if      (c < 20) state.temperature = "cold";
+      if      (c < 15) state.temperature = "frost";
+      else if (c < 20) state.temperature = "cold";
       else if (c <= 25) state.temperature = "room";
       else if (c <= 29) state.temperature = "warm";
       else              state.temperature = "hot";
