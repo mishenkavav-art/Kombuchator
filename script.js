@@ -425,10 +425,17 @@ function loadRecipeIntoCalculator(recipe) {
   if (recipe.vesselVolumeL) els.jarLiters.value = recipe.vesselVolumeL;
   if (recipe.desiredOutputL) els.targetLiters.value = recipe.desiredOutputL;
   els.starterMl.value = recipe.starterMl || 0;
+  // Restore sugar
+  state.sugarSource = "perLiter";
+  els.sugarPerLiter.value = recipe.sugarGramsPerLiter ? Math.round(recipe.sugarGramsPerLiter) : "";
+  els.sugarTotal.value = "";
   els.usePellicle.checked = recipe.pellicleEnabled ?? true;
   if (recipe.pellicleType) state.pellicleSize = recipe.pellicleType;
   state.pellicleCount = recipe.pellicleCount || 1;
   els.pellicleGrams.value = recipe.pellicleGrams || "";
+  // Restore temperature (experiment mode only)
+  els.temperatureInput.value = recipe.temperatureC ?? "";
+  state.temperature = recipe.temperatureC ? null : (recipe.mode === "experiment" ? null : null);
   if (recipe.teaStates && recipe.teaStates.length) {
     state.teas = recipe.teaStates.map(t => ({ ...t, id: createTeaId() }));
   } else if (recipe.teas && recipe.teas.length) {

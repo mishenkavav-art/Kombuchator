@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=40">
+  <link rel="stylesheet" href="style.css?v=41">
 </head>
 <body>
   <div class="app-layout">
@@ -110,19 +110,17 @@
               <h2 class="card-title">Kolik máš startéru?</h2>
             </div>
             <div class="starter-layout">
-              <div class="starter-amount-row">
-                <div class="starter-amount-left">
-                  <label>
-                    <span class="choice-label">Množství startéru</span>
-                    <div class="unit-input">
-                      <img class="field-icon" src="ikony/startér pro příště.png" alt="" aria-hidden="true">
-                      <input id="starterMl" type="number" min="0" step="10" value="300">
-                      <em>ml</em>
-                    </div>
-                  </label>
-                  <p class="microcopy">Minimum startéru je 10 % z celkového plánovaného objemu, ideál 10–15 %.</p>
+              <div class="starter-amount-col">
+                <span class="choice-label">Množství startéru</span>
+                <div class="starter-field-row">
+                  <div class="unit-input">
+                    <img class="field-icon" src="ikony/startér pro příště.png" alt="" aria-hidden="true">
+                    <input id="starterMl" type="number" min="0" step="10" value="300">
+                    <em>ml</em>
+                  </div>
+                  <p class="result-line starter-amount-hint" id="starterAmountHint"></p>
                 </div>
-                <p class="result-line starter-amount-hint" id="starterAmountHint"></p>
+                <p class="microcopy">Minimum startéru je 10 % z celkového plánovaného objemu, ideál 10–15 %.</p>
               </div>
               <div>
                 <span class="choice-label">Typ startéru</span>
@@ -327,6 +325,6 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=40"></script>
+  <script src="script.js?v=41"></script>
 </body>
 </html>
