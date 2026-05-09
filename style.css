@@ -2215,6 +2215,27 @@ body::before {
   font-size: 13px;
 }
 
+.saved-needs-block {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(228,234,216,.48);
+  border: 1px solid rgba(111,150,89,.22);
+}
+.saved-section-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--forest-green);
+  margin-bottom: 8px;
+}
+.saved-needs-block .needs-list li {
+  font-size: 13.5px;
+  padding-bottom: 4px;
+}
+
 /* ═══ SAVED CARD ACTIONS — wrap nicely ═══ */
 
 .saved-card-actions {

@@ -125,6 +125,7 @@ const els = {
   predictionText:     document.querySelector("#predictionText"),
   intensityDots:      document.querySelector("#intensityDots"),
   recommendations:    document.querySelector("#recommendations"),
+  saveRecipeBtn:      document.querySelector("#saveRecipeBtn"),
   shareWhatsAppBtn:   document.querySelector("#shareWhatsAppBtn"),
   shareMessengerBtn:  document.querySelector("#shareMessengerBtn"),
   copyRecipeBtn:      document.querySelector("#copyRecipeBtn"),
@@ -260,7 +261,7 @@ function formatDateTime(value) {
   }).format(new Date(value));
 }
 function modeLabel(mode) {
-  return mode === "classic" ? "Klasická kalkulačka" : "Hokus pokus";
+  return mode === "classic" ? "Klasická kalkulačka" : "Experimentální laboratoř";
 }
 function statusFromSeverity(severity) {
   if (severity === "STOP") return "stop";
@@ -290,6 +291,27 @@ function f2Text(calc) {
 function recipeSummary(recipe) {
   const teaSummary = recipe.teas.map(t => teaTypes[t.type]?.label || t.type).join(" + ") || "bez čaje";
   return `${roundLiters(recipe.workingVolumeL)} · ${roundMl(recipe.starterMl)} ${recipe.starterType}ho startéru · ${teaSummary} · ${Math.round(recipe.sugarGramsPerLiter)} g/l cukru`;
+}
+function renderRecipeNeeds(recipe) {
+  const teaLines = recipe.teas.map(t => {
+    const lbl = teaTypes[t.type]?.label || t.type;
+    const icon = teaTypes[t.type]?.icon || "";
+    return `<li><img src="${escapeHtml(icon)}" alt="" aria-hidden="true"><span><strong>${escapeHtml(lbl[0].toUpperCase() + lbl.slice(1))} čaj:</strong> ${roundLiters(t.waterMl / 1000)} vody + ${approxRange(t.totalGrams, 1)} čaje</span></li>`;
+  }).join("");
+  const pellicleLine = recipe.pellicleEnabled && recipe.pellicleType
+    ? `<li><img src="${escapeHtml(pellicles[recipe.pellicleType]?.icon || "")}" alt="" aria-hidden="true"><span><strong>Placka:</strong> ${recipe.pellicleCount || 1}× ${escapeHtml(pellicles[recipe.pellicleType]?.label || "placka")}${recipe.pellicleGrams ? `, přesně ${Math.round(recipe.pellicleGrams)} g` : ""}</span></li>`
+    : "";
+  const tempLine = recipe.temperatureC !== null && recipe.temperatureC !== undefined
+    ? `<li><span><strong>Teplota:</strong> ${recipe.temperatureC} °C</span></li>`
+    : "";
+  return `<ul class="needs-list">
+    <li><img src="ikony/kombucha.png" alt="" aria-hidden="true"><span><strong>Sladký čaj celkem:</strong> ${roundLiters(recipe.teaLiters)}</span></li>
+    ${teaLines}
+    <li><img src="ikony/cukr.png" alt="" aria-hidden="true"><span><strong>Cukr:</strong> ${approxRange(recipe.sugarTotalGrams, 5)} (${Math.round(recipe.sugarGramsPerLiter)} g/l)</span></li>
+    <li><img src="ikony/startér pro příště.png" alt="" aria-hidden="true"><span><strong>Startér:</strong> ${roundMl(recipe.starterMl)} (${escapeHtml(recipe.starterType)}ho)</span></li>
+    ${pellicleLine}
+    ${tempLine}
+  </ul>`;
 }
 function buildShareText(recipe) {
   const teaLines = recipe.teas.map(t =>
@@ -636,7 +658,8 @@ function calculate() {
   const teaTotalGrams = teaItems.reduce((s, t) => s + t.gramsTotal, 0);
   const mainTeaMl     = teaItems.filter(t => teaTypes[t.type].main).reduce((s, t) => s + t.waterMl, 0);
   const hasHibiscus   = teaItems.some(t => t.type === "hibiscus" && t.waterMl > 0);
-  const onlyExtraTea  = teaItems.length > 0 && mainTeaMl === 0;
+  const hasMainTeaType = teaItems.some(t => teaTypes[t.type].main);
+  const onlyExtraTea  = teaItems.length > 0 && !hasMainTeaType;
   const avgTeaStrength = teaLiters > 0 ? teaTotalGrams / teaLiters : 0;
   const teaWaterDiffL = state.mode === "experiment" ? teaLiters - freshTeaL : 0;
   const teaNeedsWaterForGrams = state.mode === "experiment" && teaItems.some(t => t.needsWaterForGrams);
@@ -1037,19 +1060,21 @@ function updateOutputs(calc) {
 
 function updateCurrentRecipeActions(calc) {
   const disabled = calc.errors.length > 0;
+  const saveTitle = disabled
+    ? "Nejdřív oprav recept, ať neukládáš kombuchový průšvih."
+    : (calc.starterSeverity === "STOP" ? "Ukládáš rizikový recept. Ber ho jako poznámku, ne jako návod." : "");
+  [els.saveRecipeBtn, els.saveCurrentRecipeBtn].forEach(btn => {
+    if (!btn) return;
+    btn.disabled = disabled;
+    btn.classList.toggle("disabled", disabled);
+    btn.title = saveTitle;
+  });
   [els.shareWhatsAppBtn, els.shareMessengerBtn, els.copyRecipeBtn].forEach(btn => {
     if (!btn) return;
     btn.disabled = disabled;
     btn.classList.toggle("disabled", disabled);
     btn.title = disabled ? "Nejdřív doplň recept, ať neposíláš polotovar." : "";
   });
-  if (els.saveCurrentRecipeBtn) {
-    els.saveCurrentRecipeBtn.disabled = disabled;
-    els.saveCurrentRecipeBtn.classList.toggle("disabled", disabled);
-    els.saveCurrentRecipeBtn.title = disabled
-      ? "Nejdřív doplň recept v kalkulačce."
-      : (calc.starterSeverity === "STOP" ? "Ukládáš rizikový recept. Ber ho jako poznámku, ne jako návod." : "");
-  }
 }
 
 function renderSavedRecipes() {
@@ -1079,7 +1104,10 @@ function renderSavedRecipes() {
         </div>
       </div>
       <p class="saved-date">Uloženo: ${escapeHtml(formatDateTime(recipe.createdAt))}</p>
-      <p class="saved-summary">${escapeHtml(recipeSummary(recipe))}</p>
+      <div class="saved-needs-block">
+        <strong class="saved-section-label">Budeš potřebovat</strong>
+        ${renderRecipeNeeds(recipe)}
+      </div>
       <div class="saved-verdict">
         <strong>Verdikt</strong>
         <p>${escapeHtml(recipe.verdictText)}</p>
@@ -1310,7 +1338,7 @@ function bindEvents() {
     renderSavedRecipes();
     switchView("zapisnik");
   });
-  // Save current recipe (from zápisník section)
+  els.saveRecipeBtn?.addEventListener("click", openSaveRecipeDialog);
   els.saveCurrentRecipeBtn?.addEventListener("click", openSaveRecipeDialog);
   els.shareWhatsAppBtn.addEventListener("click", () => {
     const snapshot = currentSnapshotForSharing();
