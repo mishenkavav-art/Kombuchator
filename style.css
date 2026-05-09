@@ -605,7 +605,7 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
 
 .tea-row {
   display: grid;
-  grid-template-columns: 22px 128px 72px 96px 92px 92px 26px;
+  grid-template-columns: 22px 128px 86px 96px 80px 80px 26px;
   align-items: center;
   justify-content: start;
   column-gap: 8px;
@@ -665,8 +665,8 @@ input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
   width: 96px;
   cursor: pointer;
 }
-.tea-ratio { width: 64px; }
-.tea-grams, .tea-total-grams { width: 58px; }
+.tea-ratio { width: 76px; }
+.tea-grams, .tea-total-grams { width: 68px; }
 .tea-type:focus,
 .tea-ratio:focus,
 .tea-grams:focus,

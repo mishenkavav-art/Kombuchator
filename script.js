@@ -1559,7 +1559,7 @@ function bindEvents() {
   els.jarLiters.addEventListener("focus",    () => { state.volumeSource = "jar";    render(); });
   els.targetLiters.addEventListener("focus", () => { state.volumeSource = "target"; render(); });
   els.addTeaBtn.addEventListener("click", () => {
-    state.teas.push({ id: createTeaId(), enabled: true, type: "rooibos", ratio: "", waterMl: "", grams: 6, gramsTotal: "", lastEditedTeaField: "" });
+    state.teas.push({ id: createTeaId(), enabled: true, type: "black", ratio: "", waterMl: "", grams: 6, gramsTotal: "", lastEditedTeaField: "" });
     render();
   });
   els.teaList.addEventListener("input",  updateTeaFromDom);
