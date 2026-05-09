@@ -9,10 +9,10 @@ const goals = [
 ];
 
 const starterTypes = {
-  sweet:    { label: "sladký",  emoji: "😋", activityMultiplier: 0.50, min: 0.15, target: [0.15, 0.25], tasteOffset: +2, text: "Startér chutná sladce, takže počítej s pomalejším rozjezdem. Přidej víc kyselého startéru, nebo zmenši várku." },
-  weak:     { label: "slabý",   emoji: "😴", activityMultiplier: 0.70, min: 0.15, target: [0.15, 0.20], tasteOffset: +2, text: "Startér máš slabší. Hlídej vůni, hladinu a chuť dřív než obvykle." },
-  normal:   { label: "běžný",   emoji: "🙂", activityMultiplier: 1.00, min: 0.10, target: [0.10, 0.15], tasteOffset:  0, text: "Startér máš v běžném rozmezí. Kombucha by se měla rozjet bez zbytečného čekání." },
-  vinegary: { label: "octový",  emoji: "😖", activityMultiplier: 1.25, min: 0.08, target: [0.08, 0.12], tasteOffset: -1, text: "Startér máš hodně kyselý. Ochutnávej dřív, ať ti výsledek neujede do octa." }
+  sweet:    { label: "sladký",  emoji: "😋", activityMultiplier: 0.50, min: 0.15, target: [0.15, 0.25], tasteOffset: +2, text: "Startér chutná jako sladký čaj. Počítej s pomalejším rozjezdem kvašení. Přidej víc kyselého startéru nebo zmenši várku." },
+  weak:     { label: "slabý",   emoji: "😴", activityMultiplier: 0.70, min: 0.15, target: [0.15, 0.20], tasteOffset: +2, text: "Lehce kyselý, není to žádný silák. Nejspíš byl krátce fermentovaný. Použij ho víc nebo zmenši objem várky." },
+  normal:   { label: "běžný",   emoji: "🙂", activityMultiplier: 1.00, min: 0.10, target: [0.10, 0.15], tasteOffset:  0, text: "Ideální startér, voní jako kombucha, je kyselý, ale pořád pitelný. Bez problému rozjede kvašení." },
+  vinegary: { label: "octový",  emoji: "😖", activityMultiplier: 1.25, min: 0.08, target: [0.08, 0.12], tasteOffset: -1, text: "Výrazně kyselý základ, už není moc pitelný, ale poslouží jako rychlý motor pro další kvašení. Použij ho méně a dřív ochutnávej." }
 };
 
 const teaTypes = {
