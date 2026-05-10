@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=54">
+  <link rel="stylesheet" href="style.css?v=55">
 </head>
 <body>
   <div class="app-layout">
@@ -53,6 +53,8 @@
         <span id="reminderBannerText"></span>
         <div class="reminder-banner-actions">
           <button type="button" id="reminderGoToVarkyBtn">Zobrazit várky</button>
+          <button type="button" id="reminderSnoozeBtn">Odložit na hodinu</button>
+          <button type="button" id="reminderDoneBtn">Označit jako splněné</button>
           <button type="button" id="reminderDismissBtn">Zavřít</button>
         </div>
       </div>
@@ -517,6 +519,98 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=54"></script>
+  <!-- DIALOG: Smazat kontrolu -->
+  <dialog id="deleteCheckDialog">
+    <form class="modal-card" method="dialog">
+      <h2>Smazat tuhle kontrolu?</h2>
+      <p>Zápis zmizí, ale várka zůstane.</p>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelDeleteCheckBtn" type="button">Nechat</button>
+        <button class="recipe-action danger" id="confirmDeleteCheckBtn" type="button">Smazat</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- DIALOG: Upravit kontrolu -->
+  <dialog id="editCheckDialog">
+    <form class="modal-card batch-dialog" method="dialog">
+      <button class="close-button" id="closeEditCheckBtn" type="button" aria-label="Zavřít">×</button>
+      <h2>Upravit kontrolu</h2>
+      <div>
+        <span class="choice-label">Typ kontroly</span>
+        <div class="check-type-chips" id="editCheckTypeChips"></div>
+      </div>
+      <div class="dialog-row">
+        <label><span>Datum</span><input id="editCheckDate" type="date"></label>
+        <label><span>Čas</span><input id="editCheckTime" type="time"></label>
+      </div>
+      <div id="editCheckResultArea">
+        <span class="choice-label">Hodnocení</span>
+        <div class="check-result-chips" id="editCheckResultChips"></div>
+      </div>
+      <label>
+        <span>Poznámka</span>
+        <textarea id="editCheckNote" rows="3" placeholder="Co jsi zjistil/a?"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelEditCheckBtn" type="button">Zrušit</button>
+        <button class="recipe-action primary" id="confirmEditCheckBtn" type="button">Uložit změny</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- DIALOG: Přechod F1 → F2 -->
+  <dialog id="f1ToF2Dialog">
+    <form class="modal-card batch-dialog" method="dialog">
+      <button class="close-button" id="closeF1ToF2Btn" type="button" aria-label="Zavřít">×</button>
+      <h2>Založ navázanou F2 várku?</h2>
+      <p class="dialog-hint">F1 skončila — teď ji přesuň do láhví a nech to naperlovat.</p>
+      <label>
+        <span>Název F2 várky</span>
+        <input id="f1ToF2Name" type="text" placeholder="Třeba: F2 – malinová, Perlení pro Vojtu…">
+      </label>
+      <div class="dialog-row">
+        <label><span>Datum začátku F2</span><input id="f1ToF2Date" type="date"></label>
+        <label><span>Čas</span><input id="f1ToF2Time" type="time"></label>
+      </div>
+      <div>
+        <span class="choice-label">První připomínka</span>
+        <div class="reminder-quick" id="f1ToF2ReminderQuick">
+          <button type="button" data-rdays="1">zítra</button>
+          <button type="button" data-rdays="2" class="active">za 2 dny</button>
+          <button type="button" data-rdays="3">za 3 dny</button>
+          <button type="button" data-rdays="0">bez připomínky</button>
+          <button type="button" data-rdays="custom">vlastní datum</button>
+        </div>
+        <div class="custom-reminder-row" id="f1ToF2CustomReminder" hidden>
+          <label><span>Datum připomínky</span><input id="f1ToF2CustomDate" type="date"></label>
+          <label><span>Čas</span><input id="f1ToF2CustomTime" type="time"></label>
+        </div>
+      </div>
+      <label>
+        <span>Poznámka</span>
+        <textarea id="f1ToF2Note" rows="2" placeholder="Co přidáváš do láhví? Ovoce, zázvor, bylinky…"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelF1ToF2Btn" type="button">Teď ne</button>
+        <button class="recipe-action primary" id="confirmF1ToF2Btn" type="button">Založ F2 várku</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- DIALOG: Varování rizikové várky -->
+  <dialog id="riskBatchDialog">
+    <form class="modal-card" method="dialog">
+      <h2>Pozor – rizikový recept</h2>
+      <p>Tenhle recept má problém se startérem. Normálně bychom ho nedoporučili zakládat.</p>
+      <p><strong>Zakládáš rizikovou várku. Ber ji jako pokus, ne jako doporučený postup.</strong></p>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelRiskBatchBtn" type="button">Vrátit se k receptu</button>
+        <button class="recipe-action danger" id="confirmRiskBatchBtn" type="button">Zakládám jako pokus</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="script.js?v=55"></script>
 </body>
 </html>

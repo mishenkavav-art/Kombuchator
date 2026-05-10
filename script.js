@@ -77,6 +77,12 @@ let currentBatchDetailId = null;
 let pendingCheckBatchId = null;
 let pendingFinishBatchId = null;
 let pendingDeleteBatchId = null;
+let pendingDeleteCheckId = null;
+let editingCheckId = null;
+let editCheckType = "taste";
+let editCheckResult = null;
+let pendingF1ToF2BatchId = null;
+let f1ToF2ReminderDays = 2;
 let newBatchType = "F1";
 let newBatchReminderDays = 3;
 let newCheckType = "taste";
@@ -181,6 +187,8 @@ const els = {
   reminderBanner:       document.querySelector("#reminderBanner"),
   reminderBannerText:   document.querySelector("#reminderBannerText"),
   reminderGoToVarkyBtn: document.querySelector("#reminderGoToVarkyBtn"),
+  reminderSnoozeBtn:    document.querySelector("#reminderSnoozeBtn"),
+  reminderDoneBtn:      document.querySelector("#reminderDoneBtn"),
   reminderDismissBtn:   document.querySelector("#reminderDismissBtn"),
   newBatchDialog:       document.querySelector("#newBatchDialog"),
   newBatchName:         document.querySelector("#newBatchName"),
@@ -212,6 +220,34 @@ const els = {
   deleteBatchDialog:    document.querySelector("#deleteBatchDialog"),
   cancelDeleteBatchBtn: document.querySelector("#cancelDeleteBatchBtn"),
   confirmDeleteBatchBtn:document.querySelector("#confirmDeleteBatchBtn"),
+  deleteCheckDialog:    document.querySelector("#deleteCheckDialog"),
+  cancelDeleteCheckBtn: document.querySelector("#cancelDeleteCheckBtn"),
+  confirmDeleteCheckBtn:document.querySelector("#confirmDeleteCheckBtn"),
+  editCheckDialog:      document.querySelector("#editCheckDialog"),
+  closeEditCheckBtn:    document.querySelector("#closeEditCheckBtn"),
+  cancelEditCheckBtn:   document.querySelector("#cancelEditCheckBtn"),
+  confirmEditCheckBtn:  document.querySelector("#confirmEditCheckBtn"),
+  editCheckTypeChips:   document.querySelector("#editCheckTypeChips"),
+  editCheckResultChips: document.querySelector("#editCheckResultChips"),
+  editCheckResultArea:  document.querySelector("#editCheckResultArea"),
+  editCheckDate:        document.querySelector("#editCheckDate"),
+  editCheckTime:        document.querySelector("#editCheckTime"),
+  editCheckNote:        document.querySelector("#editCheckNote"),
+  f1ToF2Dialog:         document.querySelector("#f1ToF2Dialog"),
+  closeF1ToF2Btn:       document.querySelector("#closeF1ToF2Btn"),
+  cancelF1ToF2Btn:      document.querySelector("#cancelF1ToF2Btn"),
+  confirmF1ToF2Btn:     document.querySelector("#confirmF1ToF2Btn"),
+  f1ToF2Name:           document.querySelector("#f1ToF2Name"),
+  f1ToF2Date:           document.querySelector("#f1ToF2Date"),
+  f1ToF2Time:           document.querySelector("#f1ToF2Time"),
+  f1ToF2Note:           document.querySelector("#f1ToF2Note"),
+  f1ToF2ReminderQuick:  document.querySelector("#f1ToF2ReminderQuick"),
+  f1ToF2CustomReminder: document.querySelector("#f1ToF2CustomReminder"),
+  f1ToF2CustomDate:     document.querySelector("#f1ToF2CustomDate"),
+  f1ToF2CustomTime:     document.querySelector("#f1ToF2CustomTime"),
+  riskBatchDialog:      document.querySelector("#riskBatchDialog"),
+  cancelRiskBatchBtn:   document.querySelector("#cancelRiskBatchBtn"),
+  confirmRiskBatchBtn:  document.querySelector("#confirmRiskBatchBtn"),
   mainHeader:          document.querySelector("#mainHeader"),
   newBatchCustomReminder: document.querySelector("#newBatchCustomReminder"),
   newBatchCustomDate:  document.querySelector("#newBatchCustomDate"),
@@ -450,6 +486,7 @@ function createRecipeSnapshot(calc, recipeName = "") {
     temperatureC: state.mode === "experiment" && els.temperatureInput.value !== "" ? numberValue(els.temperatureInput, null) : null,
     temperatureBand: state.temperature || null,
     status,
+    starterSeverity: calc.starterSeverity,
     verdictText: calc.starterSeverity === "STOP" ? "Stopka. Tohle takhle nezakládej bez úprav." : pred.text,
     tastePredictionText: pred.text,
     fermentationAdviceText: calc.tasteWindow,
@@ -2033,19 +2070,23 @@ function renderBatchDetail(batchId) {
             <div class="timeline-dot dot-start"></div>
             <div class="timeline-content">
               <span class="timeline-date">${formatBatchDate(entry.time)} ${formatBatchTime(entry.time)}</span>
-              <strong>Várka základena</strong>
+              <strong>Várka založena</strong>
               ${entry.note ? `<p class="timeline-note">${escapeHtml(entry.note)}</p>` : ""}
             </div>
           </div>`;
         const c = entry.check;
         return `
-          <div class="timeline-entry timeline-check">
+          <div class="timeline-entry timeline-check" data-check-id="${c.id}" data-batch-id="${batch.id}">
             <div class="timeline-dot"></div>
             <div class="timeline-content">
               <span class="timeline-date">${formatBatchDate(c.checkedAt)} ${formatBatchTime(c.checkedAt)}</span>
               <strong>${escapeHtml(checkTypeInfo[c.checkType] || c.checkType)}</strong>
               ${checkTagHtml(c.result)}
               ${c.note ? `<p class="timeline-note">${escapeHtml(c.note)}</p>` : ""}
+              <div class="timeline-check-actions">
+                <button class="timeline-action-btn check-edit-btn" type="button" data-check-id="${c.id}" data-batch-id="${batch.id}">Upravit</button>
+                <button class="timeline-action-btn check-delete-btn" type="button" data-check-id="${c.id}" data-batch-id="${batch.id}">Smazat</button>
+              </div>
             </div>
           </div>`;
       }).join("")}
@@ -2166,11 +2207,16 @@ function confirmNewCheck() {
   }
   persistBatches();
   els.newCheckDialog?.close();
-  if (currentBatchDetailId === pendingCheckBatchId) renderBatchDetail(pendingCheckBatchId);
+  const savedBatchId = pendingCheckBatchId;
+  pendingCheckBatchId = null;
+  if (currentBatchDetailId === savedBatchId) renderBatchDetail(savedBatchId);
   renderVarkyView();
   checkReminders();
-  pendingCheckBatchId = null;
   showActionFeedback("Kontrolu máš zapsanou.");
+  // Nabídni F2 přechod při stočení nebo přesunu F1
+  if (batch.type === "F1" && (newCheckType === "bottle_f1" || newCheckType === "move_to_f2")) {
+    window.setTimeout(() => openF1ToF2Dialog(savedBatchId), 300);
+  }
 }
 
 // ── Finish Batch ──
@@ -2250,6 +2296,136 @@ function startBatchNameEdit(container, batchId) {
   input.addEventListener("blur", () => window.setTimeout(commit, 100));
 }
 
+// ── Delete check ──
+
+function openDeleteCheckDialog(checkId, batchId) {
+  pendingDeleteCheckId = checkId;
+  pendingCheckBatchId = batchId;
+  els.deleteCheckDialog?.showModal();
+}
+
+function confirmDeleteCheck() {
+  const batch = findBatch(pendingCheckBatchId);
+  if (batch) {
+    batch.checks = batch.checks.filter(c => c.id !== pendingDeleteCheckId);
+    persistBatches();
+    renderBatchDetail(pendingCheckBatchId);
+    renderVarkyView();
+    checkReminders();
+    showActionFeedback("Kontrola je pryč.");
+  }
+  pendingDeleteCheckId = null;
+  els.deleteCheckDialog?.close();
+}
+
+// ── Edit check ──
+
+function openEditCheckDialog(checkId, batchId) {
+  const batch = findBatch(batchId);
+  if (!batch) return;
+  const check = batch.checks.find(c => c.id === checkId);
+  if (!check) return;
+  editingCheckId = checkId;
+  pendingCheckBatchId = batchId;
+  editCheckType = check.checkType;
+  editCheckResult = check.result;
+  if (els.editCheckDate) els.editCheckDate.value = check.checkedAt.slice(0, 10);
+  if (els.editCheckTime) els.editCheckTime.value = check.checkedAt.slice(11, 16);
+  if (els.editCheckNote) els.editCheckNote.value = check.note || "";
+  renderEditCheckTypeChips(batch.type);
+  renderEditCheckResultChips(batch.type);
+  els.editCheckDialog?.showModal();
+}
+
+function renderEditCheckTypeChips(batchType) {
+  if (!els.editCheckTypeChips) return;
+  els.editCheckTypeChips.innerHTML = Object.entries(checkTypeInfo).map(([id, label]) =>
+    `<button class="check-chip${editCheckType === id ? " active" : ""}" type="button" data-ectype="${id}">${escapeHtml(label)}</button>`
+  ).join("");
+}
+
+function renderEditCheckResultChips(batchType) {
+  if (!els.editCheckResultChips) return;
+  const keys = batchType === "F2" ? f2ResultKeys : f1ResultKeys;
+  els.editCheckResultChips.innerHTML = keys.map(k => {
+    const info = checkResultInfo[k];
+    return `<button class="result-chip${editCheckResult === k ? " active" : ""} ${info?.css || ""}" type="button" data-ecresult="${k}">${escapeHtml(info?.label || k)}</button>`;
+  }).join("");
+}
+
+function confirmEditCheck() {
+  const batch = findBatch(pendingCheckBatchId);
+  if (!batch) return;
+  const check = batch.checks.find(c => c.id === editingCheckId);
+  if (!check) return;
+  const dateStr = els.editCheckDate?.value || todayISO();
+  const timeStr = els.editCheckTime?.value || "12:00";
+  check.checkedAt = new Date(`${dateStr}T${timeStr}:00`).toISOString();
+  check.checkType = editCheckType;
+  check.result = editCheckResult || check.result;
+  check.note = els.editCheckNote?.value.trim() || null;
+  persistBatches();
+  els.editCheckDialog?.close();
+  renderBatchDetail(pendingCheckBatchId);
+  renderVarkyView();
+  showActionFeedback("Kontrola upravená.");
+  editingCheckId = null;
+}
+
+// ── F1 → F2 transition ──
+
+function openF1ToF2Dialog(sourceBatchId) {
+  pendingF1ToF2BatchId = sourceBatchId;
+  f1ToF2ReminderDays = 2;
+  const sourceBatch = findBatch(sourceBatchId);
+  if (els.f1ToF2Name) els.f1ToF2Name.value = sourceBatch ? `F2 – ${sourceBatch.batchName}` : "F2 várka";
+  if (els.f1ToF2Date) els.f1ToF2Date.value = todayISO();
+  if (els.f1ToF2Time) els.f1ToF2Time.value = nowTimeHHMM();
+  if (els.f1ToF2Note) els.f1ToF2Note.value = "";
+  if (els.f1ToF2CustomReminder) els.f1ToF2CustomReminder.hidden = true;
+  if (els.f1ToF2CustomDate) els.f1ToF2CustomDate.value = todayISO();
+  if (els.f1ToF2CustomTime) els.f1ToF2CustomTime.value = nowTimeHHMM();
+  els.f1ToF2ReminderQuick?.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.rdays === "2"));
+  els.f1ToF2Dialog?.showModal();
+}
+
+function confirmF1ToF2() {
+  const sourceBatch = findBatch(pendingF1ToF2BatchId);
+  if (!sourceBatch) return;
+  const name = els.f1ToF2Name?.value.trim() || `F2 – ${sourceBatch.batchName}`;
+  const dateStr = els.f1ToF2Date?.value || todayISO();
+  const timeStr = els.f1ToF2Time?.value || "12:00";
+  const startedAt = new Date(`${dateStr}T${timeStr}:00`).toISOString();
+  const reminders = [];
+  if (f1ToF2ReminderDays === -1) {
+    const cd = els.f1ToF2CustomDate?.value || todayISO();
+    const ct = els.f1ToF2CustomTime?.value || "12:00";
+    reminders.push({ id: uid(), type: "check", title: "Zkontrolovat tlak", remindAt: new Date(`${cd}T${ct}:00`).toISOString(), status: "pending", note: null });
+  } else if (f1ToF2ReminderDays > 0) {
+    reminders.push({ id: uid(), type: "check", title: "Zkontrolovat tlak", remindAt: new Date(new Date(startedAt).getTime() + f1ToF2ReminderDays * 86400000).toISOString(), status: "pending", note: null });
+  }
+  const f2Id = uid();
+  const f2Batch = {
+    id: f2Id, batchName: name, type: "F2",
+    fermentationStartedAt: startedAt, createdAt: new Date().toISOString(),
+    finished: false, finishedAt: null, finalResult: null, finalNote: null,
+    startNote: els.f1ToF2Note?.value.trim() || null,
+    recipeSnapshot: sourceBatch.recipeSnapshot || null,
+    parentBatchId: pendingF1ToF2BatchId,
+    checks: [], reminders
+  };
+  if (!sourceBatch.linkedBatchIds) sourceBatch.linkedBatchIds = [];
+  sourceBatch.linkedBatchIds.push(f2Id);
+  batches.unshift(f2Batch);
+  persistBatches();
+  els.f1ToF2Dialog?.close();
+  renderVarkyView();
+  checkReminders();
+  renderBatchDetail(f2Id);
+  showActionFeedback("F2 várka zalošena. Nech to naperlovat.");
+  pendingF1ToF2BatchId = null;
+}
+
 // ── Bind batch events ──
 
 function bindBatchEvents() {
@@ -2257,7 +2433,16 @@ function bindBatchEvents() {
   els.newBatchBtn?.addEventListener("click", () => openNewBatchDialog(null));
   els.startBatchBtn?.addEventListener("click", () => {
     const snap = currentSnapshotForSharing();
-    openNewBatchDialog(snap);
+    if (snap && (snap.starterSeverity === "STOP" || snap.starterSeverity === "RED")) {
+      els.riskBatchDialog?.showModal();
+    } else {
+      openNewBatchDialog(snap);
+    }
+  });
+  els.cancelRiskBatchBtn?.addEventListener("click", () => els.riskBatchDialog?.close());
+  els.confirmRiskBatchBtn?.addEventListener("click", () => {
+    els.riskBatchDialog?.close();
+    openNewBatchDialog(currentSnapshotForSharing());
   });
   els.closeNewBatchBtn?.addEventListener("click", () => els.newBatchDialog?.close());
   els.cancelNewBatchBtn?.addEventListener("click", () => els.newBatchDialog?.close());
@@ -2306,7 +2491,57 @@ function bindBatchEvents() {
   els.confirmFinishBatchBtn?.addEventListener("click", confirmFinishBatch);
   els.cancelDeleteBatchBtn?.addEventListener("click", () => { pendingDeleteBatchId = null; els.deleteBatchDialog?.close(); });
   els.confirmDeleteBatchBtn?.addEventListener("click", confirmDeleteBatch);
+  els.cancelDeleteCheckBtn?.addEventListener("click", () => { pendingDeleteCheckId = null; els.deleteCheckDialog?.close(); });
+  els.confirmDeleteCheckBtn?.addEventListener("click", confirmDeleteCheck);
+  els.closeEditCheckBtn?.addEventListener("click", () => els.editCheckDialog?.close());
+  els.cancelEditCheckBtn?.addEventListener("click", () => els.editCheckDialog?.close());
+  els.confirmEditCheckBtn?.addEventListener("click", confirmEditCheck);
+  els.editCheckTypeChips?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-ectype]");
+    if (!btn) return;
+    editCheckType = btn.dataset.ectype;
+    els.editCheckTypeChips.querySelectorAll(".check-chip").forEach(b => b.classList.toggle("active", b === btn));
+    const batch = findBatch(pendingCheckBatchId);
+    if (batch) renderEditCheckResultChips(batch.type);
+  });
+  els.editCheckResultChips?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-ecresult]");
+    if (!btn) return;
+    editCheckResult = btn.dataset.ecresult;
+    els.editCheckResultChips.querySelectorAll(".result-chip").forEach(b => b.classList.toggle("active", b === btn));
+  });
+  els.f1ToF2ReminderQuick?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-rdays]");
+    if (!btn) return;
+    const isCustom = btn.dataset.rdays === "custom";
+    f1ToF2ReminderDays = isCustom ? -1 : Number(btn.dataset.rdays);
+    els.f1ToF2ReminderQuick.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+    if (els.f1ToF2CustomReminder) els.f1ToF2CustomReminder.hidden = !isCustom;
+  });
+  els.closeF1ToF2Btn?.addEventListener("click", () => els.f1ToF2Dialog?.close());
+  els.cancelF1ToF2Btn?.addEventListener("click", () => els.f1ToF2Dialog?.close());
+  els.confirmF1ToF2Btn?.addEventListener("click", confirmF1ToF2);
   els.reminderGoToVarkyBtn?.addEventListener("click", () => { batchFilter = "due"; renderVarkyView(); switchView("varky"); });
+  els.reminderSnoozeBtn?.addEventListener("click", () => {
+    const snoozeMs = 3600000;
+    batches.forEach(b => b.reminders.forEach(r => {
+      if (r.status === "pending" && new Date(r.remindAt) <= new Date()) {
+        r.remindAt = new Date(Date.now() + snoozeMs).toISOString();
+      }
+    }));
+    persistBatches();
+    checkReminders();
+    showActionFeedback("Připomínky odloženy o hodinu.");
+  });
+  els.reminderDoneBtn?.addEventListener("click", () => {
+    batches.forEach(b => b.reminders.forEach(r => {
+      if (r.status === "pending" && new Date(r.remindAt) <= new Date()) r.status = "done";
+    }));
+    persistBatches();
+    checkReminders();
+    renderVarkyView();
+    showActionFeedback("Připomínky označeny jako splněné.");
+  });
   els.reminderDismissBtn?.addEventListener("click", () => { els.reminderBanner.hidden = true; });
   els.batchDetailBackBtn?.addEventListener("click", () => { currentBatchDetailId = null; renderVarkyView(); switchView("varky"); });
   els.varkyFilterPills?.addEventListener("click", e => {
@@ -2350,6 +2585,16 @@ function bindBatchEvents() {
       const card = e.target.closest(".saved-recipe-card");
       const recipe = findRecipe(card?.dataset.recipeId);
       if (recipe) openNewBatchDialog(recipe);
+      return;
+    }
+    if (e.target.closest(".check-edit-btn")) {
+      const btn = e.target.closest(".check-edit-btn");
+      openEditCheckDialog(btn.dataset.checkId, btn.dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".check-delete-btn")) {
+      const btn = e.target.closest(".check-delete-btn");
+      openDeleteCheckDialog(btn.dataset.checkId, btn.dataset.batchId);
       return;
     }
   });
