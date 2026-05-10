@@ -2088,6 +2088,18 @@ body::before {
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
+.recipe-title-pencil {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  font-size: 15px;
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.recipe-title-pencil:hover { opacity: 1; background: var(--paper-bg-2); }
 .icon-action {
   border: 0;
   background: rgba(228,234,216,.8);
@@ -3267,6 +3279,12 @@ button {
 .batch-next-text { font-size: 13px; }
 .batch-next-text small { color: var(--ink-muted); font-size: 11px; }
 
+.batch-col-recipe {
+  max-width: 200px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
 .batch-col-actions {
   min-width: 180px;
 }
@@ -3714,6 +3732,7 @@ button {
   border: 1.5px solid var(--border-paper);
   border-radius: 999px;
   background: var(--paper-bg);
+  color: var(--ink);
   font: inherit;
   font-size: 13px;
   cursor: pointer;

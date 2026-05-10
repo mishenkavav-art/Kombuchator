@@ -1222,6 +1222,7 @@ function renderSavedRecipes() {
       <div class="saved-card-top">
         <div class="saved-title-row">
           <h3 data-title>${escapeHtml(recipe.recipeName)}</h3>
+          <button class="recipe-title-pencil" type="button" title="Změnit název">✏️</button>
         </div>
         <div class="saved-badges">
           <span>${escapeHtml(modeLabel(recipe.mode))}</span>
@@ -1241,7 +1242,6 @@ function renderSavedRecipes() {
       <div class="saved-card-actions">
         <button class="recipe-action share-whatsapp" type="button">WhatsApp</button>
         <button class="recipe-action copy-share" type="button">Kopírovat</button>
-        <button class="recipe-action edit-title" type="button">Změnit název</button>
         <button class="recipe-action load-to-calc" type="button">Nahrát do kalkulačky</button>
         <button class="recipe-action start-batch" type="button">Založ várku</button>
         <button class="recipe-action toggle-note" type="button">${recipe.userNote ? "Poznámka ✓" : "Přidat poznámku"}</button>
@@ -1561,7 +1561,7 @@ function bindEvents() {
     if (!card) return;
     const recipe = findRecipe(card.dataset.recipeId);
     if (!recipe) return;
-    if (e.target.closest(".edit-title")) {
+    if (e.target.closest(".edit-title") || e.target.closest(".recipe-title-pencil")) {
       const row = card.querySelector(".saved-title-row");
       row.innerHTML = `
         <input class="title-edit-input" type="text" value="${escapeHtml(recipe.recipeName)}">
@@ -1966,8 +1966,8 @@ function renderBatchTableRow(batch) {
           <span class="batch-name-text" data-batch-title>${escapeHtml(batch.batchName)}</span>
           <button class="batch-edit-name" type="button" title="Změnit název">✏️</button>
         </div>
-        ${summary ? `<span class="batch-recipe-summary">${escapeHtml(summary)}</span>` : ""}
       </td>
+      <td class="batch-col-recipe">${summary ? escapeHtml(summary) : `<span class="batch-no-reminder">—</span>`}</td>
       <td class="batch-col-status">
         <span class="batch-status-badge status-${status}">${getBatchStatusLabel(status)}</span>
       </td>
@@ -2006,7 +2006,7 @@ function renderVarkyView() {
     <div class="batch-table-wrap">
       <table class="batch-table">
         <thead><tr>
-          <th>Založeno</th><th>Typ</th><th>Název</th><th>Stav</th><th>Poslední kontroly</th><th>Další krok</th><th>Akce</th>
+          <th>Založeno</th><th>Typ</th><th>Název</th><th>Recept</th><th>Stav</th><th>Poslední kontroly</th><th>Další krok</th><th>Akce</th>
         </tr></thead>
         <tbody>${filtered.map(renderBatchTableRow).join("")}</tbody>
       </table>
@@ -2216,6 +2216,10 @@ function confirmNewCheck() {
   // Nabídni F2 přechod při stočení nebo přesunu F1
   if (batch.type === "F1" && (newCheckType === "bottle_f1" || newCheckType === "move_to_f2")) {
     window.setTimeout(() => openF1ToF2Dialog(savedBatchId), 300);
+  }
+  // Ukončení várky rovnou otevře dialog pro dokončení
+  if (newCheckType === "finish_batch") {
+    window.setTimeout(() => openFinishBatchDialog(savedBatchId), 300);
   }
 }
 
