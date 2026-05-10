@@ -212,15 +212,13 @@ const els = {
   deleteBatchDialog:    document.querySelector("#deleteBatchDialog"),
   cancelDeleteBatchBtn: document.querySelector("#cancelDeleteBatchBtn"),
   confirmDeleteBatchBtn:document.querySelector("#confirmDeleteBatchBtn"),
-  // Sync
-  syncBtn:          document.querySelector("#syncBtn"),
-  syncDialog:       document.querySelector("#syncDialog"),
-  closeSyncBtn:     document.querySelector("#closeSyncBtn"),
-  exportDataBtn:    document.querySelector("#exportDataBtn"),
-  importDataBtn:    document.querySelector("#importDataBtn"),
-  importDataInput:  document.querySelector("#importDataInput"),
-  exportFeedback:   document.querySelector("#exportFeedback"),
-  importFeedback:   document.querySelector("#importFeedback")
+  mainHeader:          document.querySelector("#mainHeader"),
+  newBatchCustomReminder: document.querySelector("#newBatchCustomReminder"),
+  newBatchCustomDate:  document.querySelector("#newBatchCustomDate"),
+  newBatchCustomTime:  document.querySelector("#newBatchCustomTime"),
+  checkCustomReminder: document.querySelector("#checkCustomReminder"),
+  checkCustomDate:     document.querySelector("#checkCustomDate"),
+  checkCustomTime:     document.querySelector("#checkCustomTime")
 };
 
 // ═══ UTILS ═══
@@ -490,6 +488,7 @@ function switchView(viewName) {
   const isCalc    = viewName === "calculator";
   const isVarky   = viewName === "varky" || viewName === "batchDetail";
   const isZapisnik = viewName === "zapisnik";
+  if (els.mainHeader) els.mainHeader.hidden = !isCalc;
   if (els.navCalculator) { els.navCalculator.classList.toggle("active", isCalc);    els.navCalculator.ariaCurrent = isCalc ? "page" : null; }
   if (els.navVarky)      { els.navVarky.classList.toggle("active", isVarky);         els.navVarky.ariaCurrent = isVarky ? "page" : null; }
   if (els.navZapisnik)   { els.navZapisnik.classList.toggle("active", isZapisnik);   els.navZapisnik.ariaCurrent = isZapisnik ? "page" : null; }
@@ -1207,7 +1206,7 @@ function renderSavedRecipes() {
         <button class="recipe-action copy-share" type="button">Kopírovat</button>
         <button class="recipe-action edit-title" type="button">Změnit název</button>
         <button class="recipe-action load-to-calc" type="button">Nahrát do kalkulačky</button>
-        <button class="recipe-action start-batch" type="button">Základit várku</button>
+        <button class="recipe-action start-batch" type="button">Založ várku</button>
         <button class="recipe-action toggle-note" type="button">${recipe.userNote ? "Poznámka ✓" : "Přidat poznámku"}</button>
         <button class="recipe-action danger delete-recipe" type="button">Smazat</button>
       </div>
@@ -1687,7 +1686,6 @@ function bindEvents() {
     if (result !== num) inp.value = result;
   }, true);
   bindBatchEvents();
-  bindSyncEvents();
 }
 
 // ═══ SYNC ═══
@@ -1709,60 +1707,6 @@ try {
 
 function broadcastSync(type) {
   try { syncChannel?.postMessage(type); } catch (err) { /* ignore */ }
-}
-
-function exportAllData() {
-  const payload = JSON.stringify({ v: 1, recipes: savedRecipes, batches });
-  return btoa(unescape(encodeURIComponent(payload)));
-}
-
-function importAllData(encoded) {
-  const json = decodeURIComponent(escape(atob(encoded.trim())));
-  const data = JSON.parse(json);
-  if (typeof data !== "object" || !data.v) throw new Error("Neplatný formát zálohy.");
-  if (Array.isArray(data.recipes)) {
-    savedRecipes = data.recipes;
-    localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(savedRecipes));
-    renderSavedRecipes();
-  }
-  if (Array.isArray(data.batches)) {
-    batches = data.batches;
-    localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
-    renderVarkyView();
-    checkReminders();
-  }
-}
-
-function bindSyncEvents() {
-  els.syncBtn?.addEventListener("click", () => {
-    if (els.importDataInput) els.importDataInput.value = "";
-    if (els.exportFeedback) els.exportFeedback.textContent = "";
-    if (els.importFeedback) els.importFeedback.textContent = "";
-    els.syncDialog?.showModal();
-  });
-  els.closeSyncBtn?.addEventListener("click", () => els.syncDialog?.close());
-  els.exportDataBtn?.addEventListener("click", () => {
-    const code = exportAllData();
-    navigator.clipboard.writeText(code).then(() => {
-      if (els.exportFeedback) els.exportFeedback.textContent = "Záloha zkopírována do schránky.";
-    }).catch(() => {
-      if (els.exportFeedback) els.exportFeedback.textContent = "Nepodařilo se zkopírovat – zkopíruj ručně:";
-      // show in textarea as fallback
-      if (els.importDataInput) els.importDataInput.value = code;
-    });
-  });
-  els.importDataBtn?.addEventListener("click", () => {
-    const raw = els.importDataInput?.value.trim();
-    if (!raw) { if (els.importFeedback) els.importFeedback.textContent = "Vlož zálohu do pole."; return; }
-    try {
-      importAllData(raw);
-      if (els.importFeedback) els.importFeedback.textContent = "Data obnovena.";
-      els.syncDialog?.close();
-      showActionFeedback("Data obnovena ze zálohy.");
-    } catch (err) {
-      if (els.importFeedback) els.importFeedback.textContent = "Záloha se nepodařila načíst. Zkontroluj, že jsi vložil/a správný kód.";
-    }
-  });
 }
 
 // ═══ MOJE VÁRKY ═══
@@ -1790,7 +1734,7 @@ const checkTypeInfo = {
   move_to_f2:     "Přesun do F2",
   move_to_fridge: "Přesun do lednice",
   finish_batch:   "Ukončení várky",
-  custom:         "Vlastní"
+  custom:         "Ostatní"
 };
 
 const f1ResultKeys = ["still_sweet", "slightly_sour", "balanced", "sharp", "too_sour", "suspicious"];
@@ -2121,6 +2065,9 @@ function openNewBatchDialog(recipeSnapshot) {
   if (els.newBatchNote) els.newBatchNote.value = "";
   els.newBatchTypeSeg?.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.btype === "F1"));
   els.newBatchReminderQuick?.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.rdays === "3"));
+  if (els.newBatchCustomReminder) els.newBatchCustomReminder.hidden = true;
+  if (els.newBatchCustomDate) els.newBatchCustomDate.value = todayISO();
+  if (els.newBatchCustomTime) els.newBatchCustomTime.value = nowTimeHHMM();
   els.newBatchDialog?.showModal();
   els.newBatchName?.focus();
 }
@@ -2131,7 +2078,11 @@ function confirmNewBatch() {
   const timeStr = els.newBatchTime?.value || "12:00";
   const startedAt = new Date(`${dateStr}T${timeStr}:00`).toISOString();
   const reminders = [];
-  if (newBatchReminderDays > 0) {
+  if (newBatchReminderDays === -1) {
+    const cd = els.newBatchCustomDate?.value || todayISO();
+    const ct = els.newBatchCustomTime?.value || "12:00";
+    reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt: new Date(`${cd}T${ct}:00`).toISOString(), status: "pending", note: null });
+  } else if (newBatchReminderDays > 0) {
     const remindAt = new Date(new Date(startedAt).getTime() + newBatchReminderDays * 86400000).toISOString();
     reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt, status: "pending", note: null });
   }
@@ -2149,7 +2100,7 @@ function confirmNewBatch() {
   renderVarkyView();
   checkReminders();
   switchView("varky");
-  showActionFeedback("Várku máš základenu. Teď už ji jen nenech zapomenutou v koutě.");
+  showActionFeedback("Várku máš založenou. Teď už ji jen nenech zapomenutou v koutě.");
 }
 
 // ── New Check Dialog ──
@@ -2167,6 +2118,9 @@ function openNewCheckDialog(batchId) {
   renderCheckTypeChips(batch.type);
   renderCheckResultChips(batch.type);
   els.checkReminderQuick?.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.rdays === "0"));
+  if (els.checkCustomReminder) els.checkCustomReminder.hidden = true;
+  if (els.checkCustomDate) els.checkCustomDate.value = todayISO();
+  if (els.checkCustomTime) els.checkCustomTime.value = nowTimeHHMM();
   els.newCheckDialog?.showModal();
 }
 
@@ -2198,14 +2152,22 @@ function confirmNewCheck() {
     note: els.newCheckNote?.value.trim() || null
   };
   batch.checks.push(check);
-  if (newCheckReminderDays > 0) {
+  // Mark any due reminders as done since the user just checked
+  batch.reminders.forEach(r => {
+    if (r.status === "pending" && new Date(r.remindAt) <= new Date()) r.status = "done";
+  });
+  if (newCheckReminderDays === -1) {
+    const cd = els.checkCustomDate?.value || todayISO();
+    const ct = els.checkCustomTime?.value || "12:00";
+    batch.reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt: new Date(`${cd}T${ct}:00`).toISOString(), status: "pending", note: null });
+  } else if (newCheckReminderDays > 0) {
     const remindAt = new Date(new Date(check.checkedAt).getTime() + newCheckReminderDays * 86400000).toISOString();
     batch.reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt, status: "pending", note: null });
   }
   persistBatches();
   els.newCheckDialog?.close();
   if (currentBatchDetailId === pendingCheckBatchId) renderBatchDetail(pendingCheckBatchId);
-  else renderVarkyView();
+  renderVarkyView();
   checkReminders();
   pendingCheckBatchId = null;
   showActionFeedback("Kontrolu máš zapsanou.");
@@ -2309,8 +2271,10 @@ function bindBatchEvents() {
   els.newBatchReminderQuick?.addEventListener("click", e => {
     const btn = e.target.closest("[data-rdays]");
     if (!btn) return;
-    newBatchReminderDays = Number(btn.dataset.rdays);
+    const isCustom = btn.dataset.rdays === "custom";
+    newBatchReminderDays = isCustom ? -1 : Number(btn.dataset.rdays);
     els.newBatchReminderQuick.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+    if (els.newBatchCustomReminder) els.newBatchCustomReminder.hidden = !isCustom;
   });
   els.closeNewCheckBtn?.addEventListener("click", () => els.newCheckDialog?.close());
   els.cancelNewCheckBtn?.addEventListener("click", () => els.newCheckDialog?.close());
@@ -2332,8 +2296,10 @@ function bindBatchEvents() {
   els.checkReminderQuick?.addEventListener("click", e => {
     const btn = e.target.closest("[data-rdays]");
     if (!btn) return;
-    newCheckReminderDays = Number(btn.dataset.rdays);
+    const isCustom = btn.dataset.rdays === "custom";
+    newCheckReminderDays = isCustom ? -1 : Number(btn.dataset.rdays);
     els.checkReminderQuick.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+    if (els.checkCustomReminder) els.checkCustomReminder.hidden = !isCustom;
   });
   els.closeFinishBatchBtn?.addEventListener("click", () => els.finishBatchDialog?.close());
   els.cancelFinishBatchBtn?.addEventListener("click", () => els.finishBatchDialog?.close());
@@ -2396,6 +2362,13 @@ renderSavedRecipes();
 batches = loadBatches();
 renderVarkyView();
 checkReminders();
+
+// Handle #varky / #zapisnik URL fragments for deep-linking
+(function() {
+  const hash = location.hash.slice(1);
+  if (hash === "varky") { renderVarkyView(); switchView("varky"); }
+  else if (hash === "zapisnik") { renderSavedRecipes(); switchView("zapisnik"); }
+})();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));

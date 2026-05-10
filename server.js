@@ -27,6 +27,7 @@ function send(res, status, body, type = "text/plain; charset=utf-8") {
 http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const pathname = decodeURIComponent(url.pathname);
+
   const filePath = path.normalize(path.join(root, pathname === "/" ? "index.html" : pathname));
 
   if (!filePath.startsWith(root)) {

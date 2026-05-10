@@ -234,6 +234,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 
 /* ═══ HEADER ═══ */
 
+.main-header[hidden] { display: none; }
 .main-header {
   display: flex;
   align-items: flex-start;
@@ -3755,84 +3756,37 @@ button {
   .batch-cards { display: none; }
 }
 
-/* ── Sidebar sync button ── */
+/* ── Custom reminder date row ── */
 
-.sidebar { justify-content: space-between; }
-
-.sidebar-bottom {
-  padding: 12px 8px 16px;
-  border-top: 1px solid rgba(255,255,255,.1);
-}
-
-.sidebar-sync-btn {
+.custom-reminder-row[hidden] { display: none; }
+.custom-reminder-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  background: none;
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 10px;
-  color: rgba(255,255,255,.55);
-  font: inherit;
+  gap: 12px;
+  margin-top: 10px;
+}
+.custom-reminder-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.custom-reminder-row label span {
   font-size: 13px;
-  cursor: pointer;
-  transition: background .15s, color .15s;
-}
-
-.sidebar-sync-btn:hover {
-  background: rgba(255,255,255,.08);
-  color: rgba(255,255,255,.85);
-}
-
-.sidebar-sync-btn .nav-icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-/* ── Sync dialog ── */
-
-.sync-dialog {
-  max-width: 480px;
-}
-
-.sync-section h3 {
-  margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.sync-section p {
-  margin: 0 0 10px;
-  font-size: 14px;
   color: var(--ink-soft);
 }
-
-.sync-section textarea {
-  width: 100%;
-  padding: 10px 12px;
+.custom-reminder-row input {
+  padding: 7px 10px;
   border: 1.5px solid var(--border-paper);
   border-radius: 10px;
   background: var(--paper-bg);
   font: inherit;
-  font-size: 13px;
-  resize: vertical;
-  margin-bottom: 10px;
+  font-size: 14px;
 }
-
-.sync-section textarea:focus {
+.custom-reminder-row input:focus {
   outline: none;
   border-color: var(--soft-green);
 }
 
-.sync-divider {
-  border-top: 1.5px solid var(--border-soft);
-  margin: 18px 0;
-}
+/* ── Batch dialog footer spacing ── */
 
-.sync-feedback {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: var(--soft-green);
-}
+.batch-dialog .dialog-actions { margin-top: 20px; }
