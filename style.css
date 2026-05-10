@@ -2978,3 +2978,777 @@ button {
     padding-inline: 12px;
   }
 }
+
+/* ═══ MOJE VÁRKY ═══ */
+
+/* ── Reminder banner ── */
+
+.reminder-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 18px;
+  margin-bottom: 12px;
+  background: #FFF3CC;
+  border: 1.5px solid var(--orange);
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.reminder-banner-icon { font-size: 18px; }
+
+.reminder-banner-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.reminder-banner-actions button {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 5px 13px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.reminder-banner-actions button:last-child {
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1.5px solid var(--border-paper);
+}
+
+/* ── Varky view header ── */
+
+.varky-view-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.varky-new-btn {
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+/* ── Filter pills ── */
+
+.varky-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.varky-filter-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.varky-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: 1.5px solid var(--border-paper);
+  border-radius: 999px;
+  background: var(--paper-card);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.varky-pill:hover {
+  background: var(--paper-bg-2);
+  border-color: var(--border-soft);
+}
+
+.varky-pill.active {
+  background: var(--dark-green);
+  border-color: var(--dark-green);
+  color: #fff;
+}
+
+.pill-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.22);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.varky-pill:not(.active) .pill-count {
+  background: var(--paper-bg-2);
+  color: var(--ink-muted);
+}
+
+.varky-search-wrap { margin-left: auto; }
+
+.varky-search {
+  padding: 7px 14px;
+  border: 1.5px solid var(--border-paper);
+  border-radius: 10px;
+  background: var(--paper-card);
+  font: inherit;
+  font-size: 14px;
+  min-width: 180px;
+}
+
+.varky-search:focus {
+  outline: none;
+  border-color: var(--soft-green);
+}
+
+/* ── Batch type badges ── */
+
+.batch-type-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.batch-type-badge.badge-f1 {
+  background: #D1FAD7;
+  color: #1a5c28;
+}
+
+.batch-type-badge.badge-f2 {
+  background: #DBEAFE;
+  color: #1e40af;
+}
+
+/* ── Batch status badges ── */
+
+.batch-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.batch-status-badge.status-active {
+  background: var(--muted-green);
+  color: var(--forest-green);
+}
+
+.batch-status-badge.status-needs_tasting {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.batch-status-badge.status-finished {
+  background: var(--paper-bg-2);
+  color: var(--ink-muted);
+}
+
+/* ── Check result tags ── */
+
+.check-tag {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tag-sweet         { background: #FEF3C7; color: #92400E; }
+.tag-slightly-sour { background: #D1FAD7; color: #1a5c28; }
+.tag-balanced      { background: #BBF7D0; color: #14532d; }
+.tag-sharp         { background: #FFEDD5; color: #7c2d12; }
+.tag-too-sour      { background: #FEE2E2; color: #7f1d1d; }
+.tag-suspicious    { background: #FEE2E2; color: #991b1b; border: 1.5px solid #fca5a5; }
+.tag-no-bubbles    { background: var(--paper-bg-2); color: var(--ink-muted); }
+.tag-light-bubbles { background: #DBEAFE; color: #1e40af; }
+.tag-good-bubbles  { background: #BBF7D0; color: #14532d; }
+.tag-pressure      { background: #FFEDD5; color: #7c2d12; }
+.tag-fridge        { background: #E0F2FE; color: #0c4a6e; }
+.tag-custom        { background: var(--paper-bg-2); color: var(--ink-soft); }
+
+/* ── Desktop batch table ── */
+
+.batch-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 16px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.batch-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper-card);
+  font-size: 14px;
+}
+
+.batch-table thead tr {
+  background: var(--paper-bg-2);
+  border-bottom: 2px solid var(--border-paper);
+}
+
+.batch-table th {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.batch-table td {
+  padding: 13px 14px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.batch-row:last-child td { border-bottom: none; }
+
+.batch-row:hover td { background: var(--paper-green); }
+
+.batch-col-date strong { font-size: 13.5px; }
+.batch-time { font-size: 12px; color: var(--ink-muted); }
+.batch-day-num { font-size: 12px; color: var(--soft-green); font-weight: 600; }
+
+.batch-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.batch-name-text { font-weight: 600; }
+.batch-recipe-summary { display: block; font-size: 12px; color: var(--ink-muted); margin-top: 3px; }
+
+.batch-check-mini {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.batch-check-date { font-size: 11px; color: var(--ink-muted); }
+
+.batch-no-checks,
+.batch-no-reminder { font-size: 12px; color: var(--ink-muted); font-style: italic; }
+
+.batch-more-checks {
+  background: none;
+  border: none;
+  color: var(--soft-green);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.batch-next-text { font-size: 13px; }
+.batch-next-text small { color: var(--ink-muted); font-size: 11px; }
+
+.batch-col-actions {
+  min-width: 180px;
+}
+
+.batch-col-actions .recipe-action {
+  display: block;
+  width: 100%;
+  margin-bottom: 5px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.batch-edit-name {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 12px;
+  opacity: .55;
+  transition: opacity .15s;
+}
+
+.batch-edit-name:hover { opacity: 1; }
+
+/* ── Mobile batch cards ── */
+
+.batch-cards {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.batch-card {
+  background: var(--paper-card);
+  border-radius: var(--radius-card);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-card);
+  border-left: 4px solid var(--muted-green);
+}
+
+.batch-card.batch-status-needs_tasting { border-left-color: var(--orange); }
+.batch-card.batch-status-finished { border-left-color: var(--border-paper); opacity: .75; }
+
+.batch-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.batch-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.batch-card-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.batch-card-badges {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.batch-card-meta {
+  margin: 0 0 5px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.batch-card-recipe {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.batch-last-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.batch-last-check-label {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.batch-check-note {
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.batch-next-step {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.batch-next-step.no-reminder { font-style: italic; color: var(--ink-muted); }
+
+.batch-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Compass note ── */
+
+.varky-compass-note {
+  margin: 28px 0 8px;
+  padding: 18px 22px;
+  background: var(--paper-green);
+  border-radius: 14px;
+  border: 1.5px solid var(--muted-green);
+}
+
+.varky-compass-title {
+  margin: 0 0 5px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.varky-compass-note p:last-child { margin: 0; font-size: 14px; color: var(--ink-soft); }
+
+/* ── Batch detail view ── */
+
+.batch-detail-topbar {
+  margin-bottom: 20px;
+}
+
+.batch-detail-header-card {
+  background: var(--paper-card);
+  border-radius: var(--radius-card);
+  padding: 22px 24px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 20px;
+}
+
+.batch-detail-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.batch-detail-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.batch-detail-name {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.batch-detail-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.batch-detail-meta-row {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.batch-reminders {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.batch-reminder-chip {
+  background: #FEF3C7;
+  color: #92400E;
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.batch-detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.batch-finished-note {
+  background: var(--paper-green);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.batch-finished-note strong { display: block; margin-bottom: 4px; }
+.batch-finished-note small { color: var(--ink-muted); }
+
+/* ── Timeline ── */
+
+.batch-timeline-heading {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: 0 0 16px;
+}
+
+.batch-timeline {
+  position: relative;
+  padding-left: 28px;
+}
+
+.batch-timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-paper);
+}
+
+.timeline-entry {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -24px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--soft-green);
+  border: 2px solid var(--paper-card);
+  box-shadow: 0 0 0 2px var(--soft-green);
+}
+
+.timeline-dot.dot-start {
+  background: var(--dark-green);
+  box-shadow: 0 0 0 2px var(--dark-green);
+}
+
+.timeline-content {
+  background: var(--paper-card);
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(59,42,24,.07);
+}
+
+.timeline-date {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+
+.timeline-content strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.timeline-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+/* ── Batch dialogs ── */
+
+.batch-dialog {
+  max-width: 520px;
+}
+
+.batch-dialog label span:first-child,
+.batch-dialog .choice-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  margin-top: 14px;
+}
+
+.batch-dialog label { display: block; }
+
+.batch-dialog input[type="text"],
+.batch-dialog input[type="date"],
+.batch-dialog input[type="time"],
+.batch-dialog textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border-paper);
+  border-radius: 10px;
+  background: var(--paper-bg);
+  font: inherit;
+  font-size: 15px;
+}
+
+.batch-dialog input[type="text"]:focus,
+.batch-dialog input[type="date"]:focus,
+.batch-dialog input[type="time"]:focus,
+.batch-dialog textarea:focus {
+  outline: none;
+  border-color: var(--soft-green);
+}
+
+.dialog-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dialog-row > * { flex: 1; min-width: 110px; }
+
+/* ── Batch type toggle (in dialog) ── */
+
+.batch-type-seg {
+  display: flex;
+  gap: 8px;
+}
+
+.batch-type-seg button {
+  flex: 1;
+  padding: 9px 14px;
+  border: 1.5px solid var(--border-paper);
+  border-radius: 10px;
+  background: var(--paper-bg);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: background .15s, border-color .15s;
+}
+
+.batch-type-seg button small { font-size: 11px; font-weight: 400; color: var(--ink-muted); }
+
+.batch-type-seg button.active {
+  background: var(--dark-green);
+  border-color: var(--dark-green);
+  color: #fff;
+}
+
+.batch-type-seg button.active small { color: rgba(255,255,255,.7); }
+
+/* ── Reminder quick-pick ── */
+
+.reminder-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.reminder-quick button {
+  padding: 6px 13px;
+  border: 1.5px solid var(--border-paper);
+  border-radius: 999px;
+  background: var(--paper-bg);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+.reminder-quick button:hover { background: var(--paper-bg-2); }
+
+.reminder-quick button.active {
+  background: var(--soft-green);
+  border-color: var(--soft-green);
+  color: #fff;
+}
+
+/* ── Check type / result chips ── */
+
+.check-type-chips,
+.check-result-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.check-chip {
+  padding: 6px 13px;
+  border: 1.5px solid var(--border-paper);
+  border-radius: 999px;
+  background: var(--paper-bg);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+.check-chip:hover { background: var(--paper-bg-2); }
+
+.check-chip.active {
+  background: var(--soft-green);
+  border-color: var(--soft-green);
+  color: #fff;
+}
+
+/* result chips inherit tag colors when active */
+.result-chip.tag-sweet.active         { background: #D4A017; border-color: #D4A017; color: #fff; }
+.result-chip.tag-slightly-sour.active { background: #6F9659; border-color: #6F9659; color: #fff; }
+.result-chip.tag-balanced.active      { background: #264B1F; border-color: #264B1F; color: #fff; }
+.result-chip.tag-sharp.active         { background: #E89A20; border-color: #E89A20; color: #fff; }
+.result-chip.tag-too-sour.active      { background: #C05228; border-color: #C05228; color: #fff; }
+.result-chip.tag-suspicious.active    { background: #9f3d35; border-color: #9f3d35; color: #fff; }
+.result-chip.tag-no-bubbles.active    { background: #827565; border-color: #827565; color: #fff; }
+.result-chip.tag-light-bubbles.active { background: #4A90D9; border-color: #4A90D9; color: #fff; }
+.result-chip.tag-good-bubbles.active  { background: #264B1F; border-color: #264B1F; color: #fff; }
+.result-chip.tag-pressure.active      { background: #E89A20; border-color: #E89A20; color: #fff; }
+.result-chip.tag-fridge.active        { background: #2B6CB0; border-color: #2B6CB0; color: #fff; }
+
+/* ── Radio group (finish dialog) ── */
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-paper);
+  transition: background .12s;
+}
+
+.radio-group label:hover { background: var(--paper-green); }
+
+.radio-group input[type="radio"] { accent-color: var(--soft-green); }
+
+/* ── Responsive: hide table, show cards on mobile ── */
+
+@media (max-width: 700px) {
+  .batch-table-wrap { display: none; }
+  .batch-cards { display: flex; }
+  .varky-search-wrap { width: 100%; }
+  .varky-search { width: 100%; min-width: 0; }
+  .batch-detail-meta-row { flex-direction: column; gap: 6px; }
+  .batch-detail-actions { flex-direction: column; }
+  .batch-detail-actions .recipe-action { width: 100%; text-align: center; }
+}
+
+@media (min-width: 701px) {
+  .batch-cards { display: none; }
+}

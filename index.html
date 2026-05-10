@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=50">
+  <link rel="stylesheet" href="style.css?v=51">
 </head>
 <body>
   <div class="app-layout">
@@ -30,6 +30,11 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
             <span>Kalkulačka</span>
           </a>
+          <a class="nav-item" href="#" id="navVarky">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8v2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1V3z"/><path d="M5 10h14"/><path d="M9 3h6"/></svg>
+            <span>Moje Várky</span>
+            <span class="nav-badge" id="navVarkyBadge" hidden>0</span>
+          </a>
           <a class="nav-item" href="#" id="navZapisnik">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
             <span>Zápisník</span>
@@ -41,6 +46,16 @@
 
     <!-- ═══ MAIN AREA ═══ -->
     <div class="main-area">
+
+      <!-- REMINDER BANNER -->
+      <div class="reminder-banner" id="reminderBanner" hidden>
+        <span class="reminder-banner-icon">🔔</span>
+        <span id="reminderBannerText"></span>
+        <div class="reminder-banner-actions">
+          <button type="button" id="reminderGoToVarkyBtn">Zobrazit várky</button>
+          <button type="button" id="reminderDismissBtn">Zavřít</button>
+        </div>
+      </div>
 
       <!-- HEADER -->
       <header class="main-header">
@@ -259,6 +274,7 @@
                 <button class="recipe-action primary" id="saveRecipeBtn" type="button">Uložit</button>
                 <button class="recipe-action" id="shareWhatsAppBtn" type="button">WhatsApp</button>
                 <button class="recipe-action" id="copyRecipeBtn" type="button">Kopírovat</button>
+                <button class="recipe-action" id="startBatchBtn" type="button">Várky</button>
                 <button class="recipe-action danger" id="resetCalcBtn" type="button">Reset</button>
               </div>
               <p class="action-feedback" id="currentActionFeedback" aria-live="polite"></p>
@@ -278,6 +294,37 @@
       </div><!-- /content-grid -->
 
       </div><!-- /calculatorView -->
+
+      <!-- MOJE VARKY VIEW -->
+      <div id="varkyView" hidden>
+        <div class="saved-view-header varky-view-header">
+          <div class="saved-view-header-text">
+            <h2>Moje várky</h2>
+            <p>Fermentační přehled živých várek.</p>
+            <small>Várky se ukládají jen v tomhle prohlížeči.</small>
+          </div>
+          <button class="recipe-action primary varky-new-btn" id="newBatchBtn" type="button">+ Základit várku</button>
+        </div>
+        <div class="varky-filter-bar">
+          <div class="varky-filter-pills" id="varkyFilterPills"></div>
+          <div class="varky-search-wrap">
+            <input class="varky-search" type="text" id="varkySearch" placeholder="Hledat várku…">
+          </div>
+        </div>
+        <div class="varky-list" id="varkyList"></div>
+        <div class="varky-compass-note">
+          <p class="varky-compass-title">Chuť je kompas, ne kalendář.</p>
+          <p>Ochutnávej pravidelně a rozhoduj se podle chuti, ne podle data. Každá várka je jiná — ty jí rozumíš nejlíp.</p>
+        </div>
+      </div><!-- /varkyView -->
+
+      <!-- BATCH DETAIL VIEW -->
+      <div id="batchDetailView" hidden>
+        <div class="batch-detail-topbar">
+          <button class="recipe-action" id="batchDetailBackBtn" type="button">← Zpět na várky</button>
+        </div>
+        <div id="batchDetailBody"></div>
+      </div><!-- /batchDetailView -->
 
       <div id="savedRecipesView" hidden>
         <div class="saved-view-header">
@@ -337,6 +384,133 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=50"></script>
+  <!-- DIALOG: Základit novou várku -->
+  <dialog id="newBatchDialog">
+    <form class="modal-card batch-dialog" method="dialog">
+      <button class="close-button" id="closeNewBatchBtn" type="button" aria-label="Zavřít">×</button>
+      <h2>Základit novou várku</h2>
+      <label>
+        <span>Název várky</span>
+        <input id="newBatchName" type="text" placeholder="Třeba: Jemná várka pro Vojtu, Startér na příště, První pokus s malinou…">
+      </label>
+      <div class="dialog-row">
+        <div>
+          <span class="choice-label">Typ várky</span>
+          <div class="batch-type-seg" id="newBatchTypeSeg">
+            <button type="button" class="active" data-btype="F1">F1 <small>ochutnávka</small></button>
+            <button type="button" data-btype="F2">F2 <small>perlení</small></button>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-row">
+        <label>
+          <span>Datum začátku</span>
+          <input id="newBatchDate" type="date">
+        </label>
+        <label>
+          <span>Čas začátku</span>
+          <input id="newBatchTime" type="time">
+        </label>
+      </div>
+      <div>
+        <span class="choice-label">První připomínka</span>
+        <div class="reminder-quick" id="newBatchReminderQuick">
+          <button type="button" data-rdays="2">za 2 dny</button>
+          <button type="button" data-rdays="3" class="active">za 3 dny</button>
+          <button type="button" data-rdays="4">za 4 dny</button>
+          <button type="button" data-rdays="5">za 5 dní</button>
+          <button type="button" data-rdays="0">bez připomínky</button>
+        </div>
+      </div>
+      <label>
+        <span>Poznámka ke začátku</span>
+        <textarea id="newBatchNote" rows="3" placeholder="Co si chceš poznamenat k začátku várky?"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelNewBatchBtn" type="button">Zrušit</button>
+        <button class="recipe-action primary" id="confirmNewBatchBtn" type="button">Základit várku</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- DIALOG: Zapsat kontrolu -->
+  <dialog id="newCheckDialog">
+    <form class="modal-card batch-dialog" method="dialog">
+      <button class="close-button" id="closeNewCheckBtn" type="button" aria-label="Zavřít">×</button>
+      <h2>Zapsat kontrolu</h2>
+      <div>
+        <span class="choice-label">Typ kontroly</span>
+        <div class="check-type-chips" id="checkTypeChips"></div>
+      </div>
+      <div class="dialog-row">
+        <label>
+          <span>Datum</span>
+          <input id="newCheckDate" type="date">
+        </label>
+        <label>
+          <span>Čas</span>
+          <input id="newCheckTime" type="time">
+        </label>
+      </div>
+      <div id="checkResultArea">
+        <span class="choice-label">Hodnocení</span>
+        <div class="check-result-chips" id="checkResultChips"></div>
+      </div>
+      <label>
+        <span>Poznámka</span>
+        <textarea id="newCheckNote" rows="3" placeholder="Co jsi zjistil/a? Chuť, vůně, bublinky, tlak, co příště změnit…"></textarea>
+      </label>
+      <div>
+        <span class="choice-label">Další připomínka</span>
+        <div class="reminder-quick" id="checkReminderQuick">
+          <button type="button" data-rdays="1">zítra</button>
+          <button type="button" data-rdays="2">za 2 dny</button>
+          <button type="button" data-rdays="3">za 3 dny</button>
+          <button type="button" data-rdays="0" class="active">bez připomínky</button>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelNewCheckBtn" type="button">Zrušit</button>
+        <button class="recipe-action primary" id="confirmNewCheckBtn" type="button">Uložit kontrolu</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- DIALOG: Ukončit várku -->
+  <dialog id="finishBatchDialog">
+    <form class="modal-card" method="dialog">
+      <button class="close-button" id="closeFinishBatchBtn" type="button" aria-label="Zavřít">×</button>
+      <h2>Jak várka dopadla?</h2>
+      <div class="radio-group" id="finishResultGroup">
+        <label><input type="radio" name="finishResult" value="success"> Povedla se</label>
+        <label><input type="radio" name="finishResult" value="too_sweet"> Moc sladká</label>
+        <label><input type="radio" name="finishResult" value="too_sour"> Moc kyselá</label>
+        <label><input type="radio" name="finishResult" value="used_as_starter"> Použito jako startér</label>
+        <label><input type="radio" name="finishResult" value="failed"> Nepovedla se / vyhozeno</label>
+      </div>
+      <label>
+        <span>Poznámka</span>
+        <textarea id="finishBatchNote" rows="3" placeholder="Co chceš příště změnit?"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelFinishBatchBtn" type="button">Zrušit</button>
+        <button class="recipe-action primary" id="confirmFinishBatchBtn" type="button">Ukončit várku</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- DIALOG: Smazat várku -->
+  <dialog id="deleteBatchDialog">
+    <form class="modal-card" method="dialog">
+      <h2>Smazat tuhle várku?</h2>
+      <p>Tato akce je nevratná. Kontroly a poznámky zmizí.</p>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelDeleteBatchBtn" type="button">Nechat</button>
+        <button class="recipe-action danger" id="confirmDeleteBatchBtn" type="button">Smazat</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="script.js?v=51"></script>
 </body>
 </html>

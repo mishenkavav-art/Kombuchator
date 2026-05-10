@@ -70,6 +70,21 @@ let savedRecipes = loadSavedRecipes();
 let pendingRecipeSnapshot = null;
 let pendingDeleteRecipeId = null;
 
+const BATCHES_KEY = "kombuchator.batches.v1";
+let batchFilter = "active";
+let batchSearch = "";
+let currentBatchDetailId = null;
+let pendingCheckBatchId = null;
+let pendingFinishBatchId = null;
+let pendingDeleteBatchId = null;
+let newBatchType = "F1";
+let newBatchReminderDays = 3;
+let newCheckType = "taste";
+let newCheckResult = null;
+let newCheckReminderDays = 0;
+let newBatchRecipeSnapshot = null;
+let batches = [];
+
 const state = {
   mode: "classic",
   goal: "balanced",
@@ -150,7 +165,53 @@ const els = {
   confirmDeleteRecipeBtn: document.querySelector("#confirmDeleteRecipeBtn"),
   howItWorksBtn:      document.querySelector("#howItWorksBtn"),
   howItWorksDialog:   document.querySelector("#howItWorksDialog"),
-  closeDialog:        document.querySelector("#closeDialog")
+  closeDialog:        document.querySelector("#closeDialog"),
+  // Moje Várky
+  navVarky:             document.querySelector("#navVarky"),
+  navVarkyBadge:        document.querySelector("#navVarkyBadge"),
+  varkyView:            document.querySelector("#varkyView"),
+  batchDetailView:      document.querySelector("#batchDetailView"),
+  newBatchBtn:          document.querySelector("#newBatchBtn"),
+  varkyFilterPills:     document.querySelector("#varkyFilterPills"),
+  varkySearch:          document.querySelector("#varkySearch"),
+  varkyList:            document.querySelector("#varkyList"),
+  batchDetailBackBtn:   document.querySelector("#batchDetailBackBtn"),
+  batchDetailBody:      document.querySelector("#batchDetailBody"),
+  startBatchBtn:        document.querySelector("#startBatchBtn"),
+  reminderBanner:       document.querySelector("#reminderBanner"),
+  reminderBannerText:   document.querySelector("#reminderBannerText"),
+  reminderGoToVarkyBtn: document.querySelector("#reminderGoToVarkyBtn"),
+  reminderDismissBtn:   document.querySelector("#reminderDismissBtn"),
+  newBatchDialog:       document.querySelector("#newBatchDialog"),
+  newBatchName:         document.querySelector("#newBatchName"),
+  newBatchDate:         document.querySelector("#newBatchDate"),
+  newBatchTime:         document.querySelector("#newBatchTime"),
+  newBatchTypeSeg:      document.querySelector("#newBatchTypeSeg"),
+  newBatchReminderQuick:document.querySelector("#newBatchReminderQuick"),
+  newBatchNote:         document.querySelector("#newBatchNote"),
+  closeNewBatchBtn:     document.querySelector("#closeNewBatchBtn"),
+  cancelNewBatchBtn:    document.querySelector("#cancelNewBatchBtn"),
+  confirmNewBatchBtn:   document.querySelector("#confirmNewBatchBtn"),
+  newCheckDialog:       document.querySelector("#newCheckDialog"),
+  newCheckDate:         document.querySelector("#newCheckDate"),
+  newCheckTime:         document.querySelector("#newCheckTime"),
+  checkTypeChips:       document.querySelector("#checkTypeChips"),
+  checkResultChips:     document.querySelector("#checkResultChips"),
+  checkResultArea:      document.querySelector("#checkResultArea"),
+  newCheckNote:         document.querySelector("#newCheckNote"),
+  checkReminderQuick:   document.querySelector("#checkReminderQuick"),
+  closeNewCheckBtn:     document.querySelector("#closeNewCheckBtn"),
+  cancelNewCheckBtn:    document.querySelector("#cancelNewCheckBtn"),
+  confirmNewCheckBtn:   document.querySelector("#confirmNewCheckBtn"),
+  finishBatchDialog:    document.querySelector("#finishBatchDialog"),
+  finishResultGroup:    document.querySelector("#finishResultGroup"),
+  finishBatchNote:      document.querySelector("#finishBatchNote"),
+  closeFinishBatchBtn:  document.querySelector("#closeFinishBatchBtn"),
+  cancelFinishBatchBtn: document.querySelector("#cancelFinishBatchBtn"),
+  confirmFinishBatchBtn:document.querySelector("#confirmFinishBatchBtn"),
+  deleteBatchDialog:    document.querySelector("#deleteBatchDialog"),
+  cancelDeleteBatchBtn: document.querySelector("#cancelDeleteBatchBtn"),
+  confirmDeleteBatchBtn:document.querySelector("#confirmDeleteBatchBtn")
 };
 
 // ═══ UTILS ═══
@@ -412,17 +473,16 @@ function shareWhatsApp(text) {
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
 }
 function switchView(viewName) {
-  const isCalc = viewName === "calculator";
-  if (els.calculatorView)  els.calculatorView.hidden  = !isCalc;
-  if (els.savedRecipesView) els.savedRecipesView.hidden = isCalc;
-  if (els.navCalculator) {
-    els.navCalculator.classList.toggle("active", isCalc);
-    els.navCalculator.ariaCurrent = isCalc ? "page" : null;
-  }
-  if (els.navZapisnik) {
-    els.navZapisnik.classList.toggle("active", !isCalc);
-    els.navZapisnik.ariaCurrent = isCalc ? null : "page";
-  }
+  if (els.calculatorView)  els.calculatorView.hidden  = viewName !== "calculator";
+  if (els.varkyView)       els.varkyView.hidden        = viewName !== "varky";
+  if (els.batchDetailView) els.batchDetailView.hidden  = viewName !== "batchDetail";
+  if (els.savedRecipesView) els.savedRecipesView.hidden = viewName !== "zapisnik";
+  const isCalc    = viewName === "calculator";
+  const isVarky   = viewName === "varky" || viewName === "batchDetail";
+  const isZapisnik = viewName === "zapisnik";
+  if (els.navCalculator) { els.navCalculator.classList.toggle("active", isCalc);    els.navCalculator.ariaCurrent = isCalc ? "page" : null; }
+  if (els.navVarky)      { els.navVarky.classList.toggle("active", isVarky);         els.navVarky.ariaCurrent = isVarky ? "page" : null; }
+  if (els.navZapisnik)   { els.navZapisnik.classList.toggle("active", isZapisnik);   els.navZapisnik.ariaCurrent = isZapisnik ? "page" : null; }
 }
 function loadRecipeIntoCalculator(recipe) {
   state.mode = recipe.mode || "classic";
@@ -1082,7 +1142,7 @@ function updateCurrentRecipeActions(calc) {
   const saveTitle = disabled
     ? "Nejdřív oprav recept, ať neukládáš kombuchový průšvih."
     : (calc.starterSeverity === "STOP" ? "Ukládáš rizikový recept. Ber ho jako poznámku, ne jako návod." : "");
-  [els.saveRecipeBtn].forEach(btn => {
+  [els.saveRecipeBtn, els.startBatchBtn].forEach(btn => {
     if (!btn) return;
     btn.disabled = disabled;
     btn.classList.toggle("disabled", disabled);
@@ -1137,6 +1197,7 @@ function renderSavedRecipes() {
         <button class="recipe-action copy-share" type="button">Kopírovat</button>
         <button class="recipe-action edit-title" type="button">Změnit název</button>
         <button class="recipe-action load-to-calc" type="button">Nahrát do kalkulačky</button>
+        <button class="recipe-action start-batch" type="button">Základit várku</button>
         <button class="recipe-action toggle-note" type="button">${recipe.userNote ? "Poznámka ✓" : "Přidat poznámku"}</button>
         <button class="recipe-action danger delete-recipe" type="button">Smazat</button>
       </div>
@@ -1615,12 +1676,639 @@ function bindEvents() {
     if (inp.classList.contains("tea-ratio")) result = Math.round(result);
     if (result !== num) inp.value = result;
   }, true);
+  bindBatchEvents();
+}
+
+// ═══ MOJE VÁRKY ═══
+
+const checkResultInfo = {
+  still_sweet:       { label: "Pořád sladké",   css: "tag-sweet" },
+  slightly_sour:     { label: "Jemně nakyslé",  css: "tag-slightly-sour" },
+  balanced:          { label: "Akorát",          css: "tag-balanced" },
+  sharp:             { label: "Má říz",          css: "tag-sharp" },
+  too_sour:          { label: "Moc kyselé",      css: "tag-too-sour" },
+  suspicious:        { label: "Podezřelé",       css: "tag-suspicious" },
+  no_bubbles:        { label: "Bez bublinek",    css: "tag-no-bubbles" },
+  light_bubbles:     { label: "Lehce perlí",     css: "tag-light-bubbles" },
+  good_bubbles:      { label: "Akorát perlí",    css: "tag-good-bubbles" },
+  too_much_pressure: { label: "Moc natlakované", css: "tag-pressure" },
+  fridge:            { label: "Lednice",          css: "tag-fridge" },
+  custom:            { label: "Vlastní",          css: "tag-custom" }
+};
+
+const checkTypeInfo = {
+  taste:          "Ochutnávka",
+  visual_check:   "Vizuální kontrola",
+  pressure_check: "Kontrola tlaku",
+  bottle_f1:      "Stočení F1",
+  move_to_f2:     "Přesun do F2",
+  move_to_fridge: "Přesun do lednice",
+  finish_batch:   "Ukončení várky",
+  custom:         "Vlastní"
+};
+
+const f1ResultKeys = ["still_sweet", "slightly_sour", "balanced", "sharp", "too_sour", "suspicious"];
+const f2ResultKeys = ["no_bubbles", "light_bubbles", "good_bubbles", "too_much_pressure", "fridge", "suspicious"];
+
+const finalResultLabels = {
+  success:         "Povedla se",
+  too_sweet:       "Moc sladká",
+  too_sour:        "Moc kyselá",
+  used_as_starter: "Použito jako startér",
+  failed:          "Nepovedla se / vyhozeno"
+};
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+function nowTimeHHMM() {
+  const d = new Date();
+  return d.toTimeString().slice(0, 5);
+}
+function formatBatchDate(iso) {
+  if (!iso) return "–";
+  return new Date(iso).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
+}
+function formatBatchDateShort(iso) {
+  if (!iso) return "–";
+  return new Date(iso).toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric" });
+}
+function formatBatchTime(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
+}
+function getBatchDay(batch) {
+  return Math.max(1, Math.floor((Date.now() - new Date(batch.fermentationStartedAt).getTime()) / 86400000) + 1);
+}
+function hasDueReminder(batch) {
+  const now = Date.now();
+  return batch.reminders.some(r => r.status === "pending" && new Date(r.remindAt).getTime() <= now);
+}
+function getDueCount() {
+  return batches.filter(b => !b.finished && hasDueReminder(b)).length;
+}
+function getBatchStatus(batch) {
+  if (batch.finished) return "finished";
+  if (hasDueReminder(batch)) return "needs_tasting";
+  return "active";
+}
+function getBatchStatusLabel(status) {
+  return { active: "Běží", needs_tasting: "Dnes ochutnat", finished: "Hotovo" }[status] || "Běží";
+}
+function findBatch(id) { return batches.find(b => b.id === id); }
+
+function loadBatches() {
+  try { return JSON.parse(localStorage.getItem(BATCHES_KEY) || "[]"); } catch { return []; }
+}
+function persistBatches() {
+  localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
+}
+
+function checkTagHtml(result) {
+  const info = checkResultInfo[result];
+  if (!info) return "";
+  return `<span class="check-tag ${info.css}">${escapeHtml(info.label)}</span>`;
+}
+
+function getFilterCounts() {
+  return {
+    active: batches.filter(b => !b.finished).length,
+    due:    batches.filter(b => !b.finished && hasDueReminder(b)).length,
+    f1:     batches.filter(b => !b.finished && b.type === "F1").length,
+    f2:     batches.filter(b => !b.finished && b.type === "F2").length,
+    done:   batches.filter(b => b.finished).length
+  };
+}
+
+function filterBatches() {
+  let result = [...batches];
+  if (batchFilter === "active") result = result.filter(b => !b.finished);
+  else if (batchFilter === "due")  result = result.filter(b => !b.finished && hasDueReminder(b));
+  else if (batchFilter === "f1")   result = result.filter(b => !b.finished && b.type === "F1");
+  else if (batchFilter === "f2")   result = result.filter(b => !b.finished && b.type === "F2");
+  else if (batchFilter === "done") result = result.filter(b => b.finished);
+  if (batchSearch.trim()) {
+    const q = batchSearch.trim().toLowerCase();
+    result = result.filter(b => b.batchName.toLowerCase().includes(q));
+  }
+  return result.sort((a, b) => new Date(b.fermentationStartedAt) - new Date(a.fermentationStartedAt));
+}
+
+function recipeSnapshotSummary(snap) {
+  if (!snap) return "";
+  const parts = [];
+  if (snap.workingVolumeL) parts.push(roundLiters(snap.workingVolumeL));
+  if (snap.teas && snap.teas.length) {
+    const teaLabel = snap.teas.map(t => (teaTypes[t.type]?.label || t.type) + " čaj").join(", ");
+    parts.push(teaLabel);
+  }
+  if (snap.starterMl) parts.push(roundMl(snap.starterMl) + " startéru");
+  return parts.join(" · ");
+}
+
+function updateVarkyBadge() {
+  if (!els.navVarkyBadge) return;
+  const due = getDueCount();
+  els.navVarkyBadge.textContent = due || "";
+  els.navVarkyBadge.hidden = due === 0;
+}
+
+function checkReminders() {
+  if (!els.reminderBanner) return;
+  updateVarkyBadge();
+  const due = getDueCount();
+  if (due === 0) { els.reminderBanner.hidden = true; return; }
+  els.reminderBannerText.textContent = due === 1 ? "Dnes máš ochutnat 1 várku." : `Máš ${due} připomínky k várkám.`;
+  els.reminderBanner.hidden = false;
+}
+
+function renderFilterPills() {
+  if (!els.varkyFilterPills) return;
+  const counts = getFilterCounts();
+  const pills = [
+    { id: "active", label: "Aktivní",       count: counts.active },
+    { id: "due",    label: "Dnes k řešení", count: counts.due },
+    { id: "f1",     label: "F1",            count: counts.f1 },
+    { id: "f2",     label: "F2",            count: counts.f2 },
+    { id: "done",   label: "Hotové",        count: counts.done }
+  ];
+  els.varkyFilterPills.innerHTML = pills.map(p => `
+    <button class="varky-pill${batchFilter === p.id ? " active" : ""}" type="button" data-filter="${p.id}">
+      ${escapeHtml(p.label)}<span class="pill-count">${p.count}</span>
+    </button>`).join("");
+}
+
+function renderBatchCard(batch) {
+  const status = getBatchStatus(batch);
+  const day = getBatchDay(batch);
+  const lastCheck = batch.checks.length ? batch.checks[batch.checks.length - 1] : null;
+  const nextReminder = batch.reminders.find(r => r.status === "pending");
+  const summary = recipeSnapshotSummary(batch.recipeSnapshot);
+  return `
+    <article class="batch-card batch-status-${status}" data-batch-id="${batch.id}">
+      <div class="batch-card-top">
+        <div class="batch-card-title-row">
+          <h3 class="batch-card-name" data-batch-title>${escapeHtml(batch.batchName)}</h3>
+          <button class="batch-edit-name" type="button" title="Změnit název">✏️</button>
+        </div>
+        <div class="batch-card-badges">
+          <span class="batch-type-badge badge-${batch.type.toLowerCase()}">${batch.type}</span>
+          <span class="batch-status-badge status-${status}">${getBatchStatusLabel(status)}</span>
+        </div>
+      </div>
+      <p class="batch-card-meta">${formatBatchDate(batch.fermentationStartedAt)} · ${day}. den</p>
+      ${summary ? `<p class="batch-card-recipe">${escapeHtml(summary)}</p>` : ""}
+      ${lastCheck ? `
+        <div class="batch-last-check">
+          <span class="batch-last-check-label">Poslední kontrola:</span>
+          ${checkTagHtml(lastCheck.result)}
+          ${lastCheck.note ? `<span class="batch-check-note">&ldquo;${escapeHtml(lastCheck.note)}&rdquo;</span>` : ""}
+        </div>` : ""}
+      <p class="batch-next-step${nextReminder ? "" : " no-reminder"}">
+        ${nextReminder ? `Další krok: ${escapeHtml(nextReminder.title)} – ${formatBatchDate(nextReminder.remindAt)}` : "Bez připomínky"}
+      </p>
+      <div class="batch-card-actions">
+        <button class="recipe-action primary batch-add-check" type="button">Zapsat kontrolu</button>
+        <button class="recipe-action batch-show-detail" type="button">Detail</button>
+      </div>
+    </article>`;
+}
+
+function renderBatchTableRow(batch) {
+  const status = getBatchStatus(batch);
+  const day = getBatchDay(batch);
+  const lastChecks = batch.checks.slice(-3).reverse();
+  const nextReminder = batch.reminders.find(r => r.status === "pending");
+  const summary = recipeSnapshotSummary(batch.recipeSnapshot);
+  return `
+    <tr class="batch-row batch-status-${status}" data-batch-id="${batch.id}">
+      <td class="batch-col-date">
+        <strong>${formatBatchDate(batch.fermentationStartedAt)}</strong><br>
+        <span class="batch-time">${formatBatchTime(batch.fermentationStartedAt)}</span><br>
+        <span class="batch-day-num">${day}. den</span>
+      </td>
+      <td class="batch-col-type">
+        <span class="batch-type-badge badge-${batch.type.toLowerCase()}">${batch.type}</span>
+      </td>
+      <td class="batch-col-name">
+        <div class="batch-name-row" data-batch-id="${batch.id}">
+          <span class="batch-name-text" data-batch-title>${escapeHtml(batch.batchName)}</span>
+          <button class="batch-edit-name" type="button" title="Změnit název">✏️</button>
+        </div>
+        ${summary ? `<span class="batch-recipe-summary">${escapeHtml(summary)}</span>` : ""}
+      </td>
+      <td class="batch-col-status">
+        <span class="batch-status-badge status-${status}">${getBatchStatusLabel(status)}</span>
+      </td>
+      <td class="batch-col-checks">
+        ${lastChecks.length
+          ? lastChecks.map(c => `<div class="batch-check-mini">${checkTagHtml(c.result)}<span class="batch-check-date">${formatBatchDateShort(c.checkedAt)}</span></div>`).join("")
+          : `<span class="batch-no-checks">Zatím žádné kontroly</span>`}
+        ${batch.checks.length > 3 ? `<button class="batch-more-checks" type="button" data-batch-id="${batch.id}">+${batch.checks.length - 3} další</button>` : ""}
+      </td>
+      <td class="batch-col-next">
+        ${nextReminder
+          ? `<span class="batch-next-text">${escapeHtml(nextReminder.title)}<br><small>${formatBatchDate(nextReminder.remindAt)}</small></span>`
+          : `<span class="batch-no-reminder">Bez připomínky</span>`}
+      </td>
+      <td class="batch-col-actions">
+        <button class="recipe-action primary batch-add-check" type="button">Zapsat kontrolu</button>
+        <button class="recipe-action batch-show-detail" type="button">Detail</button>
+      </td>
+    </tr>`;
+}
+
+function renderVarkyView() {
+  if (!els.varkyList) return;
+  renderFilterPills();
+  updateVarkyBadge();
+  const filtered = filterBatches();
+  if (!filtered.length) {
+    els.varkyList.innerHTML = `
+      <div class="saved-empty">
+        <strong>${batchFilter === "done" ? "Žádné hotové várky." : batchFilter === "due" ? "Žádné várky dnes k řešení." : "Žádné aktivní várky."}</strong>
+        <p>${batchFilter === "done" ? "Dokončené várky se tady ukážou." : "Základi první várku a začne to tu žít."}</p>
+      </div>`;
+    return;
+  }
+  const tableHtml = `
+    <div class="batch-table-wrap">
+      <table class="batch-table">
+        <thead><tr>
+          <th>Založeno</th><th>Typ</th><th>Název</th><th>Stav</th><th>Poslední kontroly</th><th>Další krok</th><th>Akce</th>
+        </tr></thead>
+        <tbody>${filtered.map(renderBatchTableRow).join("")}</tbody>
+      </table>
+    </div>`;
+  const cardsHtml = `<div class="batch-cards">${filtered.map(renderBatchCard).join("")}</div>`;
+  els.varkyList.innerHTML = tableHtml + cardsHtml;
+}
+
+function renderBatchDetail(batchId) {
+  const batch = findBatch(batchId);
+  if (!batch || !els.batchDetailBody) return;
+  currentBatchDetailId = batchId;
+  const status = getBatchStatus(batch);
+  const day = getBatchDay(batch);
+  const summary = recipeSnapshotSummary(batch.recipeSnapshot);
+  const activeReminders = batch.reminders.filter(r => r.status === "pending");
+  const allEntries = [
+    { time: batch.fermentationStartedAt, type: "start", note: batch.startNote },
+    ...batch.checks.map(c => ({ time: c.checkedAt, type: "check", check: c }))
+  ].sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  els.batchDetailBody.innerHTML = `
+    <div class="batch-detail-header-card" data-batch-id="${batch.id}">
+      <div class="batch-detail-title-row">
+        <div class="batch-detail-name-wrap">
+          <h2 class="batch-detail-name" data-batch-title>${escapeHtml(batch.batchName)}</h2>
+          <button class="batch-edit-name" type="button" title="Změnit název">✏️</button>
+        </div>
+        <div class="batch-detail-badges">
+          <span class="batch-type-badge badge-${batch.type.toLowerCase()}">${batch.type}</span>
+          <span class="batch-status-badge status-${status}">${getBatchStatusLabel(status)}</span>
+        </div>
+      </div>
+      <div class="batch-detail-meta-row">
+        <span>Začátek: <strong>${formatBatchDate(batch.fermentationStartedAt)} ${formatBatchTime(batch.fermentationStartedAt)}</strong></span>
+        <span>${day}. den fermentace</span>
+        ${summary ? `<span>${escapeHtml(summary)}</span>` : ""}
+      </div>
+      ${activeReminders.length ? `
+        <div class="batch-reminders">
+          <strong>Připomínky:</strong>
+          ${activeReminders.map(r => `<span class="batch-reminder-chip">${escapeHtml(r.title)} – ${formatBatchDate(r.remindAt)}</span>`).join("")}
+        </div>` : ""}
+    </div>
+    <div class="batch-detail-actions">
+      <button class="recipe-action primary batch-add-check" type="button" data-batch-id="${batch.id}">+ Zapsat kontrolu</button>
+      ${!batch.finished ? `<button class="recipe-action batch-finish" type="button" data-batch-id="${batch.id}">Ukončit várku</button>` : ""}
+      <button class="recipe-action danger batch-delete" type="button" data-batch-id="${batch.id}">Smazat</button>
+    </div>
+    ${batch.finished ? `
+      <div class="batch-finished-note">
+        <strong>Várka ukončena: ${escapeHtml(finalResultLabels[batch.finalResult] || "–")}</strong>
+        ${batch.finalNote ? `<p>${escapeHtml(batch.finalNote)}</p>` : ""}
+        <small>Ukončeno: ${formatBatchDate(batch.finishedAt)}</small>
+      </div>` : ""}
+    <h3 class="batch-timeline-heading">Průběh várky</h3>
+    <div class="batch-timeline">
+      ${allEntries.map(entry => {
+        if (entry.type === "start") return `
+          <div class="timeline-entry timeline-start">
+            <div class="timeline-dot dot-start"></div>
+            <div class="timeline-content">
+              <span class="timeline-date">${formatBatchDate(entry.time)} ${formatBatchTime(entry.time)}</span>
+              <strong>Várka základena</strong>
+              ${entry.note ? `<p class="timeline-note">${escapeHtml(entry.note)}</p>` : ""}
+            </div>
+          </div>`;
+        const c = entry.check;
+        return `
+          <div class="timeline-entry timeline-check">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <span class="timeline-date">${formatBatchDate(c.checkedAt)} ${formatBatchTime(c.checkedAt)}</span>
+              <strong>${escapeHtml(checkTypeInfo[c.checkType] || c.checkType)}</strong>
+              ${checkTagHtml(c.result)}
+              ${c.note ? `<p class="timeline-note">${escapeHtml(c.note)}</p>` : ""}
+            </div>
+          </div>`;
+      }).join("")}
+    </div>`;
+  switchView("batchDetail");
+}
+
+// ── New Batch Dialog ──
+
+function openNewBatchDialog(recipeSnapshot) {
+  newBatchType = "F1";
+  newBatchReminderDays = 3;
+  newBatchRecipeSnapshot = recipeSnapshot || null;
+  if (els.newBatchName) els.newBatchName.value = recipeSnapshot?.recipeName ? `Várka – ${recipeSnapshot.recipeName}` : "";
+  if (els.newBatchDate) els.newBatchDate.value = todayISO();
+  if (els.newBatchTime) els.newBatchTime.value = nowTimeHHMM();
+  if (els.newBatchNote) els.newBatchNote.value = "";
+  els.newBatchTypeSeg?.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.btype === "F1"));
+  els.newBatchReminderQuick?.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.rdays === "3"));
+  els.newBatchDialog?.showModal();
+  els.newBatchName?.focus();
+}
+
+function confirmNewBatch() {
+  const name = els.newBatchName?.value.trim() || "Moje várka";
+  const dateStr = els.newBatchDate?.value || todayISO();
+  const timeStr = els.newBatchTime?.value || "12:00";
+  const startedAt = new Date(`${dateStr}T${timeStr}:00`).toISOString();
+  const reminders = [];
+  if (newBatchReminderDays > 0) {
+    const remindAt = new Date(new Date(startedAt).getTime() + newBatchReminderDays * 86400000).toISOString();
+    reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt, status: "pending", note: null });
+  }
+  const batch = {
+    id: uid(), batchName: name, type: newBatchType,
+    fermentationStartedAt: startedAt, createdAt: new Date().toISOString(),
+    finished: false, finishedAt: null, finalResult: null, finalNote: null,
+    startNote: els.newBatchNote?.value.trim() || null,
+    recipeSnapshot: newBatchRecipeSnapshot || null,
+    checks: [], reminders
+  };
+  batches.unshift(batch);
+  persistBatches();
+  els.newBatchDialog?.close();
+  renderVarkyView();
+  checkReminders();
+  switchView("varky");
+  showActionFeedback("Várku máš základenu. Teď už ji jen nenech zapomenutou v koutě.");
+}
+
+// ── New Check Dialog ──
+
+function openNewCheckDialog(batchId) {
+  const batch = findBatch(batchId);
+  if (!batch) return;
+  pendingCheckBatchId = batchId;
+  newCheckType = "taste";
+  newCheckResult = null;
+  newCheckReminderDays = 0;
+  if (els.newCheckDate) els.newCheckDate.value = todayISO();
+  if (els.newCheckTime) els.newCheckTime.value = nowTimeHHMM();
+  if (els.newCheckNote) els.newCheckNote.value = "";
+  renderCheckTypeChips(batch.type);
+  renderCheckResultChips(batch.type);
+  els.checkReminderQuick?.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.rdays === "0"));
+  els.newCheckDialog?.showModal();
+}
+
+function renderCheckTypeChips(batchType) {
+  if (!els.checkTypeChips) return;
+  els.checkTypeChips.innerHTML = Object.entries(checkTypeInfo).map(([id, label]) =>
+    `<button class="check-chip${newCheckType === id ? " active" : ""}" type="button" data-ctype="${id}">${escapeHtml(label)}</button>`
+  ).join("");
+}
+
+function renderCheckResultChips(batchType) {
+  if (!els.checkResultChips) return;
+  const keys = batchType === "F2" ? f2ResultKeys : f1ResultKeys;
+  els.checkResultChips.innerHTML = keys.map(k => {
+    const info = checkResultInfo[k];
+    return `<button class="check-chip result-chip${newCheckResult === k ? " active" : ""} ${info.css}" type="button" data-cresult="${k}">${escapeHtml(info.label)}</button>`;
+  }).join("");
+}
+
+function confirmNewCheck() {
+  if (!pendingCheckBatchId) return;
+  const batch = findBatch(pendingCheckBatchId);
+  if (!batch) return;
+  const dateStr = els.newCheckDate?.value || todayISO();
+  const timeStr = els.newCheckTime?.value || "12:00";
+  const check = {
+    id: uid(), checkedAt: new Date(`${dateStr}T${timeStr}:00`).toISOString(),
+    checkType: newCheckType, result: newCheckResult || "custom",
+    note: els.newCheckNote?.value.trim() || null
+  };
+  batch.checks.push(check);
+  if (newCheckReminderDays > 0) {
+    const remindAt = new Date(new Date(check.checkedAt).getTime() + newCheckReminderDays * 86400000).toISOString();
+    batch.reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt, status: "pending", note: null });
+  }
+  persistBatches();
+  els.newCheckDialog?.close();
+  if (currentBatchDetailId === pendingCheckBatchId) renderBatchDetail(pendingCheckBatchId);
+  else renderVarkyView();
+  checkReminders();
+  pendingCheckBatchId = null;
+  showActionFeedback("Kontrolu máš zapsanou.");
+}
+
+// ── Finish Batch ──
+
+function openFinishBatchDialog(batchId) {
+  pendingFinishBatchId = batchId;
+  els.finishResultGroup?.querySelectorAll("input[type=radio]").forEach(r => r.checked = false);
+  if (els.finishBatchNote) els.finishBatchNote.value = "";
+  els.finishBatchDialog?.showModal();
+}
+
+function confirmFinishBatch() {
+  const batch = findBatch(pendingFinishBatchId);
+  if (!batch) return;
+  const resultInput = els.finishResultGroup?.querySelector("input[name='finishResult']:checked");
+  batch.finished = true;
+  batch.finishedAt = new Date().toISOString();
+  batch.finalResult = resultInput?.value || "success";
+  batch.finalNote = els.finishBatchNote?.value.trim() || null;
+  batch.reminders.forEach(r => { if (r.status === "pending") r.status = "done"; });
+  persistBatches();
+  els.finishBatchDialog?.close();
+  renderBatchDetail(pendingFinishBatchId);
+  renderVarkyView();
+  checkReminders();
+  pendingFinishBatchId = null;
+  showActionFeedback("Várka ukončená. Zkušenost zůstává.");
+}
+
+// ── Delete Batch ──
+
+function openDeleteBatchDialog(batchId) {
+  pendingDeleteBatchId = batchId;
+  els.deleteBatchDialog?.showModal();
+}
+
+function confirmDeleteBatch() {
+  batches = batches.filter(b => b.id !== pendingDeleteBatchId);
+  persistBatches();
+  els.deleteBatchDialog?.close();
+  pendingDeleteBatchId = null;
+  currentBatchDetailId = null;
+  renderVarkyView();
+  checkReminders();
+  switchView("varky");
+  showActionFeedback("Várka smazaná.");
+}
+
+// ── Inline batch name edit ──
+
+function startBatchNameEdit(container, batchId) {
+  const batch = findBatch(batchId);
+  if (!batch) return;
+  const titleEl = container.querySelector("[data-batch-title]");
+  if (!titleEl || titleEl.tagName === "INPUT") return;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "title-edit-input";
+  input.value = batch.batchName;
+  titleEl.replaceWith(input);
+  input.focus();
+  input.select();
+  function commit() {
+    const val = input.value.trim() || batch.batchName;
+    batch.batchName = val;
+    persistBatches();
+    const newEl = document.createElement(titleEl.tagName.toLowerCase());
+    newEl.className = titleEl.className;
+    newEl.setAttribute("data-batch-title", "");
+    newEl.textContent = val;
+    input.replaceWith(newEl);
+    if (currentBatchDetailId === batchId) renderBatchDetail(batchId);
+    else renderVarkyView();
+    showActionFeedback("Název uložený.");
+  }
+  input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") commit(); });
+  input.addEventListener("blur", () => window.setTimeout(commit, 100));
+}
+
+// ── Bind batch events ──
+
+function bindBatchEvents() {
+  els.navVarky?.addEventListener("click", e => { e.preventDefault(); renderVarkyView(); switchView("varky"); });
+  els.newBatchBtn?.addEventListener("click", () => openNewBatchDialog(null));
+  els.startBatchBtn?.addEventListener("click", () => {
+    const snap = currentSnapshotForSharing();
+    openNewBatchDialog(snap);
+  });
+  els.closeNewBatchBtn?.addEventListener("click", () => els.newBatchDialog?.close());
+  els.cancelNewBatchBtn?.addEventListener("click", () => els.newBatchDialog?.close());
+  els.confirmNewBatchBtn?.addEventListener("click", confirmNewBatch);
+  els.newBatchTypeSeg?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-btype]");
+    if (!btn) return;
+    newBatchType = btn.dataset.btype;
+    els.newBatchTypeSeg.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+  });
+  els.newBatchReminderQuick?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-rdays]");
+    if (!btn) return;
+    newBatchReminderDays = Number(btn.dataset.rdays);
+    els.newBatchReminderQuick.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+  });
+  els.closeNewCheckBtn?.addEventListener("click", () => els.newCheckDialog?.close());
+  els.cancelNewCheckBtn?.addEventListener("click", () => els.newCheckDialog?.close());
+  els.confirmNewCheckBtn?.addEventListener("click", confirmNewCheck);
+  els.checkTypeChips?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-ctype]");
+    if (!btn) return;
+    newCheckType = btn.dataset.ctype;
+    const batch = findBatch(pendingCheckBatchId);
+    els.checkTypeChips.querySelectorAll(".check-chip").forEach(b => b.classList.toggle("active", b === btn));
+    if (batch) renderCheckResultChips(batch.type);
+  });
+  els.checkResultChips?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-cresult]");
+    if (!btn) return;
+    newCheckResult = btn.dataset.cresult;
+    els.checkResultChips.querySelectorAll(".result-chip").forEach(b => b.classList.toggle("active", b === btn));
+  });
+  els.checkReminderQuick?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-rdays]");
+    if (!btn) return;
+    newCheckReminderDays = Number(btn.dataset.rdays);
+    els.checkReminderQuick.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+  });
+  els.closeFinishBatchBtn?.addEventListener("click", () => els.finishBatchDialog?.close());
+  els.cancelFinishBatchBtn?.addEventListener("click", () => els.finishBatchDialog?.close());
+  els.confirmFinishBatchBtn?.addEventListener("click", confirmFinishBatch);
+  els.cancelDeleteBatchBtn?.addEventListener("click", () => { pendingDeleteBatchId = null; els.deleteBatchDialog?.close(); });
+  els.confirmDeleteBatchBtn?.addEventListener("click", confirmDeleteBatch);
+  els.reminderGoToVarkyBtn?.addEventListener("click", () => { batchFilter = "due"; renderVarkyView(); switchView("varky"); });
+  els.reminderDismissBtn?.addEventListener("click", () => { els.reminderBanner.hidden = true; });
+  els.batchDetailBackBtn?.addEventListener("click", () => { currentBatchDetailId = null; renderVarkyView(); switchView("varky"); });
+  els.varkyFilterPills?.addEventListener("click", e => {
+    const btn = e.target.closest("[data-filter]");
+    if (!btn) return;
+    batchFilter = btn.dataset.filter;
+    renderVarkyView();
+  });
+  els.varkySearch?.addEventListener("input", () => { batchSearch = els.varkySearch.value; renderVarkyView(); });
+  // Delegated clicks for dynamically-rendered batch elements
+  document.addEventListener("click", e => {
+    if (e.target.closest(".batch-add-check")) {
+      const row = e.target.closest("[data-batch-id]");
+      if (row?.dataset.batchId) openNewCheckDialog(row.dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".batch-show-detail")) {
+      const row = e.target.closest("[data-batch-id]");
+      if (row?.dataset.batchId) renderBatchDetail(row.dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".batch-more-checks")) {
+      const btn = e.target.closest(".batch-more-checks");
+      if (btn.dataset.batchId) renderBatchDetail(btn.dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".batch-finish")) {
+      openFinishBatchDialog(e.target.closest(".batch-finish").dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".batch-delete")) {
+      openDeleteBatchDialog(e.target.closest(".batch-delete").dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".batch-edit-name")) {
+      const container = e.target.closest("[data-batch-id]");
+      if (container?.dataset.batchId) startBatchNameEdit(container, container.dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".start-batch")) {
+      const card = e.target.closest(".saved-recipe-card");
+      const recipe = findRecipe(card?.dataset.recipeId);
+      if (recipe) openNewBatchDialog(recipe);
+      return;
+    }
+  });
 }
 
 renderChoices();
 bindEvents();
 render();
 renderSavedRecipes();
+batches = loadBatches();
+renderVarkyView();
+checkReminders();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
