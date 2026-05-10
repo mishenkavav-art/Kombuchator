@@ -211,7 +211,16 @@ const els = {
   confirmFinishBatchBtn:document.querySelector("#confirmFinishBatchBtn"),
   deleteBatchDialog:    document.querySelector("#deleteBatchDialog"),
   cancelDeleteBatchBtn: document.querySelector("#cancelDeleteBatchBtn"),
-  confirmDeleteBatchBtn:document.querySelector("#confirmDeleteBatchBtn")
+  confirmDeleteBatchBtn:document.querySelector("#confirmDeleteBatchBtn"),
+  // Sync
+  syncBtn:          document.querySelector("#syncBtn"),
+  syncDialog:       document.querySelector("#syncDialog"),
+  closeSyncBtn:     document.querySelector("#closeSyncBtn"),
+  exportDataBtn:    document.querySelector("#exportDataBtn"),
+  importDataBtn:    document.querySelector("#importDataBtn"),
+  importDataInput:  document.querySelector("#importDataInput"),
+  exportFeedback:   document.querySelector("#exportFeedback"),
+  importFeedback:   document.querySelector("#importFeedback")
 };
 
 // ═══ UTILS ═══
@@ -309,6 +318,7 @@ function loadSavedRecipes() {
 }
 function persistSavedRecipes() {
   localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(savedRecipes));
+  broadcastSync("recipes-updated");
 }
 function showActionFeedback(text) {
   if (!els.currentActionFeedback) return;
@@ -1677,6 +1687,82 @@ function bindEvents() {
     if (result !== num) inp.value = result;
   }, true);
   bindBatchEvents();
+  bindSyncEvents();
+}
+
+// ═══ SYNC ═══
+
+let syncChannel = null;
+try {
+  syncChannel = new BroadcastChannel("kombuchator-sync");
+  syncChannel.onmessage = e => {
+    if (e.data === "batches-updated") {
+      batches = loadBatches();
+      renderVarkyView();
+      checkReminders();
+    } else if (e.data === "recipes-updated") {
+      savedRecipes = loadSavedRecipes();
+      renderSavedRecipes();
+    }
+  };
+} catch (err) { /* BroadcastChannel not supported */ }
+
+function broadcastSync(type) {
+  try { syncChannel?.postMessage(type); } catch (err) { /* ignore */ }
+}
+
+function exportAllData() {
+  const payload = JSON.stringify({ v: 1, recipes: savedRecipes, batches });
+  return btoa(unescape(encodeURIComponent(payload)));
+}
+
+function importAllData(encoded) {
+  const json = decodeURIComponent(escape(atob(encoded.trim())));
+  const data = JSON.parse(json);
+  if (typeof data !== "object" || !data.v) throw new Error("Neplatný formát zálohy.");
+  if (Array.isArray(data.recipes)) {
+    savedRecipes = data.recipes;
+    localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(savedRecipes));
+    renderSavedRecipes();
+  }
+  if (Array.isArray(data.batches)) {
+    batches = data.batches;
+    localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
+    renderVarkyView();
+    checkReminders();
+  }
+}
+
+function bindSyncEvents() {
+  els.syncBtn?.addEventListener("click", () => {
+    if (els.importDataInput) els.importDataInput.value = "";
+    if (els.exportFeedback) els.exportFeedback.textContent = "";
+    if (els.importFeedback) els.importFeedback.textContent = "";
+    els.syncDialog?.showModal();
+  });
+  els.closeSyncBtn?.addEventListener("click", () => els.syncDialog?.close());
+  els.exportDataBtn?.addEventListener("click", () => {
+    const code = exportAllData();
+    navigator.clipboard.writeText(code).then(() => {
+      if (els.exportFeedback) els.exportFeedback.textContent = "Záloha zkopírována do schránky.";
+    }).catch(() => {
+      if (els.exportFeedback) els.exportFeedback.textContent = "Nepodařilo se zkopírovat – zkopíruj ručně:";
+      // show in textarea as fallback
+      if (els.importDataInput) els.importDataInput.value = code;
+    });
+  });
+  els.importDataBtn?.addEventListener("click", () => {
+    const raw = els.importDataInput?.value.trim();
+    if (!raw) { if (els.importFeedback) els.importFeedback.textContent = "Vlož zálohu do pole."; return; }
+    try {
+      importAllData(raw);
+      if (els.importFeedback) els.importFeedback.textContent = "Data obnovena.";
+      els.syncDialog?.close();
+      showActionFeedback("Data obnovena ze zálohy.");
+    } catch (err) {
+      if (els.importFeedback) els.importFeedback.textContent = "Záloha se nepodařila načíst. Zkontroluj, že jsi vložil/a správný kód.";
+    }
+  });
 }
 
 // ═══ MOJE VÁRKY ═══
@@ -1765,6 +1851,7 @@ function loadBatches() {
 }
 function persistBatches() {
   localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
+  broadcastSync("batches-updated");
 }
 
 function checkTagHtml(result) {
@@ -1930,7 +2017,7 @@ function renderVarkyView() {
     els.varkyList.innerHTML = `
       <div class="saved-empty">
         <strong>${batchFilter === "done" ? "Žádné hotové várky." : batchFilter === "due" ? "Žádné várky dnes k řešení." : "Žádné aktivní várky."}</strong>
-        <p>${batchFilter === "done" ? "Dokončené várky se tady ukážou." : "Základi první várku a začne to tu žít."}</p>
+        <p>${batchFilter === "done" ? "Dokončené várky se tady ukážou." : "Založ první várku a začne to tu žít."}</p>
       </div>`;
     return;
   }
