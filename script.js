@@ -1924,23 +1924,28 @@ function checkHasResult(check, resultKey) {
   return check.result === resultKey;
 }
 
+function hasAnyPendingReminder(batch) {
+  return batch.reminders.some(r => r.status === "pending");
+}
 function getFilterCounts() {
   return {
-    active: batches.filter(b => !b.finished).length,
-    due:    batches.filter(b => !b.finished && hasDueReminder(b)).length,
-    f1:     batches.filter(b => !b.finished && b.type === "F1").length,
-    f2:     batches.filter(b => !b.finished && b.type === "F2").length,
-    done:   batches.filter(b => b.finished).length
+    active:   batches.filter(b => !b.finished).length,
+    due:      batches.filter(b => !b.finished && hasDueReminder(b)).length,
+    planned:  batches.filter(b => !b.finished && hasAnyPendingReminder(b)).length,
+    f1:       batches.filter(b => !b.finished && b.type === "F1").length,
+    f2:       batches.filter(b => !b.finished && b.type === "F2").length,
+    done:     batches.filter(b => b.finished).length
   };
 }
 
 function filterBatches() {
   let result = [...batches];
-  if (batchFilter === "active") result = result.filter(b => !b.finished);
-  else if (batchFilter === "due")  result = result.filter(b => !b.finished && hasDueReminder(b));
-  else if (batchFilter === "f1")   result = result.filter(b => !b.finished && b.type === "F1");
-  else if (batchFilter === "f2")   result = result.filter(b => !b.finished && b.type === "F2");
-  else if (batchFilter === "done") result = result.filter(b => b.finished);
+  if (batchFilter === "active")   result = result.filter(b => !b.finished);
+  else if (batchFilter === "due")     result = result.filter(b => !b.finished && hasDueReminder(b));
+  else if (batchFilter === "planned") result = result.filter(b => !b.finished && hasAnyPendingReminder(b));
+  else if (batchFilter === "f1")      result = result.filter(b => !b.finished && b.type === "F1");
+  else if (batchFilter === "f2")      result = result.filter(b => !b.finished && b.type === "F2");
+  else if (batchFilter === "done")    result = result.filter(b => b.finished);
   if (batchSearch.trim()) {
     const q = batchSearch.trim().toLowerCase();
     result = result.filter(b => b.batchName.toLowerCase().includes(q));
@@ -2028,11 +2033,12 @@ function renderFilterPills() {
   if (!els.varkyFilterPills) return;
   const counts = getFilterCounts();
   const pills = [
-    { id: "active", label: "Aktivní",       count: counts.active },
-    { id: "due",    label: "Dnes k řešení", count: counts.due },
-    { id: "f1",     label: "F1",            count: counts.f1 },
-    { id: "f2",     label: "F2",            count: counts.f2 },
-    { id: "done",   label: "Ukončené",      count: counts.done }
+    { id: "active",   label: "Aktivní",        count: counts.active },
+    { id: "due",      label: "Dnes k řešení",  count: counts.due },
+    { id: "planned",  label: "Naplánované",    count: counts.planned },
+    { id: "f1",       label: "F1",             count: counts.f1 },
+    { id: "f2",       label: "F2",             count: counts.f2 },
+    { id: "done",     label: "Ukončené",       count: counts.done }
   ];
   els.varkyFilterPills.innerHTML = pills.map(p => `
     <button class="varky-pill${batchFilter === p.id ? " active" : ""}" type="button" data-filter="${p.id}">
@@ -2082,7 +2088,7 @@ function renderBatchTableRow(batch) {
   const day = getBatchDay(batch);
   const lastChecks = batch.checks.slice(-3).reverse();
   const lastCheck = batch.checks.length ? batch.checks[batch.checks.length - 1] : null;
-  const nextReminder = batch.reminders.find(r => r.status === "pending");
+  const pendingReminders = batch.reminders.filter(r => r.status === "pending");
   const summary = recipeSnapshotSummary(batch.recipeSnapshot);
   const stavTags = lastCheck ? checkActionTags(lastCheck) : "";
   return `
@@ -2122,13 +2128,21 @@ function renderBatchTableRow(batch) {
         ${stavTags ? `<div class="batch-check-tags">${stavTags}</div>` : `<span class="batch-no-reminder">—</span>`}
       </td>
       <td class="batch-col-next">
-        ${nextReminder
-          ? `<span class="batch-next-text">${escapeHtml(nextReminder.title)}<br><small>${formatBatchDate(nextReminder.remindAt)}</small></span>`
+        ${pendingReminders.length
+          ? pendingReminders.map(r => `
+              <div class="batch-next-row">
+                <span class="batch-next-text">${escapeHtml(r.title)}<br><small>${formatBatchDate(r.remindAt)} ${formatBatchTime(r.remindAt)}</small></span>
+                <div class="batch-next-btns">
+                  <button class="batch-rem-edit-btn" type="button" data-rem-id="${r.id}" data-batch-id="${batch.id}" title="Upravit">✏</button>
+                  <button class="batch-rem-cancel-btn" type="button" data-rem-id="${r.id}" data-batch-id="${batch.id}" title="Zrušit připomínku">×</button>
+                </div>
+              </div>`).join("")
           : `<span class="batch-no-reminder">Bez připomínky</span>`}
       </td>
       <td class="batch-col-actions">
-        <button class="recipe-action primary batch-add-check" type="button">Kontrola várky</button>
+        ${!batch.finished ? `<button class="recipe-action primary batch-add-check" type="button">Kontrola várky</button>` : ""}
         ${!batch.finished ? `<button class="recipe-action danger batch-finish" type="button" data-batch-id="${batch.id}">Ukončení várky</button>` : ""}
+        ${batch.finished ? `<button class="recipe-action danger batch-delete" type="button" data-batch-id="${batch.id}">Smazat</button>` : ""}
         <button class="recipe-action batch-show-detail" type="button">Detail</button>
       </td>
     </tr>`;
@@ -2142,8 +2156,8 @@ function renderVarkyView() {
   if (!filtered.length) {
     els.varkyList.innerHTML = `
       <div class="saved-empty">
-        <strong>${batchFilter === "done" ? "Žádné ukončené várky." : batchFilter === "due" ? "Žádné várky dnes k řešení." : "Zatím tu žádná várka nebublá."}</strong>
-        <p>${batchFilter === "done" ? "Ukončené várky se tady ukážou." : "Založ první z kalkulačky nebo ručně."}</p>
+        <strong>${batchFilter === "done" ? "Žádné ukončené várky." : batchFilter === "due" ? "Žádné várky dnes k řešení." : batchFilter === "planned" ? "Žádné naplánované připomínky." : "Zatím tu žádná várka nebublá."}</strong>
+        <p>${batchFilter === "done" ? "Ukončené várky se tady ukážou." : batchFilter === "planned" ? "Připomínky nastavíš při zakládání várky nebo ze záznamu kontroly." : "Založ první z kalkulačky nebo ručně."}</p>
         ${batchFilter === "active" ? `<button class="recipe-action primary batch-empty-add" type="button" style="margin-top:12px">+ Přidat várku</button>` : ""}
       </div>`;
     return;
@@ -2977,6 +2991,22 @@ function bindBatchEvents() {
     }
     if (e.target.closest(".batch-delete")) {
       openDeleteBatchDialog(e.target.closest(".batch-delete").dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".batch-rem-edit-btn")) {
+      const btn = e.target.closest(".batch-rem-edit-btn");
+      openEditReminderDialog(btn.dataset.batchId, btn.dataset.remId);
+      return;
+    }
+    if (e.target.closest(".batch-rem-cancel-btn")) {
+      const btn = e.target.closest(".batch-rem-cancel-btn");
+      const batch = findBatch(btn.dataset.batchId);
+      if (batch) {
+        batch.reminders = batch.reminders.filter(r => r.id !== btn.dataset.remId);
+        persistBatches();
+        renderVarkyView();
+        showActionFeedback("Připomínka zrušena.");
+      }
       return;
     }
     if (e.target.closest(".batch-edit-name")) {

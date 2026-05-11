@@ -3304,8 +3304,24 @@ button {
   text-decoration: underline;
 }
 
-.batch-next-text { font-size: 13px; }
+.batch-next-row { display: flex; align-items: flex-start; gap: 4px; margin-bottom: 4px; }
+.batch-next-row:last-child { margin-bottom: 0; }
+.batch-next-text { font-size: 13px; flex: 1; }
 .batch-next-text small { color: var(--ink-muted); font-size: 11px; }
+.batch-next-btns { display: flex; gap: 2px; flex-shrink: 0; }
+.batch-rem-edit-btn,
+.batch-rem-cancel-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 5px;
+  font-size: 13px;
+  color: var(--ink-muted);
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.batch-rem-edit-btn:hover { color: var(--forest-green); background: var(--soft-green-bg); }
+.batch-rem-cancel-btn:hover { color: var(--red); background: #fef2f2; }
 
 .batch-col-recipe {
   max-width: 200px;
