@@ -21,11 +21,45 @@ const types = {
 };
 
 // ── Sync store ──
-let syncStore = { batches: [], recipes: [] };
-try { syncStore = JSON.parse(fs.readFileSync(SYNC_FILE, "utf8")); } catch {}
+let syncStore = { batches: [], recipes: [], deletedBatchIds: [], deletedRecipeIds: [] };
+try { syncStore = { ...syncStore, ...JSON.parse(fs.readFileSync(SYNC_FILE, "utf8")) }; } catch {}
 
 function saveSyncFile() {
   try { fs.writeFileSync(SYNC_FILE, JSON.stringify(syncStore)); } catch {}
+}
+
+// Server-side merge: unions tombstones and items so concurrent POSTs never lose data
+function mergeIncoming(existing, incoming) {
+  const deadBatches  = new Set([...(existing.deletedBatchIds  || []), ...(incoming.deletedBatchIds  || [])]);
+  const deadRecipes  = new Set([...(existing.deletedRecipeIds || []), ...(incoming.deletedRecipeIds || [])]);
+
+  const batchMap = new Map();
+  [...(existing.batches || []), ...(incoming.batches || [])].forEach(b => {
+    if (deadBatches.has(b.id)) return;
+    const curr = batchMap.get(b.id);
+    if (!curr) { batchMap.set(b.id, b); return; }
+    const checkMap = new Map([...(curr.checks || []), ...(b.checks || [])].map(c => [c.id, c]));
+    const remMap   = new Map([...(curr.reminders || []), ...(b.reminders || [])].map(r => [r.id, r]));
+    const base = (b.checks?.length ?? 0) >= (curr.checks?.length ?? 0) ? b : curr;
+    batchMap.set(b.id, {
+      ...base,
+      checks:    [...checkMap.values()].sort((a, c) => new Date(a.checkedAt) - new Date(c.checkedAt)),
+      reminders: [...remMap.values()]
+    });
+  });
+
+  const recipeMap = new Map();
+  [...(existing.recipes || []), ...(incoming.recipes || [])].forEach(r => {
+    if (!deadRecipes.has(r.id)) recipeMap.set(r.id, r);
+  });
+
+  return {
+    batches:          [...batchMap.values()],
+    recipes:          [...recipeMap.values()],
+    deletedBatchIds:  [...deadBatches],
+    deletedRecipeIds: [...deadRecipes],
+    savedAt:          new Date().toISOString()
+  };
 }
 
 function parseJsonBody(req) {
@@ -71,13 +105,9 @@ http.createServer(async (req, res) => {
     if (req.method === "POST") {
       try {
         const data = await parseJsonBody(req);
-        syncStore = {
-          batches:  Array.isArray(data.batches)  ? data.batches  : [],
-          recipes:  Array.isArray(data.recipes)   ? data.recipes  : [],
-          savedAt:  new Date().toISOString()
-        };
+        syncStore = mergeIncoming(syncStore, data);
         saveSyncFile();
-        send(res, 200, '{"ok":true}', "application/json; charset=utf-8");
+        send(res, 200, JSON.stringify(syncStore), "application/json; charset=utf-8");
       } catch {
         send(res, 400, "Bad Request");
       }

@@ -65,7 +65,9 @@ const f2Tags = {
 
 let teaIdCounter = 0;
 function createTeaId() { return `tea-${++teaIdCounter}`; }
-const SAVED_RECIPES_KEY = "kombuchator.savedRecipes.v1";
+const SAVED_RECIPES_KEY  = "kombuchator.savedRecipes.v1";
+const DELETED_BATCH_KEY  = "kombuchator.deletedBatchIds.v1";
+const DELETED_RECIPE_KEY = "kombuchator.deletedRecipeIds.v1";
 let savedRecipes = loadSavedRecipes();
 let pendingRecipeSnapshot = null;
 let pendingDeleteRecipeId = null;
@@ -91,6 +93,16 @@ let newCheckReminderDays = 0;
 let newBatchRecipeSnapshot = null;
 let pendingPickRecipeBatchId = null;
 let batches = [];
+
+function loadDeletedIds(key) {
+  try { return new Set(JSON.parse(localStorage.getItem(key) || "[]")); } catch { return new Set(); }
+}
+function persistDeletedIds() {
+  localStorage.setItem(DELETED_BATCH_KEY,  JSON.stringify([...deletedBatchIds]));
+  localStorage.setItem(DELETED_RECIPE_KEY, JSON.stringify([...deletedRecipeIds]));
+}
+let deletedBatchIds  = loadDeletedIds(DELETED_BATCH_KEY);
+let deletedRecipeIds = loadDeletedIds(DELETED_RECIPE_KEY);
 
 const state = {
   mode: "classic",
@@ -1403,6 +1415,8 @@ function askDeleteRecipe(id) {
 
 function confirmDeleteRecipe() {
   if (!pendingDeleteRecipeId) return;
+  deletedRecipeIds.add(pendingDeleteRecipeId);
+  persistDeletedIds();
   savedRecipes = savedRecipes.filter(recipe => recipe.id !== pendingDeleteRecipeId);
   pendingDeleteRecipeId = null;
   persistSavedRecipes();
@@ -2273,6 +2287,8 @@ function openDeleteBatchDialog(batchId) {
 }
 
 function confirmDeleteBatch() {
+  deletedBatchIds.add(pendingDeleteBatchId);
+  persistDeletedIds();
   batches = batches.filter(b => b.id !== pendingDeleteBatchId);
   persistBatches();
   els.deleteBatchDialog?.close();
@@ -2449,34 +2465,44 @@ function confirmF1ToF2() {
 
 let syncBusy = false;
 
-function mergeBatches(local, remote) {
-  const map = new Map();
-  (remote || []).forEach(b => map.set(b.id, b));
-  (local || []).forEach(lb => {
-    const rb = map.get(lb.id);
-    if (!rb) { map.set(lb.id, lb); return; }
-    // Merge checks and reminders by ID union
-    const checkMap = new Map();
-    [...(rb.checks || []), ...(lb.checks || [])].forEach(c => checkMap.set(c.id, c));
-    const remMap = new Map();
-    [...(rb.reminders || []), ...(lb.reminders || [])].forEach(r => remMap.set(r.id, r));
-    // Use the more up-to-date batch as base for metadata (more checks = more activity)
-    const base = lb.checks.length >= rb.checks.length ? lb : rb;
-    map.set(lb.id, {
+function mergeSync(localBatches, localRecipes, remote) {
+  // Union tombstones from both sides
+  const deadBatches  = new Set([...deletedBatchIds,  ...(remote.deletedBatchIds  || [])]);
+  const deadRecipes  = new Set([...deletedRecipeIds, ...(remote.deletedRecipeIds || [])]);
+
+  // Persist newly learned tombstones locally
+  let tombstonesUpdated = false;
+  deadBatches.forEach(id => { if (!deletedBatchIds.has(id))  { deletedBatchIds.add(id);  tombstonesUpdated = true; } });
+  deadRecipes.forEach(id => { if (!deletedRecipeIds.has(id)) { deletedRecipeIds.add(id); tombstonesUpdated = true; } });
+  if (tombstonesUpdated) persistDeletedIds();
+
+  // Merge batches: union by ID, skip tombstoned, union checks+reminders
+  const batchMap = new Map();
+  [...(remote.batches || []), ...localBatches].forEach(b => {
+    if (deadBatches.has(b.id)) return;
+    const existing = batchMap.get(b.id);
+    if (!existing) { batchMap.set(b.id, b); return; }
+    const checkMap = new Map([...(existing.checks || []), ...(b.checks || [])].map(c => [c.id, c]));
+    const remMap   = new Map([...(existing.reminders || []), ...(b.reminders || [])].map(r => [r.id, r]));
+    const base = (b.checks?.length ?? 0) >= (existing.checks?.length ?? 0) ? b : existing;
+    batchMap.set(b.id, {
       ...base,
-      checks:    [...checkMap.values()].sort((a, b) => new Date(a.checkedAt) - new Date(b.checkedAt)),
+      checks:    [...checkMap.values()].sort((a, c) => new Date(a.checkedAt) - new Date(c.checkedAt)),
       reminders: [...remMap.values()]
     });
   });
-  return [...map.values()];
-}
 
-function mergeRecipes(local, remote) {
-  const map = new Map();
-  (remote || []).forEach(r => map.set(r.id, r));
-  // Local always wins for same ID (user's current edits take priority)
-  (local || []).forEach(r => map.set(r.id, r));
-  return [...map.values()];
+  // Merge recipes: union by ID, skip tombstoned, local wins on conflict
+  const recipeMap = new Map();
+  (remote.recipes || []).forEach(r => { if (!deadRecipes.has(r.id)) recipeMap.set(r.id, r); });
+  localRecipes.forEach(r => { if (!deadRecipes.has(r.id)) recipeMap.set(r.id, r); });
+
+  return {
+    batches:          [...batchMap.values()],
+    recipes:          [...recipeMap.values()],
+    deletedBatchIds:  [...deadBatches],
+    deletedRecipeIds: [...deadRecipes]
+  };
 }
 
 async function syncWithServer() {
@@ -2487,30 +2513,29 @@ async function syncWithServer() {
     if (!res.ok) { syncBusy = false; return; }
     const remote = await res.json();
 
-    const mergedBatches = mergeBatches(batches, remote.batches);
-    const mergedRecipes = mergeRecipes(savedRecipes, remote.recipes);
+    const merged = mergeSync(batches, savedRecipes, remote);
 
-    const batchesChanged = JSON.stringify(mergedBatches) !== JSON.stringify(batches);
-    const recipesChanged = JSON.stringify(mergedRecipes) !== JSON.stringify(savedRecipes);
+    const batchesChanged = JSON.stringify(merged.batches)  !== JSON.stringify(batches);
+    const recipesChanged = JSON.stringify(merged.recipes)  !== JSON.stringify(savedRecipes);
 
     if (batchesChanged) {
-      batches = mergedBatches;
+      batches = merged.batches;
       localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
       renderVarkyView();
       if (currentBatchDetailId) renderBatchDetail(currentBatchDetailId);
       checkReminders();
     }
     if (recipesChanged) {
-      savedRecipes = mergedRecipes;
+      savedRecipes = merged.recipes;
       localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(savedRecipes));
       renderSavedRecipes();
     }
 
-    // Upload merged data so other devices get the union
+    // Upload merged payload — server does another union pass
     await fetch("/api/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ batches: mergedBatches, recipes: mergedRecipes })
+      body: JSON.stringify(merged)
     });
   } catch {}
   syncBusy = false;
