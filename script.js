@@ -1886,6 +1886,20 @@ function checkResultTags(check) {
   return results.map(r => checkTagHtml(r)).join("");
 }
 
+const actionResultKeysSet = new Set(actionResultKeys);
+
+// Tags excluding action/state keys (for "Poslední kontroly" column)
+function checkResultTagsWithoutActions(check) {
+  const results = check.checkResults || (check.result && check.result !== "custom" ? [check.result] : []);
+  return results.filter(r => !actionResultKeysSet.has(r)).map(r => checkTagHtml(r)).join("");
+}
+
+// Only action/state tags (for "Stav" column)
+function checkActionTags(check) {
+  const results = check.checkResults || (check.result && check.result !== "custom" ? [check.result] : []);
+  return results.filter(r => actionResultKeysSet.has(r)).map(r => checkTagHtml(r)).join("");
+}
+
 // Check if a check contains a specific result (both formats)
 function checkHasResult(check, resultKey) {
   if (check.checkResults) return check.checkResults.includes(resultKey);
@@ -1952,7 +1966,7 @@ function renderFilterPills() {
     { id: "due",    label: "Dnes k řešení", count: counts.due },
     { id: "f1",     label: "F1",            count: counts.f1 },
     { id: "f2",     label: "F2",            count: counts.f2 },
-    { id: "done",   label: "Hotové",        count: counts.done }
+    { id: "done",   label: "Ukončené",      count: counts.done }
   ];
   els.varkyFilterPills.innerHTML = pills.map(p => `
     <button class="varky-pill${batchFilter === p.id ? " active" : ""}" type="button" data-filter="${p.id}">
@@ -2001,8 +2015,10 @@ function renderBatchTableRow(batch) {
   const status = getBatchStatus(batch);
   const day = getBatchDay(batch);
   const lastChecks = batch.checks.slice(-3).reverse();
+  const lastCheck = batch.checks.length ? batch.checks[batch.checks.length - 1] : null;
   const nextReminder = batch.reminders.find(r => r.status === "pending");
   const summary = recipeSnapshotSummary(batch.recipeSnapshot);
+  const stavTags = lastCheck ? checkActionTags(lastCheck) : "";
   return `
     <tr class="batch-row batch-status-${status}" data-batch-id="${batch.id}">
       <td class="batch-col-date">
@@ -2025,9 +2041,19 @@ function renderBatchTableRow(batch) {
       </td>
       <td class="batch-col-checks">
         ${lastChecks.length
-          ? lastChecks.map(c => `<div class="batch-check-mini"><div class="batch-check-tags">${checkResultTags(c)}</div><span class="batch-check-date">${formatBatchDateShort(c.checkedAt)}</span></div>`).join("")
+          ? lastChecks.map(c => {
+              const tags = checkResultTagsWithoutActions(c);
+              return `<div class="batch-check-mini">
+                <span class="batch-check-date">${formatBatchDateShort(c.checkedAt)}</span>
+                ${tags ? `<div class="batch-check-tags">${tags}</div>` : ""}
+                ${c.note ? `<span class="batch-check-note">&ldquo;${escapeHtml(c.note)}&rdquo;</span>` : ""}
+              </div>`;
+            }).join("")
           : `<span class="batch-no-checks">Zatím žádné kontroly</span>`}
         ${batch.checks.length > 3 ? `<button class="batch-more-checks" type="button" data-batch-id="${batch.id}">+${batch.checks.length - 3} další</button>` : ""}
+      </td>
+      <td class="batch-col-stav">
+        ${stavTags ? `<div class="batch-check-tags">${stavTags}</div>` : `<span class="batch-no-reminder">—</span>`}
       </td>
       <td class="batch-col-next">
         ${nextReminder
@@ -2050,8 +2076,8 @@ function renderVarkyView() {
   if (!filtered.length) {
     els.varkyList.innerHTML = `
       <div class="saved-empty">
-        <strong>${batchFilter === "done" ? "Žádné hotové várky." : batchFilter === "due" ? "Žádné várky dnes k řešení." : "Zatím tu žádná várka nebublá."}</strong>
-        <p>${batchFilter === "done" ? "Dokončené várky se tady ukážou." : "Založ první z kalkulačky nebo ručně."}</p>
+        <strong>${batchFilter === "done" ? "Žádné ukončené várky." : batchFilter === "due" ? "Žádné várky dnes k řešení." : "Zatím tu žádná várka nebublá."}</strong>
+        <p>${batchFilter === "done" ? "Ukončené várky se tady ukážou." : "Založ první z kalkulačky nebo ručně."}</p>
         ${batchFilter === "active" ? `<button class="recipe-action primary batch-empty-add" type="button" style="margin-top:12px">+ Přidat várku</button>` : ""}
       </div>`;
     return;
@@ -2060,7 +2086,7 @@ function renderVarkyView() {
     <div class="batch-table-wrap">
       <table class="batch-table">
         <thead><tr>
-          <th>Založeno</th><th>Typ</th><th>Název</th><th>Recept</th><th>Stav</th><th>Poslední kontroly</th><th>Další krok</th><th>Akce</th>
+          <th>Založeno</th><th>Typ</th><th>Název</th><th>Recept</th><th>Průběh</th><th>Poslední kontroly</th><th>Stav</th><th>Další krok</th><th>Akce</th>
         </tr></thead>
         <tbody>${filtered.map(renderBatchTableRow).join("")}</tbody>
       </table>
