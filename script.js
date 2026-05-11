@@ -1972,21 +1972,42 @@ function checkReminders() {
   if (!els.reminderBanner) return;
   updateVarkyBadge();
   const now = Date.now();
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const todayEnd   = new Date(); todayEnd.setHours(23, 59, 59, 999);
   const dueItems = [];
+  const upcomingItems = [];
   batches.forEach(b => {
     if (b.finished) return;
     b.reminders.forEach(r => {
-      if (r.status === "pending" && new Date(r.remindAt).getTime() <= now) {
+      if (r.status !== "pending") return;
+      const t = new Date(r.remindAt).getTime();
+      if (t <= now) {
         dueItems.push({ batch: b, reminder: r });
+      } else if (t <= todayEnd.getTime()) {
+        upcomingItems.push({ batch: b, reminder: r });
       }
     });
   });
 
-  if (dueItems.length === 0) { els.reminderBanner.hidden = true; return; }
+  if (dueItems.length === 0 && upcomingItems.length === 0) {
+    els.reminderBanner.hidden = true;
+    return;
+  }
 
-  // In-app banner
-  const due = dueItems.length;
-  els.reminderBannerText.textContent = due === 1 ? "Dnes máš ochutnat 1 várku." : `Máš ${due} připomínky k várkám.`;
+  // Banner text
+  if (dueItems.length > 0) {
+    const due = dueItems.length;
+    els.reminderBannerText.textContent = due === 1
+      ? `Připomínka: ${dueItems[0].reminder.title} – ${dueItems[0].batch.batchName}`
+      : `Máš ${due} připomínky k várkám.`;
+  } else {
+    const r = upcomingItems[0];
+    const t = new Date(r.reminder.remindAt);
+    const hm = t.toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
+    els.reminderBannerText.textContent = upcomingItems.length === 1
+      ? `Připomínka dnes v ${hm}: ${r.reminder.title} – ${r.batch.batchName}`
+      : `Dnes máš ${upcomingItems.length} naplánované připomínky.`;
+  }
   els.reminderBanner.hidden = false;
 
   // Browser notifications – once per reminder ID
