@@ -84,7 +84,14 @@ let editingCheckId = null;
 let editBatchReminders = [];
 let editingReminderId = null;
 let editingReminderBatchId = null;
-const firedNotifications = new Set();
+// Persist across sessions so "notification on open" doesn't repeat for already-fired reminders
+const FIRED_NOTIFS_KEY = "kombuchator_fired_notifs";
+const firedNotifications = new Set(
+  (() => { try { return JSON.parse(localStorage.getItem(FIRED_NOTIFS_KEY) || "[]"); } catch { return []; } })()
+);
+function saveFiredNotifications() {
+  try { localStorage.setItem(FIRED_NOTIFS_KEY, JSON.stringify([...firedNotifications])); } catch {}
+}
 let editCheckTypes   = new Set(["taste"]);
 let editCheckResults = new Set();
 let pendingF1ToF2BatchId = null;
@@ -2025,6 +2032,7 @@ function checkReminders() {
   dueItems.forEach(({ batch, reminder }) => {
     if (firedNotifications.has(reminder.id)) return;
     firedNotifications.add(reminder.id);
+    saveFiredNotifications();
     fireNotification(`Kombuchátor: ${reminder.title}`, batch.batchName);
   });
 }
@@ -2631,6 +2639,8 @@ function confirmEditReminder() {
   const d = els.editReminderDate?.value;
   const t = els.editReminderTime?.value;
   if (d && t) rem.remindAt = new Date(`${d}T${t}:00`).toISOString();
+  firedNotifications.delete(editingReminderId);
+  saveFiredNotifications();
   persistBatches();
   els.editReminderDialog?.close();
   renderBatchDetail(editingReminderBatchId);
@@ -2942,9 +2952,11 @@ function bindBatchEvents() {
     const newTime = new Date(`${d}T${t}:00`).toISOString();
     batches.forEach(b => b.reminders.forEach(r => {
       if (r.status === "pending" && new Date(r.remindAt) <= new Date()) {
+        firedNotifications.delete(r.id);
         r.remindAt = newTime;
       }
     }));
+    saveFiredNotifications();
     persistBatches();
     els.snoozeReminderDialog?.close();
     checkReminders();

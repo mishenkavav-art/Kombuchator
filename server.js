@@ -56,18 +56,34 @@ function saveNotified() {
   try { fs.writeFileSync(path.join(__dirname, ".notified.json"), JSON.stringify([...notifiedIds])); } catch {}
 }
 
-async function sendPushToAll(payload) {
-  const dead = [];
-  await Promise.all(pushSubs.map(async sub => {
-    try {
-      await webpush.sendNotification(sub, JSON.stringify(payload));
-    } catch (e) {
-      if (e.statusCode === 410 || e.statusCode === 404) dead.push(sub.endpoint);
+async function sendPushToOne(sub, payload) {
+  try {
+    console.log(`[push] → ${sub.endpoint.slice(-30)}: ${payload.title}`);
+    await webpush.sendNotification(sub, JSON.stringify(payload));
+  } catch (e) {
+    console.log(`[push] error ${e.statusCode}: ${e.message?.slice(0, 80)}`);
+    if (e.statusCode === 410 || e.statusCode === 404) {
+      pushSubs = pushSubs.filter(s => s.endpoint !== sub.endpoint);
+      saveSubs();
     }
-  }));
-  if (dead.length) {
-    pushSubs = pushSubs.filter(s => !dead.includes(s.endpoint));
-    saveSubs();
+  }
+}
+
+async function sendPushToAll(payload) {
+  console.log(`[push] sending "${payload.title}" to ${pushSubs.length} device(s)`);
+  await Promise.all(pushSubs.map(sub => sendPushToOne(sub, payload)));
+}
+
+// Send all currently-due reminders to a single new subscription (catch-up for late devices)
+async function catchUpNewSub(sub) {
+  const now = Date.now();
+  for (const batch of (syncStore.batches || [])) {
+    if (batch.finished) continue;
+    for (const r of (batch.reminders || [])) {
+      if (r.status !== "pending") continue;
+      if (new Date(r.remindAt).getTime() > now) continue;
+      await sendPushToOne(sub, { title: `Kombuchátor: ${r.title}`, body: batch.batchName, url: "/#varky" });
+    }
   }
 }
 
@@ -179,8 +195,10 @@ http.createServer(async (req, res) => {
     try {
       const sub = await parseJsonBody(req);
       const idx = pushSubs.findIndex(s => s.endpoint === sub.endpoint);
+      const isNew = idx < 0;
       if (idx >= 0) pushSubs[idx] = sub; else pushSubs.push(sub);
       saveSubs();
+      if (isNew) catchUpNewSub(sub).catch(() => {});
       send(res, 200, "OK");
     } catch { send(res, 400, "Bad Request"); }
     return;
@@ -198,8 +216,10 @@ http.createServer(async (req, res) => {
         // Re-register push subscription piggybacked on sync
         if (data.pushSub && data.pushSub.endpoint) {
           const idx = pushSubs.findIndex(s => s.endpoint === data.pushSub.endpoint);
+          const isNew = idx < 0;
           if (idx >= 0) pushSubs[idx] = data.pushSub; else pushSubs.push(data.pushSub);
           saveSubs();
+          if (isNew) catchUpNewSub(data.pushSub).catch(() => {});
         }
         syncStore = mergeIncoming(syncStore, data);
         saveSyncFile();
