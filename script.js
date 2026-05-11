@@ -2897,10 +2897,30 @@ syncWithServer();
 setInterval(syncWithServer, 30000);
 setInterval(checkReminders, 60000);
 
-// Ask for notification permission (needed for browser notifications)
-if ("Notification" in window && Notification.permission === "default") {
-  Notification.requestPermission();
+// Request notification permission and register push subscription
+async function setupPushNotifications() {
+  if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  let permission = Notification.permission;
+  if (permission === "default") permission = await Notification.requestPermission();
+  if (permission !== "granted") return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) return; // already subscribed
+    const resp = await fetch("/api/vapid-public-key");
+    const { publicKey } = await resp.json();
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: publicKey
+    });
+    await fetch("/api/push-subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(sub)
+    });
+  } catch {}
 }
+setupPushNotifications();
 
 // Handle #varky / #zapisnik URL fragments for deep-linking
 (function() {

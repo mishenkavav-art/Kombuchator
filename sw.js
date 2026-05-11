@@ -1,4 +1,4 @@
-const CACHE = "kombuchator-v1";
+const CACHE = "kombuchator-v2";
 
 self.addEventListener("install", e => {
   e.waitUntil(
@@ -15,14 +15,30 @@ self.addEventListener("activate", e => {
   );
 });
 
+// Handle push from server
+self.addEventListener("push", e => {
+  let data = { title: "Kombuchátor", body: "Čas zkontrolovat várku!", url: "/#varky" };
+  try { data = { ...data, ...e.data.json() }; } catch {}
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/ikony/kombucha.png",
+      badge: "/ikony/kombucha.png",
+      data: { url: data.url },
+      requireInteraction: false
+    })
+  );
+});
+
 // Open app when notification is clicked
 self.addEventListener("notificationclick", e => {
   e.notification.close();
+  const target = e.notification.data?.url || "/#varky";
   e.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
       const existing = list.find(c => c.url.includes(self.location.origin));
-      if (existing) return existing.focus();
-      return clients.openWindow("/#varky");
+      if (existing) { existing.focus(); existing.navigate(self.location.origin + target); return; }
+      return clients.openWindow(self.location.origin + target);
     })
   );
 });

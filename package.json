@@ -4,5 +4,12 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "puppeteer": "^24.43.0"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
   }
 }
