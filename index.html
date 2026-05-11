@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=70">
+  <link rel="stylesheet" href="style.css?v=71">
 </head>
 <body>
   <div class="app-layout">
@@ -53,7 +53,7 @@
         <span id="reminderBannerText"></span>
         <div class="reminder-banner-actions">
           <button type="button" id="reminderGoToVarkyBtn">Zobrazit várky</button>
-          <button type="button" id="reminderSnoozeBtn">Odložit na hodinu</button>
+          <button type="button" id="reminderSnoozeBtn">Odložit</button>
           <button type="button" id="reminderDoneBtn">Označit jako splněné</button>
           <button type="button" id="reminderDismissBtn">Zavřít</button>
         </div>
@@ -583,6 +583,22 @@
     </form>
   </dialog>
 
+  <!-- DIALOG: Odložit připomínku -->
+  <dialog id="snoozeReminderDialog">
+    <form class="modal-card batch-dialog" method="dialog">
+      <button class="close-button" id="closeSnoozeReminderBtn" type="button" aria-label="Zavřít">×</button>
+      <h2>Odložit připomínku</h2>
+      <div class="dialog-row">
+        <label><span>Datum</span><input id="snoozeReminderDate" type="date"></label>
+        <label><span>Čas</span><input id="snoozeReminderTime" type="time"></label>
+      </div>
+      <div class="dialog-actions">
+        <button class="recipe-action primary" id="confirmSnoozeReminderBtn" type="button">Odložit</button>
+        <button class="recipe-action" id="cancelSnoozeReminderBtn" type="button">Zrušit</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- DIALOG: Přechod F1 → F2 -->
   <dialog id="f1ToF2Dialog">
     <form class="modal-card batch-dialog" method="dialog">
@@ -648,6 +664,6 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=70"></script>
+  <script src="script.js?v=71"></script>
 </body>
 </html>

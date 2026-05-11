@@ -203,10 +203,16 @@ const els = {
   startBatchBtn:        document.querySelector("#startBatchBtn"),
   reminderBanner:       document.querySelector("#reminderBanner"),
   reminderBannerText:   document.querySelector("#reminderBannerText"),
-  reminderGoToVarkyBtn: document.querySelector("#reminderGoToVarkyBtn"),
-  reminderSnoozeBtn:    document.querySelector("#reminderSnoozeBtn"),
-  reminderDoneBtn:      document.querySelector("#reminderDoneBtn"),
-  reminderDismissBtn:   document.querySelector("#reminderDismissBtn"),
+  reminderGoToVarkyBtn:      document.querySelector("#reminderGoToVarkyBtn"),
+  reminderSnoozeBtn:         document.querySelector("#reminderSnoozeBtn"),
+  reminderDoneBtn:           document.querySelector("#reminderDoneBtn"),
+  reminderDismissBtn:        document.querySelector("#reminderDismissBtn"),
+  snoozeReminderDialog:      document.querySelector("#snoozeReminderDialog"),
+  closeSnoozeReminderBtn:    document.querySelector("#closeSnoozeReminderBtn"),
+  cancelSnoozeReminderBtn:   document.querySelector("#cancelSnoozeReminderBtn"),
+  confirmSnoozeReminderBtn:  document.querySelector("#confirmSnoozeReminderBtn"),
+  snoozeReminderDate:        document.querySelector("#snoozeReminderDate"),
+  snoozeReminderTime:        document.querySelector("#snoozeReminderTime"),
   newBatchDialog:       document.querySelector("#newBatchDialog"),
   newBatchName:         document.querySelector("#newBatchName"),
   newBatchDate:         document.querySelector("#newBatchDate"),
@@ -2905,15 +2911,30 @@ function bindBatchEvents() {
   els.confirmF1ToF2Btn?.addEventListener("click", confirmF1ToF2);
   els.reminderGoToVarkyBtn?.addEventListener("click", () => { batchFilter = "due"; renderVarkyView(); switchView("varky"); });
   els.reminderSnoozeBtn?.addEventListener("click", () => {
-    const snoozeMs = 3600000;
+    const now = new Date();
+    const d = now.toISOString().slice(0, 10);
+    const h = String(now.getHours()).padStart(2, "0");
+    const m = String(now.getMinutes()).padStart(2, "0");
+    if (els.snoozeReminderDate) els.snoozeReminderDate.value = d;
+    if (els.snoozeReminderTime) els.snoozeReminderTime.value = `${h}:${m}`;
+    els.snoozeReminderDialog?.showModal();
+  });
+  els.closeSnoozeReminderBtn?.addEventListener("click", () => els.snoozeReminderDialog?.close());
+  els.cancelSnoozeReminderBtn?.addEventListener("click", () => els.snoozeReminderDialog?.close());
+  els.confirmSnoozeReminderBtn?.addEventListener("click", () => {
+    const d = els.snoozeReminderDate?.value;
+    const t = els.snoozeReminderTime?.value;
+    if (!d || !t) return;
+    const newTime = new Date(`${d}T${t}:00`).toISOString();
     batches.forEach(b => b.reminders.forEach(r => {
       if (r.status === "pending" && new Date(r.remindAt) <= new Date()) {
-        r.remindAt = new Date(Date.now() + snoozeMs).toISOString();
+        r.remindAt = newTime;
       }
     }));
     persistBatches();
+    els.snoozeReminderDialog?.close();
     checkReminders();
-    showActionFeedback("Připomínky odloženy o hodinu.");
+    showActionFeedback("Připomínky odloženy.");
   });
   els.reminderDoneBtn?.addEventListener("click", () => {
     batches.forEach(b => b.reminders.forEach(r => {
