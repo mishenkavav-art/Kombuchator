@@ -2025,7 +2025,7 @@ function renderBatchTableRow(batch) {
       </td>
       <td class="batch-col-checks">
         ${lastChecks.length
-          ? lastChecks.map(c => `<div class="batch-check-mini">${checkResultTags(c)}<span class="batch-check-date">${formatBatchDateShort(c.checkedAt)}</span></div>`).join("")
+          ? lastChecks.map(c => `<div class="batch-check-mini"><div class="batch-check-tags">${checkResultTags(c)}</div><span class="batch-check-date">${formatBatchDateShort(c.checkedAt)}</span></div>`).join("")
           : `<span class="batch-no-checks">Zatím žádné kontroly</span>`}
         ${batch.checks.length > 3 ? `<button class="batch-more-checks" type="button" data-batch-id="${batch.id}">+${batch.checks.length - 3} další</button>` : ""}
       </td>

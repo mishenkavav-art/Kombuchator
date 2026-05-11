@@ -3275,9 +3275,16 @@ button {
 
 .batch-check-mini {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  margin-bottom: 4px;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+
+.batch-check-tags {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: start;
+  gap: 4px;
 }
 
 .batch-check-date { font-size: 11px; color: var(--ink-muted); }
