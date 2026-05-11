@@ -359,6 +359,7 @@ function loadSavedRecipes() {
 function persistSavedRecipes() {
   localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(savedRecipes));
   broadcastSync("recipes-updated");
+  syncWithServer();
 }
 function showActionFeedback(text) {
   if (!els.currentActionFeedback) return;
@@ -1840,6 +1841,7 @@ function loadBatches() {
 function persistBatches() {
   localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
   broadcastSync("batches-updated");
+  syncWithServer();
 }
 
 function checkTagHtml(result) {
@@ -2443,6 +2445,77 @@ function confirmF1ToF2() {
   pendingF1ToF2BatchId = null;
 }
 
+// ── Cloud Sync ──
+
+let syncBusy = false;
+
+function mergeBatches(local, remote) {
+  const map = new Map();
+  (remote || []).forEach(b => map.set(b.id, b));
+  (local || []).forEach(lb => {
+    const rb = map.get(lb.id);
+    if (!rb) { map.set(lb.id, lb); return; }
+    // Merge checks and reminders by ID union
+    const checkMap = new Map();
+    [...(rb.checks || []), ...(lb.checks || [])].forEach(c => checkMap.set(c.id, c));
+    const remMap = new Map();
+    [...(rb.reminders || []), ...(lb.reminders || [])].forEach(r => remMap.set(r.id, r));
+    // Use the more up-to-date batch as base for metadata (more checks = more activity)
+    const base = lb.checks.length >= rb.checks.length ? lb : rb;
+    map.set(lb.id, {
+      ...base,
+      checks:    [...checkMap.values()].sort((a, b) => new Date(a.checkedAt) - new Date(b.checkedAt)),
+      reminders: [...remMap.values()]
+    });
+  });
+  return [...map.values()];
+}
+
+function mergeRecipes(local, remote) {
+  const map = new Map();
+  (remote || []).forEach(r => map.set(r.id, r));
+  // Local always wins for same ID (user's current edits take priority)
+  (local || []).forEach(r => map.set(r.id, r));
+  return [...map.values()];
+}
+
+async function syncWithServer() {
+  if (syncBusy) return;
+  syncBusy = true;
+  try {
+    const res = await fetch("/api/sync", { cache: "no-store" });
+    if (!res.ok) { syncBusy = false; return; }
+    const remote = await res.json();
+
+    const mergedBatches = mergeBatches(batches, remote.batches);
+    const mergedRecipes = mergeRecipes(savedRecipes, remote.recipes);
+
+    const batchesChanged = JSON.stringify(mergedBatches) !== JSON.stringify(batches);
+    const recipesChanged = JSON.stringify(mergedRecipes) !== JSON.stringify(savedRecipes);
+
+    if (batchesChanged) {
+      batches = mergedBatches;
+      localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
+      renderVarkyView();
+      if (currentBatchDetailId) renderBatchDetail(currentBatchDetailId);
+      checkReminders();
+    }
+    if (recipesChanged) {
+      savedRecipes = mergedRecipes;
+      localStorage.setItem(SAVED_RECIPES_KEY, JSON.stringify(savedRecipes));
+      renderSavedRecipes();
+    }
+
+    // Upload merged data so other devices get the union
+    await fetch("/api/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ batches: mergedBatches, recipes: mergedRecipes })
+    });
+  } catch {}
+  syncBusy = false;
+}
+
 // ── Pick Recipe Dialog ──
 
 function openPickRecipeDialog(batchId) {
@@ -2676,6 +2749,8 @@ renderSavedRecipes();
 batches = loadBatches();
 renderVarkyView();
 checkReminders();
+syncWithServer();
+setInterval(syncWithServer, 30000);
 
 // Handle #varky / #zapisnik URL fragments for deep-linking
 (function() {

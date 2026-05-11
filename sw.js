@@ -18,6 +18,8 @@ self.addEventListener("activate", e => {
 // Network-first: always try fresh, fall back to cache when offline
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
+  // Never cache API calls
+  if (new URL(e.request.url).pathname.startsWith("/api/")) return;
   e.respondWith(
     fetch(e.request)
       .then(res => {
