@@ -3524,13 +3524,31 @@ button {
 }
 
 .batch-reminder-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: #FEF3C7;
   color: #92400E;
   border-radius: 999px;
-  padding: 3px 11px;
+  padding: 3px 6px 3px 11px;
   font-size: 13px;
   font-weight: 600;
 }
+.rem-chip-text { flex: 1; }
+.rem-chip-edit,
+.rem-chip-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 13px;
+  line-height: 1;
+  color: #92400E;
+  opacity: 0.6;
+  border-radius: 999px;
+  transition: opacity 0.15s;
+}
+.rem-chip-edit:hover, .rem-chip-del:hover { opacity: 1; }
 
 .batch-detail-actions {
   display: flex;

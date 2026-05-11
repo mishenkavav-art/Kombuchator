@@ -82,6 +82,8 @@ let pendingDeleteBatchId = null;
 let pendingDeleteCheckId = null;
 let editingCheckId = null;
 let editBatchReminders = [];
+let editingReminderId = null;
+let editingReminderBatchId = null;
 const firedNotifications = new Set();
 let editCheckTypes   = new Set(["taste"]);
 let editCheckResults = new Set();
@@ -248,6 +250,13 @@ const els = {
   editCheckDate:        document.querySelector("#editCheckDate"),
   editCheckTime:        document.querySelector("#editCheckTime"),
   editCheckNote:        document.querySelector("#editCheckNote"),
+  editReminderDialog:       document.querySelector("#editReminderDialog"),
+  closeEditReminderBtn:     document.querySelector("#closeEditReminderBtn"),
+  cancelEditReminderBtn:    document.querySelector("#cancelEditReminderBtn"),
+  confirmEditReminderBtn:   document.querySelector("#confirmEditReminderBtn"),
+  editReminderTitle:        document.querySelector("#editReminderTitle"),
+  editReminderDate:         document.querySelector("#editReminderDate"),
+  editReminderTime:         document.querySelector("#editReminderTime"),
   f1ToF2Dialog:         document.querySelector("#f1ToF2Dialog"),
   closeF1ToF2Btn:       document.querySelector("#closeF1ToF2Btn"),
   cancelF1ToF2Btn:      document.querySelector("#cancelF1ToF2Btn"),
@@ -2156,7 +2165,12 @@ function renderBatchDetail(batchId) {
       ${activeReminders.length ? `
         <div class="batch-reminders">
           <strong>Připomínky:</strong>
-          ${activeReminders.map(r => `<span class="batch-reminder-chip">${escapeHtml(r.title)} – ${formatBatchDate(r.remindAt)}</span>`).join("")}
+          ${activeReminders.map(r => `
+            <span class="batch-reminder-chip">
+              <span class="rem-chip-text">${escapeHtml(r.title)} – ${formatBatchDate(r.remindAt)} ${formatBatchTime(r.remindAt)}</span>
+              <button class="rem-chip-edit" type="button" data-rem-id="${r.id}" data-batch-id="${batch.id}" title="Upravit termín">✏</button>
+              <button class="rem-chip-del" type="button" data-rem-id="${r.id}" data-batch-id="${batch.id}" title="Smazat připomínku">×</button>
+            </span>`).join("")}
         </div>` : ""}
     </div>
     <div class="batch-detail-actions">
@@ -2553,6 +2567,38 @@ function confirmEditCheck() {
   editingCheckId = null;
 }
 
+// ── Edit single reminder ──
+
+function openEditReminderDialog(batchId, remId) {
+  const batch = findBatch(batchId);
+  if (!batch) return;
+  const rem = batch.reminders.find(r => r.id === remId);
+  if (!rem) return;
+  editingReminderId = remId;
+  editingReminderBatchId = batchId;
+  if (els.editReminderTitle) els.editReminderTitle.textContent = rem.title;
+  if (els.editReminderDate) els.editReminderDate.value = rem.remindAt.slice(0, 10);
+  if (els.editReminderTime) els.editReminderTime.value = rem.remindAt.slice(11, 16);
+  els.editReminderDialog?.showModal();
+}
+
+function confirmEditReminder() {
+  const batch = findBatch(editingReminderBatchId);
+  if (!batch) return;
+  const rem = batch.reminders.find(r => r.id === editingReminderId);
+  if (!rem) return;
+  const d = els.editReminderDate?.value;
+  const t = els.editReminderTime?.value;
+  if (d && t) rem.remindAt = new Date(`${d}T${t}:00`).toISOString();
+  persistBatches();
+  els.editReminderDialog?.close();
+  renderBatchDetail(editingReminderBatchId);
+  renderVarkyView();
+  showActionFeedback("Připomínka upravena.");
+  editingReminderId = null;
+  editingReminderBatchId = null;
+}
+
 // ── F1 → F2 transition ──
 
 function openF1ToF2Dialog(sourceBatchId) {
@@ -2800,6 +2846,9 @@ function bindBatchEvents() {
   els.closeEditCheckBtn?.addEventListener("click", () => els.editCheckDialog?.close());
   els.cancelEditCheckBtn?.addEventListener("click", () => els.editCheckDialog?.close());
   els.confirmEditCheckBtn?.addEventListener("click", confirmEditCheck);
+  els.closeEditReminderBtn?.addEventListener("click", () => els.editReminderDialog?.close());
+  els.cancelEditReminderBtn?.addEventListener("click", () => els.editReminderDialog?.close());
+  els.confirmEditReminderBtn?.addEventListener("click", confirmEditReminder);
   els.editCheckTypeChips?.addEventListener("click", e => {
     const btn = e.target.closest("[data-ectype]");
     if (!btn) return;
@@ -2902,6 +2951,23 @@ function bindBatchEvents() {
       openDeleteCheckDialog(btn.dataset.checkId, btn.dataset.batchId);
       return;
     }
+    if (e.target.closest(".rem-chip-edit")) {
+      const btn = e.target.closest(".rem-chip-edit");
+      openEditReminderDialog(btn.dataset.batchId, btn.dataset.remId);
+      return;
+    }
+    if (e.target.closest(".rem-chip-del")) {
+      const btn = e.target.closest(".rem-chip-del");
+      const batch = findBatch(btn.dataset.batchId);
+      if (batch) {
+        batch.reminders = batch.reminders.filter(r => r.id !== btn.dataset.remId);
+        persistBatches();
+        renderBatchDetail(btn.dataset.batchId);
+        renderVarkyView();
+        showActionFeedback("Připomínka smazána.");
+      }
+      return;
+    }
     if (e.target.closest(".batch-empty-add")) {
       openNewBatchDialog(null);
       return;
@@ -2957,14 +3023,13 @@ async function setupPushNotifications() {
   if (permission !== "granted") return;
   try {
     const reg = await navigator.serviceWorker.ready;
-    const existing = await reg.pushManager.getSubscription();
-    if (existing) return; // already subscribed
-    const resp = await fetch("/api/vapid-public-key");
-    const { publicKey } = await resp.json();
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: publicKey
-    });
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const resp = await fetch("/api/vapid-public-key");
+      const { publicKey } = await resp.json();
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: publicKey });
+    }
+    // Vždy znovu zaregistrovat – server ztrácí záznamy při restartu
     await fetch("/api/push-subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

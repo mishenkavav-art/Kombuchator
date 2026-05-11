@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=67">
+  <link rel="stylesheet" href="style.css?v=68">
 </head>
 <body>
   <div class="app-layout">
@@ -566,6 +566,23 @@
     </form>
   </dialog>
 
+  <!-- DIALOG: Upravit připomínku -->
+  <dialog id="editReminderDialog">
+    <form class="modal-card batch-dialog" method="dialog">
+      <button class="close-button" id="closeEditReminderBtn" type="button" aria-label="Zavřít">×</button>
+      <h2>Upravit připomínku</h2>
+      <p id="editReminderTitle" class="dialog-hint" style="font-weight:600;margin-bottom:8px;"></p>
+      <div class="dialog-row">
+        <label><span>Datum</span><input id="editReminderDate" type="date"></label>
+        <label><span>Čas</span><input id="editReminderTime" type="time"></label>
+      </div>
+      <div class="dialog-actions">
+        <button class="recipe-action primary" id="confirmEditReminderBtn" type="button">Uložit</button>
+        <button class="recipe-action" id="cancelEditReminderBtn" type="button">Zrušit</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- DIALOG: Přechod F1 → F2 -->
   <dialog id="f1ToF2Dialog">
     <form class="modal-card batch-dialog" method="dialog">
@@ -631,6 +648,6 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=67"></script>
+  <script src="script.js?v=68"></script>
 </body>
 </html>
