@@ -639,8 +639,20 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 }
 
 .simple-tea-list .tea-row {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 22px 1fr 26px;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+}
+.simple-tea-list .tea-check   { grid-column: 1; grid-row: 1; }
+.simple-tea-list .tea-picker  { grid-column: 2; grid-row: 1; }
+.simple-tea-list .remove-tea  { grid-column: 3; grid-row: 1; align-self: center; }
+.simple-tea-list .tea-ratio-unit {
+  grid-column: 2 / 4;
+  grid-row: 2;
+  width: 100%;
 }
 
 .tea-check {

@@ -660,17 +660,17 @@ function renderTeas(calc = null) {
           ${Object.entries(teaTypes).map(([id, item]) => `<option value="${id}" ${tea.type === id ? "selected" : ""}>${item.label}</option>`).join("")}
         </select>
       </div>
-      <div class="inline-unit tea-ratio-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-ratio" type="number" min="0" max="100" step="1" placeholder="%" value="${displayRatioValue(autoTeaById.get(tea.id)?.ratio ?? tea.ratio)}" aria-label="Poměr čaje v procentech">
+      <div class="inline-unit tea-ratio-unit">
+        <input class="tea-ratio" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="%" value="${displayRatioValue(autoTeaById.get(tea.id)?.ratio ?? tea.ratio)}" aria-label="Poměr čaje v procentech">
       </div>
       <div class="inline-unit tea-water-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-water" type="number" min="0" step="0.1" placeholder="l" value="${displayWaterLiters(autoTeaById.get(tea.id)?.waterMl ?? tea.waterMl)}" aria-label="Voda v litrech">
+        <input class="tea-water" type="number" inputmode="decimal" min="0" step="0.1" placeholder="l" value="${displayWaterLiters(autoTeaById.get(tea.id)?.waterMl ?? tea.waterMl)}" aria-label="Voda v litrech">
       </div>
       <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-grams" type="number" min="0" step="0.5" placeholder="g/l" value="${displayGramsValue(autoTeaById.get(tea.id)?.grams ?? tea.grams)}" aria-label="Gramáž g/l">
+        <input class="tea-grams" type="number" inputmode="decimal" min="0" step="0.5" placeholder="g/l" value="${displayGramsValue(autoTeaById.get(tea.id)?.grams ?? tea.grams)}" aria-label="Gramáž g/l">
       </div>
       <div class="inline-unit ${showDetails ? "" : "visually-hidden"}">
-        <input class="tea-total-grams" type="number" min="0" step="0.5" placeholder="g" value="${displayGramsValue(autoTeaById.get(tea.id)?.gramsTotal ?? tea.gramsTotal)}" aria-label="Čaj celkem v gramech">
+        <input class="tea-total-grams" type="number" inputmode="decimal" min="0" step="0.5" placeholder="g" value="${displayGramsValue(autoTeaById.get(tea.id)?.gramsTotal ?? tea.gramsTotal)}" aria-label="Čaj celkem v gramech">
       </div>
       <button class="remove-tea" type="button" aria-label="Odebrat čaj">×</button>
     </div>`).join("");
@@ -679,18 +679,24 @@ function renderTeas(calc = null) {
 // ═══ BUILD TEA ITEMS ═══
 
 function buildClassicTeaItems(enabledTeas, freshTeaL) {
-  const main  = enabledTeas.filter(t => teaTypes[t.type].main);
-  const extra = enabledTeas.filter(t => !teaTypes[t.type].main);
-  let weighted;
-  if (main.length && extra.length) {
-    const ms = 0.7 / main.length, es = 0.3 / extra.length;
-    weighted = enabledTeas.map(t => ({ ...t, role: teaTypes[t.type].main ? "main" : "extra", share: teaTypes[t.type].main ? ms : es }));
+  const hasCustomRatios = enabledTeas.some(t => Number(t.ratio) > 0);
+  let shares;
+  if (hasCustomRatios) {
+    const ratioTotal = enabledTeas.reduce((s, t) => s + (Number(t.ratio) || 0), 0) || 100;
+    shares = enabledTeas.map(t => (Number(t.ratio) || 0) / ratioTotal);
   } else {
-    weighted = enabledTeas.map(t => ({ ...t, role: teaTypes[t.type].main ? "main" : "extra", share: 1 / enabledTeas.length }));
+    const main  = enabledTeas.filter(t => teaTypes[t.type].main);
+    const extra = enabledTeas.filter(t => !teaTypes[t.type].main);
+    if (main.length && extra.length) {
+      const ms = 0.7 / main.length, es = 0.3 / extra.length;
+      shares = enabledTeas.map(t => teaTypes[t.type].main ? ms : es);
+    } else {
+      shares = enabledTeas.map(() => 1 / enabledTeas.length);
+    }
   }
-  const total = weighted.reduce((s, t) => s + t.share, 0) || 1;
-  return weighted.map(t => {
-    const waterMl = freshTeaL * 1000 * (t.share / total);
+  const total = shares.reduce((s, x) => s + x, 0) || 1;
+  return enabledTeas.map((t, i) => {
+    const waterMl = freshTeaL * 1000 * (shares[i] / total);
     const grams   = teaTypes[t.type].grams;
     return { ...t, grams, waterMl, gramsTotal: waterMl / 1000 * grams };
   });
