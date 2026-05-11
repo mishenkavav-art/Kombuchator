@@ -940,12 +940,13 @@ function updateStarter(calc) {
     setFeedback(els.starterTypeHint, "", "ok");
     return;
   }
-  const minPct = formatPercent(calc.starterMin, 0);
-  const tgtLow = formatPercent(calc.starterTarget[0], 0);
+  const tgtLow  = formatPercent(calc.starterTarget[0], 0);
   const tgtHigh = formatPercent(calc.starterTarget[1], 0);
+  const idealMlLow  = kitchenStarterAmount(calc.requiredStarterTargetL[0]);
+  const idealMlHigh = kitchenStarterAmount(calc.requiredStarterTargetL[1]);
   const typeStatus = (!state.starterType || state.starterType === "normal") ? "ok" : state.starterType === "vinegary" ? "warn" : "warn";
   setFeedback(els.starterTypeHint, state.starterType ? calc.starterType.text : "", typeStatus);
-  const amountParts = [{ text: `Máš ${formatPercent(calc.starterRatio)} startéru.`, status: "ok" }];
+  const amountParts = [{ text: `Zadaný objem startéru odpovídá ${formatPercent(calc.starterRatio)} z celkového objemu várky. Ideální je ${tgtLow}–${tgtHigh} (${idealMlLow}–${idealMlHigh}).`, status: "ok" }];
   let amountStatus = "ok";
 
   if (calc.starterSeverity === "STOP") {
