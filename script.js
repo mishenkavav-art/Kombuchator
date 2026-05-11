@@ -406,6 +406,7 @@ function recipeSummary(recipe) {
   return `${roundLiters(recipe.workingVolumeL)} · ${roundMl(recipe.starterMl)} ${recipe.starterType}ho startéru · ${teaSummary} · ${Math.round(recipe.sugarGramsPerLiter)} g/l cukru`;
 }
 function renderRecipeNeeds(recipe) {
+  if (!recipe || !recipe.teas) return `<p class="batch-no-recipe">Ingredience nejsou k dispozici.</p>`;
   const teaLines = recipe.teas.map(t => {
     const lbl = teaTypes[t.type]?.label || t.type;
     const icon = teaTypes[t.type]?.icon || "";
@@ -2027,7 +2028,6 @@ function renderBatchDetail(batchId) {
   currentBatchDetailId = batchId;
   const status = getBatchStatus(batch);
   const day = getBatchDay(batch);
-  const summary = recipeSnapshotSummary(batch.recipeSnapshot);
   const activeReminders = batch.reminders.filter(r => r.status === "pending");
   const allEntries = [
     { time: batch.fermentationStartedAt, type: "start", note: batch.startNote },
@@ -2439,7 +2439,7 @@ function confirmF1ToF2() {
   renderVarkyView();
   checkReminders();
   renderBatchDetail(f2Id);
-  showActionFeedback("F2 várka zalošena. Nech to naperlovat.");
+  showActionFeedback("F2 várka založena. Nech to naperlovat.");
   pendingF1ToF2BatchId = null;
 }
 
