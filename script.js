@@ -81,14 +81,14 @@ let pendingFinishBatchId = null;
 let pendingDeleteBatchId = null;
 let pendingDeleteCheckId = null;
 let editingCheckId = null;
-let editCheckType = "taste";
-let editCheckResult = null;
+let editCheckTypes   = new Set(["taste"]);
+let editCheckResults = new Set();
 let pendingF1ToF2BatchId = null;
 let f1ToF2ReminderDays = 2;
 let newBatchType = "F1";
 let newBatchReminderDays = 3;
-let newCheckType = "taste";
-let newCheckResult = null;
+let newCheckTypes   = new Set(["taste"]);
+let newCheckResults = new Set();
 let newCheckReminderDays = 0;
 let newBatchRecipeSnapshot = null;
 let pendingPickRecipeBatchId = null;
@@ -1771,33 +1771,43 @@ function broadcastSync(type) {
 // ═══ MOJE VÁRKY ═══
 
 const checkResultInfo = {
-  still_sweet:       { label: "Pořád sladké",   css: "tag-sweet" },
-  slightly_sour:     { label: "Jemně nakyslé",  css: "tag-slightly-sour" },
-  balanced:          { label: "Akorát",          css: "tag-balanced" },
-  sharp:             { label: "Má říz",          css: "tag-sharp" },
-  too_sour:          { label: "Moc kyselé",      css: "tag-too-sour" },
-  suspicious:        { label: "Podezřelé",       css: "tag-suspicious" },
-  no_bubbles:        { label: "Bez bublinek",    css: "tag-no-bubbles" },
-  light_bubbles:     { label: "Lehce perlí",     css: "tag-light-bubbles" },
-  good_bubbles:      { label: "Akorát perlí",    css: "tag-good-bubbles" },
-  too_much_pressure: { label: "Moc natlakované", css: "tag-pressure" },
-  fridge:            { label: "Lednice",          css: "tag-fridge" },
-  custom:            { label: "Vlastní",          css: "tag-custom" }
+  // Ochutnávka
+  still_sweet:      { label: "Pořád sladké",  css: "tag-sweet" },
+  slightly_sour:    { label: "Jemně nakyslé", css: "tag-slightly-sour" },
+  balanced:         { label: "Akorát",         css: "tag-balanced" },
+  sharp:            { label: "Má říz",         css: "tag-sharp" },
+  too_sour:         { label: "Moc kyselé",     css: "tag-too-sour" },
+  suspicious:       { label: "Podezřelé",      css: "tag-suspicious" },
+  // Vizuální kontrola
+  clear:            { label: "Čirá",           css: "tag-clear" },
+  cloudy:           { label: "Zakalená",       css: "tag-cloudy" },
+  bubbling:         { label: "Bublá",          css: "tag-bubbling" },
+  mold:             { label: "Plíseň",         css: "tag-mold" },
+  kris:             { label: "Křís",           css: "tag-kris" },
+  new_pellicle:     { label: "Nová placka",    css: "tag-pellicle" },
+  // Kontrola tlaku
+  no_pressure:      { label: "Žádný tlak",     css: "tag-no-bubbles" },
+  normal_pressure:  { label: "V normě",        css: "tag-good-bubbles" },
+  high_pressure:    { label: "Přetlak",        css: "tag-pressure" },
+  explosion:        { label: "Exploze!",       css: "tag-explosion" },
+  // Stavy / akce (vždy viditelné)
+  no_change:        { label: "Beze změny",     css: "tag-custom" },
+  bottle_f1:        { label: "Stočení F1",     css: "tag-action" },
+  move_to_f2:       { label: "Přesun do F2",   css: "tag-action" },
+  move_to_fridge:   { label: "Do lednice",     css: "tag-fridge" },
+  finish_batch:     { label: "Ukončení várky", css: "tag-action" },
 };
 
 const checkTypeInfo = {
   taste:          "Ochutnávka",
   visual_check:   "Vizuální kontrola",
   pressure_check: "Kontrola tlaku",
-  bottle_f1:      "Stočení F1",
-  move_to_f2:     "Přesun do F2",
-  move_to_fridge: "Přesun do lednice",
-  finish_batch:   "Ukončení várky",
-  custom:         "Ostatní"
 };
 
-const f1ResultKeys = ["still_sweet", "slightly_sour", "balanced", "sharp", "too_sour", "suspicious"];
-const f2ResultKeys = ["no_bubbles", "light_bubbles", "good_bubbles", "too_much_pressure", "fridge", "suspicious"];
+const tasteResultKeys    = ["still_sweet", "slightly_sour", "balanced", "sharp", "too_sour", "suspicious"];
+const visualResultKeys   = ["clear", "cloudy", "bubbling", "mold", "kris", "new_pellicle"];
+const pressureResultKeys = ["no_pressure", "normal_pressure", "high_pressure", "explosion"];
+const actionResultKeys   = ["no_change", "bottle_f1", "move_to_f2", "move_to_fridge", "finish_batch"];
 
 const finalResultLabels = {
   success:         "Povedla se",
@@ -1862,6 +1872,24 @@ function checkTagHtml(result) {
   const info = checkResultInfo[result];
   if (!info) return "";
   return `<span class="check-tag ${info.css}">${escapeHtml(info.label)}</span>`;
+}
+
+// Handles both old (checkType string) and new (checkTypes array) format
+function checkTypesLabel(check) {
+  const types = check.checkTypes || (check.checkType ? [check.checkType] : []);
+  return types.map(t => checkTypeInfo[t] || t).join(", ") || "Kontrola";
+}
+
+// Renders all result tags (old result string OR new checkResults array)
+function checkResultTags(check) {
+  const results = check.checkResults || (check.result && check.result !== "custom" ? [check.result] : []);
+  return results.map(r => checkTagHtml(r)).join("");
+}
+
+// Check if a check contains a specific result (both formats)
+function checkHasResult(check, resultKey) {
+  if (check.checkResults) return check.checkResults.includes(resultKey);
+  return check.result === resultKey;
 }
 
 function getFilterCounts() {
@@ -1955,14 +1983,15 @@ function renderBatchCard(batch) {
       ${lastCheck ? `
         <div class="batch-last-check">
           <span class="batch-last-check-label">Poslední kontrola:</span>
-          ${checkTagHtml(lastCheck.result)}
+          ${checkResultTags(lastCheck)}
           ${lastCheck.note ? `<span class="batch-check-note">&ldquo;${escapeHtml(lastCheck.note)}&rdquo;</span>` : ""}
         </div>` : ""}
       <p class="batch-next-step${nextReminder ? "" : " no-reminder"}">
         ${nextReminder ? `Další krok: ${escapeHtml(nextReminder.title)} – ${formatBatchDate(nextReminder.remindAt)}` : "Bez připomínky"}
       </p>
       <div class="batch-card-actions">
-        <button class="recipe-action primary batch-add-check" type="button">Zapsat kontrolu</button>
+        <button class="recipe-action primary batch-add-check" type="button">Kontrola várky</button>
+        ${!batch.finished ? `<button class="recipe-action batch-finish" type="button" data-batch-id="${batch.id}">Ukončení várky</button>` : ""}
         <button class="recipe-action batch-show-detail" type="button">Detail</button>
       </div>
     </article>`;
@@ -2006,7 +2035,8 @@ function renderBatchTableRow(batch) {
           : `<span class="batch-no-reminder">Bez připomínky</span>`}
       </td>
       <td class="batch-col-actions">
-        <button class="recipe-action primary batch-add-check" type="button">Zapsat kontrolu</button>
+        <button class="recipe-action primary batch-add-check" type="button">Kontrola várky</button>
+        ${!batch.finished ? `<button class="recipe-action batch-finish" type="button" data-batch-id="${batch.id}">Ukončení várky</button>` : ""}
         <button class="recipe-action batch-show-detail" type="button">Detail</button>
       </td>
     </tr>`;
@@ -2020,8 +2050,9 @@ function renderVarkyView() {
   if (!filtered.length) {
     els.varkyList.innerHTML = `
       <div class="saved-empty">
-        <strong>${batchFilter === "done" ? "Žádné hotové várky." : batchFilter === "due" ? "Žádné várky dnes k řešení." : "Žádné aktivní várky."}</strong>
-        <p>${batchFilter === "done" ? "Dokončené várky se tady ukážou." : "Založ první várku a začne to tu žít."}</p>
+        <strong>${batchFilter === "done" ? "Žádné hotové várky." : batchFilter === "due" ? "Žádné várky dnes k řešení." : "Zatím tu žádná várka nebublá."}</strong>
+        <p>${batchFilter === "done" ? "Dokončené várky se tady ukážou." : "Založ první z kalkulačky nebo ručně."}</p>
+        ${batchFilter === "active" ? `<button class="recipe-action primary batch-empty-add" type="button" style="margin-top:12px">+ Přidat várku</button>` : ""}
       </div>`;
     return;
   }
@@ -2108,8 +2139,8 @@ function renderBatchDetail(batchId) {
             <div class="timeline-dot"></div>
             <div class="timeline-content">
               <span class="timeline-date">${formatBatchDate(c.checkedAt)} ${formatBatchTime(c.checkedAt)}</span>
-              <strong>${escapeHtml(checkTypeInfo[c.checkType] || c.checkType)}</strong>
-              ${checkTagHtml(c.result)}
+              <strong>${escapeHtml(checkTypesLabel(c))}</strong>
+              ${checkResultTags(c)}
               ${c.note ? `<p class="timeline-note">${escapeHtml(c.note)}</p>` : ""}
               <div class="timeline-check-actions">
                 <button class="timeline-action-btn check-edit-btn" type="button" data-check-id="${c.id}" data-batch-id="${batch.id}">Upravit</button>
@@ -2178,15 +2209,15 @@ function openNewCheckDialog(batchId) {
   const batch = findBatch(batchId);
   if (!batch) return;
   pendingCheckBatchId = batchId;
-  newCheckType = "taste";
-  newCheckResult = null;
+  newCheckTypes   = new Set(["taste"]);
+  newCheckResults = new Set();
   newCheckReminderDays = 0;
   const minDate = batch.fermentationStartedAt.slice(0, 10);
   if (els.newCheckDate) { els.newCheckDate.value = todayISO(); els.newCheckDate.min = minDate; }
   if (els.newCheckTime) els.newCheckTime.value = nowTimeHHMM();
   if (els.newCheckNote) els.newCheckNote.value = "";
-  renderCheckTypeChips(batch.type);
-  renderCheckResultChips(batch.type);
+  renderCheckTypeChips();
+  renderCheckResultChips();
   els.checkReminderQuick?.querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.rdays === "0"));
   if (els.checkCustomReminder) els.checkCustomReminder.hidden = true;
   if (els.checkCustomDate) els.checkCustomDate.value = todayISO();
@@ -2194,20 +2225,32 @@ function openNewCheckDialog(batchId) {
   els.newCheckDialog?.showModal();
 }
 
-function renderCheckTypeChips(batchType) {
+function renderCheckTypeChips() {
   if (!els.checkTypeChips) return;
   els.checkTypeChips.innerHTML = Object.entries(checkTypeInfo).map(([id, label]) =>
-    `<button class="check-chip${newCheckType === id ? " active" : ""}" type="button" data-ctype="${id}">${escapeHtml(label)}</button>`
+    `<button class="check-chip${newCheckTypes.has(id) ? " active" : ""}" type="button" data-ctype="${id}">${escapeHtml(label)}</button>`
   ).join("");
 }
 
-function renderCheckResultChips(batchType) {
+function renderCheckResultChips() {
   if (!els.checkResultChips) return;
-  const keys = batchType === "F2" ? f2ResultKeys : f1ResultKeys;
-  els.checkResultChips.innerHTML = keys.map(k => {
-    const info = checkResultInfo[k];
-    return `<button class="check-chip result-chip${newCheckResult === k ? " active" : ""} ${info.css}" type="button" data-cresult="${k}">${escapeHtml(info.label)}</button>`;
-  }).join("");
+  const sections = [];
+  if (newCheckTypes.has("taste"))
+    sections.push({ label: "Chuť", keys: tasteResultKeys, set: newCheckResults });
+  if (newCheckTypes.has("visual_check"))
+    sections.push({ label: "Vizuální stav", keys: visualResultKeys, set: newCheckResults });
+  if (newCheckTypes.has("pressure_check"))
+    sections.push({ label: "Tlak", keys: pressureResultKeys, set: newCheckResults });
+  sections.push({ label: "Co se s várkou děje?", keys: actionResultKeys, set: newCheckResults });
+
+  els.checkResultChips.innerHTML = sections.map(sec => `
+    <p class="result-section-label">${escapeHtml(sec.label)}</p>
+    <div class="check-result-chips">
+      ${sec.keys.map(k => {
+        const info = checkResultInfo[k];
+        return `<button class="check-chip result-chip${sec.set.has(k) ? " active" : ""} ${info.css}" type="button" data-cresult="${k}">${escapeHtml(info.label)}</button>`;
+      }).join("")}
+    </div>`).join("");
 }
 
 function confirmNewCheck() {
@@ -2218,7 +2261,7 @@ function confirmNewCheck() {
   const timeStr = els.newCheckTime?.value || "12:00";
   const check = {
     id: uid(), checkedAt: new Date(`${dateStr}T${timeStr}:00`).toISOString(),
-    checkType: newCheckType, result: newCheckResult || "custom",
+    checkTypes: [...newCheckTypes], checkResults: [...newCheckResults],
     note: els.newCheckNote?.value.trim() || null
   };
   batch.checks.push(check);
@@ -2243,11 +2286,11 @@ function confirmNewCheck() {
   checkReminders();
   showActionFeedback("Kontrolu máš zapsanou.");
   // Nabídni F2 přechod při stočení nebo přesunu F1
-  if (batch.type === "F1" && (newCheckType === "bottle_f1" || newCheckType === "move_to_f2")) {
+  if (batch.type === "F1" && (newCheckResults.has("bottle_f1") || newCheckResults.has("move_to_f2"))) {
     window.setTimeout(() => openF1ToF2Dialog(savedBatchId), 300);
   }
   // Ukončení várky rovnou otevře dialog pro dokončení
-  if (newCheckType === "finish_batch") {
+  if (newCheckResults.has("finish_batch")) {
     window.setTimeout(() => openFinishBatchDialog(savedBatchId), 300);
   }
 }
@@ -2362,30 +2405,41 @@ function openEditCheckDialog(checkId, batchId) {
   if (!check) return;
   editingCheckId = checkId;
   pendingCheckBatchId = batchId;
-  editCheckType = check.checkType;
-  editCheckResult = check.result;
+  editCheckTypes   = new Set(check.checkTypes || (check.checkType ? [check.checkType] : ["taste"]));
+  editCheckResults = new Set(check.checkResults || (check.result && check.result !== "custom" ? [check.result] : []));
   if (els.editCheckDate) { els.editCheckDate.value = check.checkedAt.slice(0, 10); els.editCheckDate.min = batch.fermentationStartedAt.slice(0, 10); }
   if (els.editCheckTime) els.editCheckTime.value = check.checkedAt.slice(11, 16);
   if (els.editCheckNote) els.editCheckNote.value = check.note || "";
-  renderEditCheckTypeChips(batch.type);
-  renderEditCheckResultChips(batch.type);
+  renderEditCheckTypeChips();
+  renderEditCheckResultChips();
   els.editCheckDialog?.showModal();
 }
 
-function renderEditCheckTypeChips(batchType) {
+function renderEditCheckTypeChips() {
   if (!els.editCheckTypeChips) return;
   els.editCheckTypeChips.innerHTML = Object.entries(checkTypeInfo).map(([id, label]) =>
-    `<button class="check-chip${editCheckType === id ? " active" : ""}" type="button" data-ectype="${id}">${escapeHtml(label)}</button>`
+    `<button class="check-chip${editCheckTypes.has(id) ? " active" : ""}" type="button" data-ectype="${id}">${escapeHtml(label)}</button>`
   ).join("");
 }
 
-function renderEditCheckResultChips(batchType) {
+function renderEditCheckResultChips() {
   if (!els.editCheckResultChips) return;
-  const keys = batchType === "F2" ? f2ResultKeys : f1ResultKeys;
-  els.editCheckResultChips.innerHTML = keys.map(k => {
-    const info = checkResultInfo[k];
-    return `<button class="result-chip${editCheckResult === k ? " active" : ""} ${info?.css || ""}" type="button" data-ecresult="${k}">${escapeHtml(info?.label || k)}</button>`;
-  }).join("");
+  const sections = [];
+  if (editCheckTypes.has("taste"))
+    sections.push({ label: "Chuť", keys: tasteResultKeys });
+  if (editCheckTypes.has("visual_check"))
+    sections.push({ label: "Vizuální stav", keys: visualResultKeys });
+  if (editCheckTypes.has("pressure_check"))
+    sections.push({ label: "Tlak", keys: pressureResultKeys });
+  sections.push({ label: "Co se s várkou děje?", keys: actionResultKeys });
+  els.editCheckResultChips.innerHTML = sections.map(sec => `
+    <p class="result-section-label">${escapeHtml(sec.label)}</p>
+    <div class="check-result-chips">
+      ${sec.keys.map(k => {
+        const info = checkResultInfo[k];
+        return `<button class="check-chip result-chip${editCheckResults.has(k) ? " active" : ""} ${info?.css || ""}" type="button" data-ecresult="${k}">${escapeHtml(info?.label || k)}</button>`;
+      }).join("")}
+    </div>`).join("");
 }
 
 function confirmEditCheck() {
@@ -2396,8 +2450,8 @@ function confirmEditCheck() {
   const dateStr = els.editCheckDate?.value || todayISO();
   const timeStr = els.editCheckTime?.value || "12:00";
   check.checkedAt = new Date(`${dateStr}T${timeStr}:00`).toISOString();
-  check.checkType = editCheckType;
-  check.result = editCheckResult || check.result;
+  check.checkTypes   = [...editCheckTypes];
+  check.checkResults = [...editCheckResults];
   check.note = els.editCheckNote?.value.trim() || null;
   persistBatches();
   els.editCheckDialog?.close();
@@ -2621,16 +2675,17 @@ function bindBatchEvents() {
   els.checkTypeChips?.addEventListener("click", e => {
     const btn = e.target.closest("[data-ctype]");
     if (!btn) return;
-    newCheckType = btn.dataset.ctype;
-    const batch = findBatch(pendingCheckBatchId);
-    els.checkTypeChips.querySelectorAll(".check-chip").forEach(b => b.classList.toggle("active", b === btn));
-    if (batch) renderCheckResultChips(batch.type);
+    const type = btn.dataset.ctype;
+    if (newCheckTypes.has(type)) newCheckTypes.delete(type); else newCheckTypes.add(type);
+    btn.classList.toggle("active", newCheckTypes.has(type));
+    renderCheckResultChips();
   });
   els.checkResultChips?.addEventListener("click", e => {
     const btn = e.target.closest("[data-cresult]");
     if (!btn) return;
-    newCheckResult = btn.dataset.cresult;
-    els.checkResultChips.querySelectorAll(".result-chip").forEach(b => b.classList.toggle("active", b === btn));
+    const r = btn.dataset.cresult;
+    if (newCheckResults.has(r)) newCheckResults.delete(r); else newCheckResults.add(r);
+    btn.classList.toggle("active", newCheckResults.has(r));
   });
   els.checkReminderQuick?.addEventListener("click", e => {
     const btn = e.target.closest("[data-rdays]");
@@ -2653,16 +2708,17 @@ function bindBatchEvents() {
   els.editCheckTypeChips?.addEventListener("click", e => {
     const btn = e.target.closest("[data-ectype]");
     if (!btn) return;
-    editCheckType = btn.dataset.ectype;
-    els.editCheckTypeChips.querySelectorAll(".check-chip").forEach(b => b.classList.toggle("active", b === btn));
-    const batch = findBatch(pendingCheckBatchId);
-    if (batch) renderEditCheckResultChips(batch.type);
+    const type = btn.dataset.ectype;
+    if (editCheckTypes.has(type)) editCheckTypes.delete(type); else editCheckTypes.add(type);
+    btn.classList.toggle("active", editCheckTypes.has(type));
+    renderEditCheckResultChips();
   });
   els.editCheckResultChips?.addEventListener("click", e => {
     const btn = e.target.closest("[data-ecresult]");
     if (!btn) return;
-    editCheckResult = btn.dataset.ecresult;
-    els.editCheckResultChips.querySelectorAll(".result-chip").forEach(b => b.classList.toggle("active", b === btn));
+    const r = btn.dataset.ecresult;
+    if (editCheckResults.has(r)) editCheckResults.delete(r); else editCheckResults.add(r);
+    btn.classList.toggle("active", editCheckResults.has(r));
   });
   els.f1ToF2ReminderQuick?.addEventListener("click", e => {
     const btn = e.target.closest("[data-rdays]");
@@ -2749,6 +2805,10 @@ function bindBatchEvents() {
     if (e.target.closest(".check-delete-btn")) {
       const btn = e.target.closest(".check-delete-btn");
       openDeleteCheckDialog(btn.dataset.checkId, btn.dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".batch-empty-add")) {
+      openNewBatchDialog(null);
       return;
     }
     if (e.target.closest(".pick-recipe-btn")) {

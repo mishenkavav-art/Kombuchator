@@ -2053,7 +2053,8 @@ body::before {
 }
 .saved-empty {
   grid-column: 1 / -1;
-  padding: 20px;
+  padding: 48px 24px 32px;
+  text-align: center;
 }
 .saved-empty p { margin: 4px 0 0; color: var(--ink-soft); }
 
@@ -3184,18 +3185,29 @@ button {
   white-space: nowrap;
 }
 
-.tag-sweet         { background: #FEF3C7; color: #92400E; }
-.tag-slightly-sour { background: #D1FAD7; color: #1a5c28; }
-.tag-balanced      { background: #BBF7D0; color: #14532d; }
-.tag-sharp         { background: #FFEDD5; color: #7c2d12; }
-.tag-too-sour      { background: #FEE2E2; color: #7f1d1d; }
-.tag-suspicious    { background: #FEE2E2; color: #991b1b; border: 1.5px solid #fca5a5; }
-.tag-no-bubbles    { background: var(--paper-bg-2); color: var(--ink-muted); }
-.tag-light-bubbles { background: #DBEAFE; color: #1e40af; }
-.tag-good-bubbles  { background: #BBF7D0; color: #14532d; }
-.tag-pressure      { background: #FFEDD5; color: #7c2d12; }
-.tag-fridge        { background: #E0F2FE; color: #0c4a6e; }
-.tag-custom        { background: var(--paper-bg-2); color: var(--ink-soft); }
+.tag-sweet           { background: #FEF3C7; color: #92400E; }
+.tag-slightly-sour   { background: #D1FAD7; color: #1a5c28; }
+.tag-balanced        { background: #BBF7D0; color: #14532d; }
+.tag-sharp           { background: #FFEDD5; color: #7c2d12; }
+.tag-too-sour        { background: #FEE2E2; color: #7f1d1d; }
+.tag-suspicious      { background: #FEE2E2; color: #991b1b; border: 1.5px solid #fca5a5; }
+.tag-no-bubbles      { background: var(--paper-bg-2); color: var(--ink-muted); }
+.tag-light-bubbles   { background: #DBEAFE; color: #1e40af; }
+.tag-good-bubbles    { background: #BBF7D0; color: #14532d; }
+.tag-pressure        { background: #FFEDD5; color: #7c2d12; }
+.tag-fridge          { background: #E0F2FE; color: #0c4a6e; }
+.tag-custom          { background: var(--paper-bg-2); color: var(--ink-soft); }
+/* Vizuální kontrola */
+.tag-clear           { background: #E0F7FA; color: #006064; }
+.tag-cloudy          { background: #F3E5F5; color: #6A1B9A; }
+.tag-bubbling        { background: #E8F5E9; color: #1B5E20; }
+.tag-mold            { background: #B71C1C; color: #fff; }
+.tag-kris            { background: #F9FBE7; color: #558B2F; }
+.tag-pellicle        { background: #FFF8E1; color: #E65100; }
+/* Kontrola tlaku */
+.tag-explosion       { background: #FFEBEE; color: #B71C1C; border: 1.5px solid #ef9a9a; }
+/* Akce / stavy */
+.tag-action          { background: #E8EAF6; color: #283593; }
 
 /* ── Desktop batch table ── */
 
@@ -3796,18 +3808,37 @@ button {
   color: #fff;
 }
 
+/* result-section label between chip groups */
+.result-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: 14px 0 6px;
+}
+
 /* result chips inherit tag colors when active */
-.result-chip.tag-sweet.active         { background: #D4A017; border-color: #D4A017; color: #fff; }
-.result-chip.tag-slightly-sour.active { background: #6F9659; border-color: #6F9659; color: #fff; }
-.result-chip.tag-balanced.active      { background: #264B1F; border-color: #264B1F; color: #fff; }
-.result-chip.tag-sharp.active         { background: #E89A20; border-color: #E89A20; color: #fff; }
-.result-chip.tag-too-sour.active      { background: #C05228; border-color: #C05228; color: #fff; }
-.result-chip.tag-suspicious.active    { background: #9f3d35; border-color: #9f3d35; color: #fff; }
-.result-chip.tag-no-bubbles.active    { background: #827565; border-color: #827565; color: #fff; }
-.result-chip.tag-light-bubbles.active { background: #4A90D9; border-color: #4A90D9; color: #fff; }
-.result-chip.tag-good-bubbles.active  { background: #264B1F; border-color: #264B1F; color: #fff; }
-.result-chip.tag-pressure.active      { background: #E89A20; border-color: #E89A20; color: #fff; }
-.result-chip.tag-fridge.active        { background: #2B6CB0; border-color: #2B6CB0; color: #fff; }
+.result-chip.tag-sweet.active           { background: #D4A017; border-color: #D4A017; color: #fff; }
+.result-chip.tag-slightly-sour.active   { background: #6F9659; border-color: #6F9659; color: #fff; }
+.result-chip.tag-balanced.active        { background: #264B1F; border-color: #264B1F; color: #fff; }
+.result-chip.tag-sharp.active           { background: #E89A20; border-color: #E89A20; color: #fff; }
+.result-chip.tag-too-sour.active        { background: #C05228; border-color: #C05228; color: #fff; }
+.result-chip.tag-suspicious.active      { background: #9f3d35; border-color: #9f3d35; color: #fff; }
+.result-chip.tag-no-bubbles.active      { background: #827565; border-color: #827565; color: #fff; }
+.result-chip.tag-light-bubbles.active   { background: #4A90D9; border-color: #4A90D9; color: #fff; }
+.result-chip.tag-good-bubbles.active    { background: #264B1F; border-color: #264B1F; color: #fff; }
+.result-chip.tag-pressure.active        { background: #E89A20; border-color: #E89A20; color: #fff; }
+.result-chip.tag-fridge.active          { background: #2B6CB0; border-color: #2B6CB0; color: #fff; }
+.result-chip.tag-clear.active           { background: #006064; border-color: #006064; color: #fff; }
+.result-chip.tag-cloudy.active          { background: #6A1B9A; border-color: #6A1B9A; color: #fff; }
+.result-chip.tag-bubbling.active        { background: #1B5E20; border-color: #1B5E20; color: #fff; }
+.result-chip.tag-mold.active            { background: #B71C1C; border-color: #B71C1C; color: #fff; }
+.result-chip.tag-kris.active            { background: #558B2F; border-color: #558B2F; color: #fff; }
+.result-chip.tag-pellicle.active        { background: #E65100; border-color: #E65100; color: #fff; }
+.result-chip.tag-explosion.active       { background: #B71C1C; border-color: #B71C1C; color: #fff; }
+.result-chip.tag-action.active          { background: #283593; border-color: #283593; color: #fff; }
+.result-chip.tag-custom.active          { background: #6b7280; border-color: #6b7280; color: #fff; }
 
 /* ── Radio group (finish dialog) ── */
 

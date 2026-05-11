@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=57">
+  <link rel="stylesheet" href="style.css?v=58">
 </head>
 <body>
   <div class="app-layout">
@@ -32,12 +32,12 @@
           </a>
           <a class="nav-item" href="#" id="navVarky">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8v2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1V3z"/><path d="M5 10h14"/><path d="M9 3h6"/></svg>
-            <span>Moje várky</span>
+            <span>Kvasírna</span>
             <span class="nav-badge" id="navVarkyBadge" hidden>0</span>
           </a>
           <a class="nav-item" href="#" id="navZapisnik">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
-            <span>Zápisník</span>
+            <span>Kombuchařka</span>
             <span class="nav-badge" id="navSavedBadge" hidden>0</span>
           </a>
         </nav>
@@ -273,11 +273,11 @@
               <div class="intensity-row" id="intensityDots"></div>
               <div class="result-metrics" id="recommendations"></div>
               <div class="recipe-actions" id="currentRecipeActions">
-                <button class="recipe-action primary" id="saveRecipeBtn" type="button">Uložit</button>
-                <button class="recipe-action" id="shareWhatsAppBtn" type="button">WhatsApp</button>
-                <button class="recipe-action" id="copyRecipeBtn" type="button">Kopírovat</button>
-                <button class="recipe-action" id="startBatchBtn" type="button">Várky</button>
-                <button class="recipe-action danger" id="resetCalcBtn" type="button">Reset</button>
+                <button class="recipe-action primary" id="saveRecipeBtn" type="button">Uložit do Kombuchařky</button>
+                <button class="recipe-action primary" id="startBatchBtn" type="button">Přesunout do kvasírny</button>
+                <button class="recipe-action" id="shareWhatsAppBtn" type="button">Poslat na WhatsApp</button>
+                <button class="recipe-action" id="copyRecipeBtn" type="button">Kopírovat recept</button>
+                <button class="recipe-action danger" id="resetCalcBtn" type="button">Resetovat</button>
               </div>
               <p class="action-feedback" id="currentActionFeedback" aria-live="polite"></p>
             </div>
@@ -301,9 +301,8 @@
       <div id="varkyView" hidden>
         <div class="saved-view-header varky-view-header">
           <div class="saved-view-header-text">
-            <h2>Moje várky</h2>
+            <h2>Kvasírna</h2>
             <p>Fermentační přehled živých várek.</p>
-            <small>Várky se ukládají jen v tomhle prohlížeči.</small>
           </div>
           <button class="recipe-action primary varky-new-btn" id="newBatchBtn" type="button">+ Založ várku</button>
         </div>
@@ -319,7 +318,7 @@
       <!-- BATCH DETAIL VIEW -->
       <div id="batchDetailView" hidden>
         <div class="batch-detail-topbar">
-          <button class="recipe-action" id="batchDetailBackBtn" type="button">← Zpět na várky</button>
+          <button class="recipe-action" id="batchDetailBackBtn" type="button">← Zpět na kvasírnu</button>
         </div>
         <div id="batchDetailBody"></div>
       </div><!-- /batchDetailView -->
@@ -327,9 +326,8 @@
       <div id="savedRecipesView" hidden>
         <div class="saved-view-header">
           <div class="saved-view-header-text">
-            <h2>Zápisník</h2>
+            <h2>Kombuchařka</h2>
             <p>Tady si necháš recepty, které chceš zopakovat, doladit nebo poslat dál.</p>
-            <small>Zápisník si pamatuje recepty jen v tomhle prohlížeči.</small>
           </div>
         </div>
         <div class="saved-recipes-list" id="savedRecipesList"></div>
@@ -624,6 +622,6 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=57"></script>
+  <script src="script.js?v=58"></script>
 </body>
 </html>
