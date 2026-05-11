@@ -1861,8 +1861,8 @@ function getBatchDay(batch) {
   return Math.max(1, Math.floor((Date.now() - new Date(batch.fermentationStartedAt).getTime()) / 86400000) + 1);
 }
 function hasDueReminder(batch) {
-  const now = Date.now();
-  return batch.reminders.some(r => r.status === "pending" && new Date(r.remindAt).getTime() <= now);
+  const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+  return batch.reminders.some(r => r.status === "pending" && new Date(r.remindAt).getTime() <= todayEnd.getTime());
 }
 function getDueCount() {
   return batches.filter(b => !b.finished && hasDueReminder(b)).length;
