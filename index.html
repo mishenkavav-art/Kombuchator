@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=56">
+  <link rel="stylesheet" href="style.css?v=57">
 </head>
 <body>
   <div class="app-layout">
@@ -426,7 +426,7 @@
         </div>
       </div>
       <label>
-        <span>Poznámka ke začátku</span>
+        <span>Poznámka</span>
         <textarea id="newBatchNote" rows="3" placeholder="Co si chceš poznamenat k začátku várky?"></textarea>
       </label>
       <div class="dialog-actions">
@@ -486,7 +486,7 @@
 
   <!-- DIALOG: Ukončit várku -->
   <dialog id="finishBatchDialog">
-    <form class="modal-card" method="dialog">
+    <form class="modal-card batch-dialog" method="dialog">
       <button class="close-button" id="closeFinishBatchBtn" type="button" aria-label="Zavřít">×</button>
       <h2>Jak várka dopadla?</h2>
       <div class="radio-group" id="finishResultGroup">
@@ -611,6 +611,19 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=56"></script>
+  <!-- DIALOG: Vybrat recept -->
+  <dialog id="pickRecipeDialog">
+    <form class="modal-card batch-dialog" method="dialog">
+      <button class="close-button" id="closePickRecipeBtn" type="button" aria-label="Zavřít">×</button>
+      <h2>Přiřadit recept k várce</h2>
+      <div id="pickRecipeList"></div>
+      <div class="dialog-actions">
+        <button class="recipe-action" id="cancelPickRecipeBtn" type="button">Zrušit</button>
+        <button class="recipe-action danger" id="clearBatchRecipeBtn" type="button">Odpojit recept</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="script.js?v=57"></script>
 </body>
 </html>

@@ -89,6 +89,7 @@ let newCheckType = "taste";
 let newCheckResult = null;
 let newCheckReminderDays = 0;
 let newBatchRecipeSnapshot = null;
+let pendingPickRecipeBatchId = null;
 let batches = [];
 
 const state = {
@@ -254,7 +255,12 @@ const els = {
   newBatchCustomTime:  document.querySelector("#newBatchCustomTime"),
   checkCustomReminder: document.querySelector("#checkCustomReminder"),
   checkCustomDate:     document.querySelector("#checkCustomDate"),
-  checkCustomTime:     document.querySelector("#checkCustomTime")
+  checkCustomTime:     document.querySelector("#checkCustomTime"),
+  pickRecipeDialog:    document.querySelector("#pickRecipeDialog"),
+  closePickRecipeBtn:  document.querySelector("#closePickRecipeBtn"),
+  cancelPickRecipeBtn: document.querySelector("#cancelPickRecipeBtn"),
+  clearBatchRecipeBtn: document.querySelector("#clearBatchRecipeBtn"),
+  pickRecipeList:      document.querySelector("#pickRecipeList")
 };
 
 // ═══ UTILS ═══
@@ -1879,9 +1885,9 @@ function recipeSnapshotSummary(snap) {
 
 function updateVarkyBadge() {
   if (!els.navVarkyBadge) return;
-  const due = getDueCount();
-  els.navVarkyBadge.textContent = due || "";
-  els.navVarkyBadge.hidden = due === 0;
+  const active = batches.filter(b => !b.finished).length;
+  els.navVarkyBadge.textContent = active || "";
+  els.navVarkyBadge.hidden = active === 0;
 }
 
 function checkReminders() {
@@ -2026,7 +2032,7 @@ function renderBatchDetail(batchId) {
   const allEntries = [
     { time: batch.fermentationStartedAt, type: "start", note: batch.startNote },
     ...batch.checks.map(c => ({ time: c.checkedAt, type: "check", check: c }))
-  ].sort((a, b) => new Date(a.time) - new Date(b.time));
+  ].sort((a, b) => new Date(b.time) - new Date(a.time));
 
   els.batchDetailBody.innerHTML = `
     <div class="batch-detail-header-card" data-batch-id="${batch.id}">
@@ -2043,7 +2049,6 @@ function renderBatchDetail(batchId) {
       <div class="batch-detail-meta-row">
         <span>Začátek: <strong>${formatBatchDate(batch.fermentationStartedAt)} ${formatBatchTime(batch.fermentationStartedAt)}</strong></span>
         <span>${day}. den fermentace</span>
-        ${summary ? `<span>${escapeHtml(summary)}</span>` : ""}
       </div>
       ${activeReminders.length ? `
         <div class="batch-reminders">
@@ -2062,6 +2067,13 @@ function renderBatchDetail(batchId) {
         ${batch.finalNote ? `<p>${escapeHtml(batch.finalNote)}</p>` : ""}
         <small>Ukončeno: ${formatBatchDate(batch.finishedAt)}</small>
       </div>` : ""}
+    <div class="batch-recipe-block">
+      <div class="batch-recipe-block-header">
+        <strong>Recept</strong>
+        <button class="timeline-action-btn pick-recipe-btn" type="button" data-batch-id="${batch.id}">${batch.recipeSnapshot ? "Změnit" : "Přiřadit ze zápisníku"}</button>
+      </div>
+      ${batch.recipeSnapshot ? renderRecipeNeeds(batch.recipeSnapshot) : `<p class="batch-no-recipe">K várce není přiřazen žádný recept.</p>`}
+    </div>
     <h3 class="batch-timeline-heading">Průběh várky</h3>
     <div class="batch-timeline">
       ${allEntries.map(entry => {
@@ -2153,7 +2165,8 @@ function openNewCheckDialog(batchId) {
   newCheckType = "taste";
   newCheckResult = null;
   newCheckReminderDays = 0;
-  if (els.newCheckDate) els.newCheckDate.value = todayISO();
+  const minDate = batch.fermentationStartedAt.slice(0, 10);
+  if (els.newCheckDate) { els.newCheckDate.value = todayISO(); els.newCheckDate.min = minDate; }
   if (els.newCheckTime) els.newCheckTime.value = nowTimeHHMM();
   if (els.newCheckNote) els.newCheckNote.value = "";
   renderCheckTypeChips(batch.type);
@@ -2333,7 +2346,7 @@ function openEditCheckDialog(checkId, batchId) {
   pendingCheckBatchId = batchId;
   editCheckType = check.checkType;
   editCheckResult = check.result;
-  if (els.editCheckDate) els.editCheckDate.value = check.checkedAt.slice(0, 10);
+  if (els.editCheckDate) { els.editCheckDate.value = check.checkedAt.slice(0, 10); els.editCheckDate.min = batch.fermentationStartedAt.slice(0, 10); }
   if (els.editCheckTime) els.editCheckTime.value = check.checkedAt.slice(11, 16);
   if (els.editCheckNote) els.editCheckNote.value = check.note || "";
   renderEditCheckTypeChips(batch.type);
@@ -2428,6 +2441,45 @@ function confirmF1ToF2() {
   renderBatchDetail(f2Id);
   showActionFeedback("F2 várka zalošena. Nech to naperlovat.");
   pendingF1ToF2BatchId = null;
+}
+
+// ── Pick Recipe Dialog ──
+
+function openPickRecipeDialog(batchId) {
+  pendingPickRecipeBatchId = batchId;
+  if (!els.pickRecipeList) return;
+  if (!savedRecipes.length) {
+    els.pickRecipeList.innerHTML = `<p style="font-size:14px;color:var(--ink-soft)">Zápisník je prázdný – nejdřív si ulož nějaký recept.</p>`;
+  } else {
+    els.pickRecipeList.innerHTML = savedRecipes.map(r => `
+      <button class="pick-recipe-item" type="button" data-recipe-id="${r.id}">
+        <strong>${escapeHtml(r.recipeName)}</strong>
+        <span>${escapeHtml(recipeSnapshotSummary(r))}</span>
+      </button>`).join("");
+  }
+  els.pickRecipeDialog?.showModal();
+}
+
+function confirmPickRecipe(recipeId) {
+  const batch = findBatch(pendingPickRecipeBatchId);
+  if (!batch) return;
+  batch.recipeSnapshot = findRecipe(recipeId) || batch.recipeSnapshot;
+  persistBatches();
+  els.pickRecipeDialog?.close();
+  renderBatchDetail(pendingPickRecipeBatchId);
+  renderVarkyView();
+  pendingPickRecipeBatchId = null;
+}
+
+function clearBatchRecipe() {
+  const batch = findBatch(pendingPickRecipeBatchId);
+  if (!batch) return;
+  batch.recipeSnapshot = null;
+  persistBatches();
+  els.pickRecipeDialog?.close();
+  renderBatchDetail(pendingPickRecipeBatchId);
+  renderVarkyView();
+  pendingPickRecipeBatchId = null;
 }
 
 // ── Bind batch events ──
@@ -2601,7 +2653,20 @@ function bindBatchEvents() {
       openDeleteCheckDialog(btn.dataset.checkId, btn.dataset.batchId);
       return;
     }
+    if (e.target.closest(".pick-recipe-btn")) {
+      const btn = e.target.closest(".pick-recipe-btn");
+      if (btn.dataset.batchId) openPickRecipeDialog(btn.dataset.batchId);
+      return;
+    }
+    if (e.target.closest(".pick-recipe-item")) {
+      const btn = e.target.closest(".pick-recipe-item");
+      if (btn.dataset.recipeId) confirmPickRecipe(btn.dataset.recipeId);
+      return;
+    }
   });
+  els.closePickRecipeBtn?.addEventListener("click", () => { pendingPickRecipeBatchId = null; els.pickRecipeDialog?.close(); });
+  els.cancelPickRecipeBtn?.addEventListener("click", () => { pendingPickRecipeBatchId = null; els.pickRecipeDialog?.close(); });
+  els.clearBatchRecipeBtn?.addEventListener("click", clearBatchRecipe);
 }
 
 renderChoices();
