@@ -38,13 +38,16 @@ function mergeIncoming(existing, incoming) {
     if (deadBatches.has(b.id)) return;
     const curr = batchMap.get(b.id);
     if (!curr) { batchMap.set(b.id, b); return; }
+    const deadChecks = new Set([...(curr.deletedCheckIds || []), ...(b.deletedCheckIds || [])]);
     const checkMap = new Map([...(curr.checks || []), ...(b.checks || [])].map(c => [c.id, c]));
+    for (const id of deadChecks) checkMap.delete(id);
     const remMap   = new Map([...(curr.reminders || []), ...(b.reminders || [])].map(r => [r.id, r]));
     const base = (b.checks?.length ?? 0) >= (curr.checks?.length ?? 0) ? b : curr;
     batchMap.set(b.id, {
       ...base,
-      checks:    [...checkMap.values()].sort((a, c) => new Date(a.checkedAt) - new Date(c.checkedAt)),
-      reminders: [...remMap.values()]
+      checks:          [...checkMap.values()].sort((a, c) => new Date(a.checkedAt) - new Date(c.checkedAt)),
+      reminders:       [...remMap.values()],
+      deletedCheckIds: [...deadChecks]
     });
   });
 

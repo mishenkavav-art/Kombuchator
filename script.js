@@ -2025,7 +2025,7 @@ function renderBatchTableRow(batch) {
       </td>
       <td class="batch-col-checks">
         ${lastChecks.length
-          ? lastChecks.map(c => `<div class="batch-check-mini">${checkTagHtml(c.result)}<span class="batch-check-date">${formatBatchDateShort(c.checkedAt)}</span></div>`).join("")
+          ? lastChecks.map(c => `<div class="batch-check-mini">${checkResultTags(c)}<span class="batch-check-date">${formatBatchDateShort(c.checkedAt)}</span></div>`).join("")
           : `<span class="batch-no-checks">Zatím žádné kontroly</span>`}
         ${batch.checks.length > 3 ? `<button class="batch-more-checks" type="button" data-batch-id="${batch.id}">+${batch.checks.length - 3} další</button>` : ""}
       </td>
@@ -2192,7 +2192,7 @@ function confirmNewBatch() {
     finished: false, finishedAt: null, finalResult: null, finalNote: null,
     startNote: els.newBatchNote?.value.trim() || null,
     recipeSnapshot: newBatchRecipeSnapshot || null,
-    checks: [], reminders
+    checks: [], reminders, deletedCheckIds: []
   };
   batches.unshift(batch);
   persistBatches();
@@ -2385,6 +2385,8 @@ function openDeleteCheckDialog(checkId, batchId) {
 function confirmDeleteCheck() {
   const batch = findBatch(pendingCheckBatchId);
   if (batch) {
+    if (!batch.deletedCheckIds) batch.deletedCheckIds = [];
+    batch.deletedCheckIds.push(pendingDeleteCheckId);
     batch.checks = batch.checks.filter(c => c.id !== pendingDeleteCheckId);
     persistBatches();
     renderBatchDetail(pendingCheckBatchId);
@@ -2501,7 +2503,7 @@ function confirmF1ToF2() {
     startNote: els.f1ToF2Note?.value.trim() || null,
     recipeSnapshot: sourceBatch.recipeSnapshot || null,
     parentBatchId: pendingF1ToF2BatchId,
-    checks: [], reminders
+    checks: [], reminders, deletedCheckIds: []
   };
   if (!sourceBatch.linkedBatchIds) sourceBatch.linkedBatchIds = [];
   sourceBatch.linkedBatchIds.push(f2Id);
@@ -2536,13 +2538,16 @@ function mergeSync(localBatches, localRecipes, remote) {
     if (deadBatches.has(b.id)) return;
     const existing = batchMap.get(b.id);
     if (!existing) { batchMap.set(b.id, b); return; }
+    const deadChecks = new Set([...(existing.deletedCheckIds || []), ...(b.deletedCheckIds || [])]);
     const checkMap = new Map([...(existing.checks || []), ...(b.checks || [])].map(c => [c.id, c]));
+    for (const id of deadChecks) checkMap.delete(id);
     const remMap   = new Map([...(existing.reminders || []), ...(b.reminders || [])].map(r => [r.id, r]));
     const base = (b.checks?.length ?? 0) >= (existing.checks?.length ?? 0) ? b : existing;
     batchMap.set(b.id, {
       ...base,
-      checks:    [...checkMap.values()].sort((a, c) => new Date(a.checkedAt) - new Date(c.checkedAt)),
-      reminders: [...remMap.values()]
+      checks:          [...checkMap.values()].sort((a, c) => new Date(a.checkedAt) - new Date(c.checkedAt)),
+      reminders:       [...remMap.values()],
+      deletedCheckIds: [...deadChecks]
     });
   });
 

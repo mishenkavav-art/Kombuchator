@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=59">
+  <link rel="stylesheet" href="style.css?v=60">
 </head>
 <body>
   <div class="app-layout">
@@ -28,7 +28,7 @@
         <nav class="sidebar-nav">
           <a class="nav-item active" href="#" id="navCalculator" aria-current="page">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-            <span>Kalkulačka</span>
+            <span>Kombuchátor</span>
           </a>
           <a class="nav-item" href="#" id="navVarky">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3h8v2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1V3z"/><path d="M5 10h14"/><path d="M9 3h6"/></svg>
@@ -273,11 +273,15 @@
               <div class="intensity-row" id="intensityDots"></div>
               <div class="result-metrics" id="recommendations"></div>
               <div class="recipe-actions" id="currentRecipeActions">
-                <button class="recipe-action primary" id="saveRecipeBtn" type="button">Uložit do Kombuchařky</button>
-                <button class="recipe-action primary" id="startBatchBtn" type="button">Přesunout do kvasírny</button>
-                <button class="recipe-action" id="shareWhatsAppBtn" type="button">Poslat na WhatsApp</button>
-                <button class="recipe-action" id="copyRecipeBtn" type="button">Kopírovat recept</button>
-                <button class="recipe-action danger" id="resetCalcBtn" type="button">Resetovat</button>
+                <div class="recipe-actions-row">
+                  <button class="recipe-action primary" id="saveRecipeBtn" type="button">Uložit do Kombuchařky</button>
+                  <button class="recipe-action primary" id="startBatchBtn" type="button">Přesunout do kvasírny</button>
+                </div>
+                <div class="recipe-actions-row">
+                  <button class="recipe-action" id="shareWhatsAppBtn" type="button">Poslat na WhatsApp</button>
+                  <button class="recipe-action" id="copyRecipeBtn" type="button">Kopírovat recept</button>
+                  <button class="recipe-action danger" id="resetCalcBtn" type="button">Resetovat</button>
+                </div>
               </div>
               <p class="action-feedback" id="currentActionFeedback" aria-live="polite"></p>
             </div>
@@ -301,8 +305,8 @@
       <div id="varkyView" hidden>
         <div class="saved-view-header varky-view-header">
           <div class="saved-view-header-text">
-            <h2>Kvasírna</h2>
-            <p>Fermentační přehled živých várek.</p>
+            <h2 class="brand-title">Kvasírna</h2>
+            <p class="brand-sub">Fermentační přehled živých várek.</p>
           </div>
           <button class="recipe-action primary varky-new-btn" id="newBatchBtn" type="button">+ Založ várku</button>
         </div>
@@ -326,8 +330,8 @@
       <div id="savedRecipesView" hidden>
         <div class="saved-view-header">
           <div class="saved-view-header-text">
-            <h2>Kombuchařka</h2>
-            <p>Tady si necháš recepty, které chceš zopakovat, doladit nebo poslat dál.</p>
+            <h2 class="brand-title">Kombuchařka</h2>
+            <p class="brand-sub">Tady si necháš recepty, které chceš zopakovat, doladit nebo poslat dál.</p>
           </div>
         </div>
         <div class="saved-recipes-list" id="savedRecipesList"></div>
@@ -622,6 +626,6 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=59"></script>
+  <script src="script.js?v=60"></script>
 </body>
 </html>
