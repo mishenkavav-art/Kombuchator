@@ -2747,11 +2747,18 @@ async function syncWithServer() {
       renderSavedRecipes();
     }
 
-    // Upload merged payload — server does another union pass
+    // Upload merged payload — include push subscription so server always has it after restart
+    let pushSub = null;
+    try {
+      if ("serviceWorker" in navigator && "PushManager" in window && Notification.permission === "granted") {
+        const reg = await navigator.serviceWorker.ready;
+        pushSub = await reg.pushManager.getSubscription();
+      }
+    } catch {}
     await fetch("/api/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(merged)
+      body: JSON.stringify({ ...merged, pushSub: pushSub ? pushSub.toJSON() : null })
     });
   } catch {}
   syncBusy = false;

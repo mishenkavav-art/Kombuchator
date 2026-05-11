@@ -195,6 +195,12 @@ http.createServer(async (req, res) => {
     if (req.method === "POST") {
       try {
         const data = await parseJsonBody(req);
+        // Re-register push subscription piggybacked on sync
+        if (data.pushSub && data.pushSub.endpoint) {
+          const idx = pushSubs.findIndex(s => s.endpoint === data.pushSub.endpoint);
+          if (idx >= 0) pushSubs[idx] = data.pushSub; else pushSubs.push(data.pushSub);
+          saveSubs();
+        }
         syncStore = mergeIncoming(syncStore, data);
         saveSyncFile();
         checkAndSendReminders();
