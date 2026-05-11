@@ -1991,7 +1991,7 @@ function renderBatchCard(batch) {
       </p>
       <div class="batch-card-actions">
         <button class="recipe-action primary batch-add-check" type="button">Kontrola várky</button>
-        ${!batch.finished ? `<button class="recipe-action batch-finish" type="button" data-batch-id="${batch.id}">Ukončení várky</button>` : ""}
+        ${!batch.finished ? `<button class="recipe-action danger batch-finish" type="button" data-batch-id="${batch.id}">Ukončení várky</button>` : ""}
         <button class="recipe-action batch-show-detail" type="button">Detail</button>
       </div>
     </article>`;
@@ -2036,7 +2036,7 @@ function renderBatchTableRow(batch) {
       </td>
       <td class="batch-col-actions">
         <button class="recipe-action primary batch-add-check" type="button">Kontrola várky</button>
-        ${!batch.finished ? `<button class="recipe-action batch-finish" type="button" data-batch-id="${batch.id}">Ukončení várky</button>` : ""}
+        ${!batch.finished ? `<button class="recipe-action danger batch-finish" type="button" data-batch-id="${batch.id}">Ukončení várky</button>` : ""}
         <button class="recipe-action batch-show-detail" type="button">Detail</button>
       </td>
     </tr>`;
@@ -2105,7 +2105,7 @@ function renderBatchDetail(batchId) {
     </div>
     <div class="batch-detail-actions">
       <button class="recipe-action primary batch-add-check" type="button" data-batch-id="${batch.id}">+ Zapsat kontrolu</button>
-      ${!batch.finished ? `<button class="recipe-action batch-finish" type="button" data-batch-id="${batch.id}">Ukončit várku</button>` : ""}
+      ${!batch.finished ? `<button class="recipe-action danger batch-finish" type="button" data-batch-id="${batch.id}">Ukončit várku</button>` : ""}
       <button class="recipe-action danger batch-delete" type="button" data-batch-id="${batch.id}">Smazat</button>
     </div>
     ${batch.finished ? `

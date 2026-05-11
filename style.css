@@ -346,7 +346,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   transition: background .18s, color .18s;
   color: var(--ink-soft);
   font-weight: 500;
-  font-size: 15.5px;
+  font-size: 15px;
   user-select: none;
   white-space: nowrap;
 }
@@ -601,7 +601,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   align-items: center;
   gap: 4px;
 }
-.starter-seg button:hover { border-color: #b8b098; transform: translateY(-1px); }
+.starter-seg button:hover { border-color: var(--soft-green); transform: translateY(-1px); }
 .starter-seg button.active {
   background: var(--forest-green);
   border-color: var(--forest-green);
@@ -627,7 +627,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 .tea-row:last-child { border-bottom: none; }
 
 .tea-row-head {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-muted);
   text-transform: uppercase;
@@ -750,7 +750,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   background: var(--paper-card-warm);
   border: 1px solid rgba(215,197,169,.7);
   color: var(--ink-muted);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -791,7 +791,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   display: block;
 }
 .pellicle-card small {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.2;
   color: var(--ink-muted);
 }
@@ -902,7 +902,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   display: block;
 }
 .goal-card small {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--ink-muted);
   display: block;
 }
@@ -1162,7 +1162,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 }
 .recommendation-item strong {
   display: block;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -1287,7 +1287,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14.5px;
+  font-size: 15px;
   color: var(--ink-mid);
   line-height: 1.4;
   padding-bottom: 6px;
@@ -1962,7 +1962,7 @@ body::before {
   color: var(--ink);
   padding: 8px 13px;
   font: inherit;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.65);
@@ -1993,7 +1993,7 @@ body::before {
   min-height: 1.3em;
   margin: 6px 0 0;
   color: var(--forest-green);
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -3305,7 +3305,7 @@ button {
   display: block;
   width: 100%;
   margin-bottom: 5px;
-  font-size: 13px;
+  font-size: 14px;
   text-align: center;
 }
 
