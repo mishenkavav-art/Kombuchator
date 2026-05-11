@@ -81,6 +81,7 @@ let pendingFinishBatchId = null;
 let pendingDeleteBatchId = null;
 let pendingDeleteCheckId = null;
 let editingCheckId = null;
+const firedNotifications = new Set();
 let editCheckTypes   = new Set(["taste"]);
 let editCheckResults = new Set();
 let pendingF1ToF2BatchId = null;
@@ -1949,13 +1950,40 @@ function updateVarkyBadge() {
   els.navVarkyBadge.hidden = active === 0;
 }
 
+function fireNotification(title, body) {
+  if (Notification.permission !== "granted") return;
+  try {
+    new Notification(title, { body, icon: "/ikony/kombucha.png", badge: "/ikony/kombucha.png" });
+  } catch {}
+}
+
 function checkReminders() {
   if (!els.reminderBanner) return;
   updateVarkyBadge();
-  const due = getDueCount();
-  if (due === 0) { els.reminderBanner.hidden = true; return; }
+  const now = Date.now();
+  const dueItems = [];
+  batches.forEach(b => {
+    if (b.finished) return;
+    b.reminders.forEach(r => {
+      if (r.status === "pending" && new Date(r.remindAt).getTime() <= now) {
+        dueItems.push({ batch: b, reminder: r });
+      }
+    });
+  });
+
+  if (dueItems.length === 0) { els.reminderBanner.hidden = true; return; }
+
+  // In-app banner
+  const due = dueItems.length;
   els.reminderBannerText.textContent = due === 1 ? "Dnes máš ochutnat 1 várku." : `Máš ${due} připomínky k várkám.`;
   els.reminderBanner.hidden = false;
+
+  // Browser notifications – once per reminder ID
+  dueItems.forEach(({ batch, reminder }) => {
+    if (firedNotifications.has(reminder.id)) return;
+    firedNotifications.add(reminder.id);
+    fireNotification(`Kombuchátor: ${reminder.title}`, batch.batchName);
+  });
 }
 
 function renderFilterPills() {
@@ -2867,6 +2895,12 @@ renderVarkyView();
 checkReminders();
 syncWithServer();
 setInterval(syncWithServer, 30000);
+setInterval(checkReminders, 60000);
+
+// Ask for notification permission (needed for browser notifications)
+if ("Notification" in window && Notification.permission === "default") {
+  Notification.requestPermission();
+}
 
 // Handle #varky / #zapisnik URL fragments for deep-linking
 (function() {

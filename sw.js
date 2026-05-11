@@ -15,6 +15,18 @@ self.addEventListener("activate", e => {
   );
 });
 
+// Open app when notification is clicked
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+      const existing = list.find(c => c.url.includes(self.location.origin));
+      if (existing) return existing.focus();
+      return clients.openWindow("/#varky");
+    })
+  );
+});
+
 // Network-first: always try fresh, fall back to cache when offline
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
