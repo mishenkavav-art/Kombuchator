@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=64">
+  <link rel="stylesheet" href="style.css?v=65">
 </head>
 <body>
   <div class="app-layout">
@@ -554,6 +554,11 @@
         <span>Poznámka</span>
         <textarea id="editCheckNote" rows="3" placeholder="Co jsi zjistil/a?"></textarea>
       </label>
+      <div class="edit-reminders-block">
+        <span class="choice-label">Připomínky</span>
+        <div id="editRemindersSection"></div>
+        <button class="add-btn" id="addEditReminderBtn" type="button">+ Přidat připomínku</button>
+      </div>
       <div class="dialog-actions">
         <button class="recipe-action" id="cancelEditCheckBtn" type="button">Zrušit</button>
         <button class="recipe-action primary" id="confirmEditCheckBtn" type="button">Uložit změny</button>
@@ -626,6 +631,6 @@
     </form>
   </dialog>
 
-  <script src="script.js?v=64"></script>
+  <script src="script.js?v=65"></script>
 </body>
 </html>

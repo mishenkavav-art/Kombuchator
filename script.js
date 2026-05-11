@@ -81,6 +81,7 @@ let pendingFinishBatchId = null;
 let pendingDeleteBatchId = null;
 let pendingDeleteCheckId = null;
 let editingCheckId = null;
+let editBatchReminders = [];
 const firedNotifications = new Set();
 let editCheckTypes   = new Set(["taste"]);
 let editCheckResults = new Set();
@@ -2454,6 +2455,24 @@ function confirmDeleteCheck() {
 
 // ── Edit check ──
 
+function renderEditReminders() {
+  const section = document.querySelector("#editRemindersSection");
+  if (!section) return;
+  if (!editBatchReminders.length) {
+    section.innerHTML = `<p class="edit-no-reminders">Žádná čekající připomínka.</p>`;
+    return;
+  }
+  section.innerHTML = editBatchReminders.map(r => `
+    <div class="edit-reminder-row">
+      <span class="edit-rem-label">${escapeHtml(r.title)}</span>
+      <div class="edit-rem-fields">
+        <input type="date" class="edit-rem-date" data-rem-id="${r.id}" value="${r.remindAt.slice(0, 10)}">
+        <input type="time" class="edit-rem-time" data-rem-id="${r.id}" value="${r.remindAt.slice(11, 16)}">
+      </div>
+      <button type="button" class="edit-rem-del" data-rem-id="${r.id}" title="Smazat připomínku">×</button>
+    </div>`).join("");
+}
+
 function openEditCheckDialog(checkId, batchId) {
   const batch = findBatch(batchId);
   if (!batch) return;
@@ -2466,8 +2485,10 @@ function openEditCheckDialog(checkId, batchId) {
   if (els.editCheckDate) { els.editCheckDate.value = check.checkedAt.slice(0, 10); els.editCheckDate.min = batch.fermentationStartedAt.slice(0, 10); }
   if (els.editCheckTime) els.editCheckTime.value = check.checkedAt.slice(11, 16);
   if (els.editCheckNote) els.editCheckNote.value = check.note || "";
+  editBatchReminders = batch.reminders.filter(r => r.status === "pending").map(r => ({ ...r }));
   renderEditCheckTypeChips();
   renderEditCheckResultChips();
+  renderEditReminders();
   els.editCheckDialog?.showModal();
 }
 
@@ -2505,14 +2526,28 @@ function confirmEditCheck() {
   if (!check) return;
   const dateStr = els.editCheckDate?.value || todayISO();
   const timeStr = els.editCheckTime?.value || "12:00";
-  check.checkedAt = new Date(`${dateStr}T${timeStr}:00`).toISOString();
+  check.checkedAt    = new Date(`${dateStr}T${timeStr}:00`).toISOString();
   check.checkTypes   = [...editCheckTypes];
   check.checkResults = [...editCheckResults];
-  check.note = els.editCheckNote?.value.trim() || null;
+  check.note         = els.editCheckNote?.value.trim() || null;
+
+  // Apply reminder edits: read current DOM values, then replace batch pending reminders
+  const section = document.querySelector("#editRemindersSection");
+  editBatchReminders.forEach(r => {
+    const d = section?.querySelector(`.edit-rem-date[data-rem-id="${r.id}"]`)?.value;
+    const t = section?.querySelector(`.edit-rem-time[data-rem-id="${r.id}"]`)?.value;
+    if (d && t) r.remindAt = new Date(`${d}T${t}:00`).toISOString();
+  });
+  batch.reminders = [
+    ...batch.reminders.filter(r => r.status !== "pending"),
+    ...editBatchReminders
+  ];
+
   persistBatches();
   els.editCheckDialog?.close();
   renderBatchDetail(pendingCheckBatchId);
   renderVarkyView();
+  checkReminders();
   showActionFeedback("Kontrola upravená.");
   editingCheckId = null;
 }
@@ -2878,6 +2913,22 @@ function bindBatchEvents() {
     if (e.target.closest(".pick-recipe-item")) {
       const btn = e.target.closest(".pick-recipe-item");
       if (btn.dataset.recipeId) confirmPickRecipe(btn.dataset.recipeId);
+      return;
+    }
+    // Edit-check dialog: delete reminder row
+    if (e.target.closest(".edit-rem-del")) {
+      const remId = e.target.closest(".edit-rem-del").dataset.remId;
+      editBatchReminders = editBatchReminders.filter(r => r.id !== remId);
+      renderEditReminders();
+      return;
+    }
+    // Edit-check dialog: add new reminder
+    if (e.target.closest("#addEditReminderBtn")) {
+      const tomorrow = new Date(Date.now() + 86400000);
+      const d = tomorrow.toISOString().slice(0, 10);
+      const t = "09:00";
+      editBatchReminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt: new Date(`${d}T${t}:00`).toISOString(), status: "pending", note: null });
+      renderEditReminders();
       return;
     }
   });

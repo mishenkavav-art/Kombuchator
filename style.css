@@ -3747,6 +3747,59 @@ button {
 
 .dialog-row > * { flex: 1; min-width: 110px; }
 
+/* ── Edit reminder rows ── */
+
+.edit-reminders-block {
+  margin-top: 6px;
+}
+
+.edit-no-reminders {
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-style: italic;
+  margin: 4px 0 8px;
+}
+
+.edit-reminder-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.edit-rem-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  min-width: 80px;
+}
+
+.edit-rem-fields {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.edit-rem-del {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-paper);
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background .1s, color .1s;
+}
+.edit-rem-del:hover { background: rgba(159,61,53,.1); color: var(--danger); border-color: var(--danger); }
+
 /* ── Batch type toggle (in dialog) ── */
 
 .batch-type-seg {
