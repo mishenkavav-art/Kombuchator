@@ -2322,6 +2322,7 @@ body::before {
 @media (max-width: 760px) {
   .saved-view-header {
     flex-direction: column;
+    align-items: flex-start;
   }
   .saved-card-top {
     flex-direction: column;
@@ -2809,6 +2810,10 @@ button {
 
   .unit-input {
     flex-wrap: wrap;
+  }
+
+  .unit-input.unit-sm {
+    flex-wrap: nowrap;
   }
 
   .unit-input input,
