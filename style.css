@@ -4134,3 +4134,87 @@ button {
 /* ── Batch dialog footer spacing ── */
 
 .batch-dialog .dialog-actions { margin-top: 20px; }
+
+/* ── Undo toast ── */
+
+.undo-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 12px;
+  font-size: 14px;
+  box-shadow: 0 6px 24px rgba(59,42,24,.28);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity .22s, transform .22s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.undo-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.undo-toast-btn {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  color: #fff;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.undo-toast-btn:hover { background: rgba(255,255,255,.25); }
+
+/* ── Batch progress bar ── */
+
+.batch-progress {
+  margin: 8px 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.batch-progress-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(215,197,169,.4);
+  overflow: hidden;
+}
+.batch-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--muted-green);
+  transition: width .3s;
+}
+.batch-progress-fill.past-window {
+  background: var(--orange);
+}
+.batch-progress-label {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Varky summary line ── */
+
+.varky-summary {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+.varky-summary strong {
+  color: var(--ink);
+}

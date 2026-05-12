@@ -420,6 +420,33 @@ function showActionFeedback(text) {
     els.currentActionFeedback.textContent = "";
   }, 2600);
 }
+
+// ── Undo toast ──
+const undoToastEl  = document.getElementById("undoToast");
+const undoToastTxt = document.getElementById("undoToastText");
+const undoToastBtn = document.getElementById("undoToastBtn");
+let   _undoTimer   = null;
+let   _undoCb      = null;
+
+function showUndoToast(message, onUndo) {
+  if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
+  _undoCb = onUndo;
+  undoToastTxt.textContent = message;
+  undoToastEl.hidden = false;
+  requestAnimationFrame(() => undoToastEl.classList.add("visible"));
+  _undoTimer = setTimeout(hideUndoToast, 5000);
+}
+function hideUndoToast() {
+  undoToastEl.classList.remove("visible");
+  _undoCb = null;
+  setTimeout(() => { undoToastEl.hidden = true; }, 230);
+}
+undoToastBtn?.addEventListener("click", () => {
+  const cb = _undoCb;
+  clearTimeout(_undoTimer);
+  hideUndoToast();
+  cb?.();
+});
 function formatDateTime(value) {
   return new Intl.DateTimeFormat("cs-CZ", {
     day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit"
@@ -1461,6 +1488,7 @@ function askDeleteRecipe(id) {
 
 function confirmDeleteRecipe() {
   if (!pendingDeleteRecipeId) return;
+  const restored = savedRecipes.find(r => r.id === pendingDeleteRecipeId);
   deletedRecipeIds.add(pendingDeleteRecipeId);
   persistDeletedIds();
   savedRecipes = savedRecipes.filter(recipe => recipe.id !== pendingDeleteRecipeId);
@@ -1468,7 +1496,15 @@ function confirmDeleteRecipe() {
   persistSavedRecipes();
   els.deleteRecipeDialog.close();
   renderSavedRecipes();
-  showActionFeedback("Recept je pryč. Místo v zápisníku.");
+  showUndoToast("Recept smazán.", () => {
+    if (!restored) return;
+    deletedRecipeIds.delete(restored.id);
+    savedRecipes.push(restored);
+    persistDeletedIds();
+    persistSavedRecipes();
+    renderSavedRecipes();
+    showActionFeedback("Recept obnoven.");
+  });
 }
 
 // ═══ SYNC MODE UI ═══
@@ -1892,6 +1928,15 @@ function formatBatchTime(iso) {
   if (!iso) return "";
   return new Date(iso).toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
 }
+function getBatchExpectedDays(batch) {
+  const text = batch.recipeSnapshot?.fermentationAdviceText || "";
+  const m = text.match(/(\d+)[.\-–]+(\d+)/);
+  if (m) return { low: parseInt(m[1]), high: parseInt(m[2]) };
+  const m2 = text.match(/(\d+)/);
+  if (m2) { const d = parseInt(m2[1]); return { low: d, high: d }; }
+  return null;
+}
+
 function getBatchDay(batch) {
   return Math.max(1, Math.floor((Date.now() - new Date(batch.fermentationStartedAt).getTime()) / 86400000) + 1);
 }
@@ -2088,6 +2133,15 @@ function renderBatchCard(batch) {
   const lastCheck = batch.checks.length ? batch.checks[batch.checks.length - 1] : null;
   const nextReminder = batch.reminders.find(r => r.status === "pending");
   const summary = recipeSnapshotSummary(batch.recipeSnapshot);
+  const exp = !batch.finished ? getBatchExpectedDays(batch) : null;
+  const progressBar = exp ? (() => {
+    const pct = Math.min(110, Math.round((day / exp.high) * 100));
+    const past = day > exp.high;
+    return `<div class="batch-progress">
+      <div class="batch-progress-track"><div class="batch-progress-fill${past ? " past-window" : ""}" style="width:${Math.min(100,pct)}%"></div></div>
+      <span class="batch-progress-label">Den ${day} / ~${exp.high}</span>
+    </div>`;
+  })() : "";
   return `
     <article class="batch-card batch-status-${status}" data-batch-id="${batch.id}">
       <div class="batch-card-top">
@@ -2101,6 +2155,7 @@ function renderBatchCard(batch) {
         </div>
       </div>
       <p class="batch-card-meta">${formatBatchDate(batch.fermentationStartedAt)} · ${day}. den</p>
+      ${progressBar}
       ${summary ? `<p class="batch-card-recipe">${escapeHtml(summary)}</p>` : ""}
       ${lastCheck ? `
         <div class="batch-last-check">
@@ -2198,6 +2253,11 @@ function renderVarkyView() {
       </div>`;
     return;
   }
+  const active = batches.filter(b => !b.finished && !deletedBatchIds.has(b.id));
+  const totalL = active.reduce((sum, b) => sum + (b.recipeSnapshot?.workingVolumeL || 0), 0);
+  const summaryHtml = active.length
+    ? `<p class="varky-summary"><strong>${active.length} ${active.length === 1 ? "várka" : active.length < 5 ? "várky" : "várek"}</strong> · celkem <strong>${totalL > 0 ? (Math.round(totalL * 10) / 10) + " l" : "?"}</strong> fermentuje</p>`
+    : "";
   const tableHtml = `
     <div class="batch-table-wrap">
       <table class="batch-table">
@@ -2208,7 +2268,7 @@ function renderVarkyView() {
       </table>
     </div>`;
   const cardsHtml = `<div class="batch-cards">${filtered.map(renderBatchCard).join("")}</div>`;
-  els.varkyList.innerHTML = tableHtml + cardsHtml;
+  els.varkyList.innerHTML = summaryHtml + tableHtml + cardsHtml;
 }
 
 function renderBatchDetail(batchId) {
@@ -2480,6 +2540,7 @@ function openDeleteBatchDialog(batchId) {
 }
 
 function confirmDeleteBatch() {
+  const restored = batches.find(b => b.id === pendingDeleteBatchId);
   deletedBatchIds.add(pendingDeleteBatchId);
   persistDeletedIds();
   batches = batches.filter(b => b.id !== pendingDeleteBatchId);
@@ -2490,7 +2551,15 @@ function confirmDeleteBatch() {
   renderVarkyView();
   checkReminders();
   switchView("varky");
-  showActionFeedback("Várka smazaná.");
+  showUndoToast("Várka smazána.", () => {
+    if (!restored) return;
+    deletedBatchIds.delete(restored.id);
+    batches.push(restored);
+    persistDeletedIds();
+    persistBatches();
+    renderVarkyView();
+    showActionFeedback("Várka obnovena.");
+  });
 }
 
 // ── Inline batch name edit ──
