@@ -4236,3 +4236,89 @@ button {
 .varky-summary strong {
   color: var(--ink);
 }
+
+/* ── Task list view (due / planned filters) ── */
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-row {
+  display: grid;
+  grid-template-columns: 100px 1fr auto;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 14px 18px;
+  background: var(--paper-card);
+  border-radius: 14px;
+  border-left: 4px solid var(--muted-green);
+  box-shadow: var(--shadow-card);
+}
+
+.task-row.task-overdue {
+  border-left-color: var(--orange);
+  background: rgba(255,249,239,.9);
+}
+
+.task-date {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.task-date-main {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.task-date-time {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.task-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.task-batch-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-reminder-title {
+  font-size: 13px;
+  color: var(--forest-green);
+  font-weight: 600;
+}
+
+.task-day-note {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.task-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+  .task-row {
+    grid-template-columns: 1fr;
+  }
+  .task-actions {
+    justify-content: flex-start;
+  }
+}

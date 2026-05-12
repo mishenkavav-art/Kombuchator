@@ -2184,6 +2184,44 @@ function renderBatchCard(batch) {
     </article>`;
 }
 
+function renderTaskView(filter) {
+  const now = Date.now();
+  const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+  const items = [];
+  filterBatches().forEach(batch => {
+    batch.reminders.forEach(r => {
+      if (r.status !== "pending") return;
+      const t = new Date(r.remindAt).getTime();
+      if (filter === "due" && t > todayEnd.getTime()) return;
+      items.push({ batch, reminder: r, t });
+    });
+  });
+  items.sort((a, b) => a.t - b.t);
+
+  if (!items.length) return "";
+
+  return `<div class="task-list">${items.map(({ batch, reminder }) => {
+    const overdue = new Date(reminder.remindAt).getTime() <= now;
+    const day = getBatchDay(batch);
+    return `<div class="task-row${overdue ? " task-overdue" : ""}" data-batch-id="${batch.id}">
+      <div class="task-date">
+        <span class="task-date-main">${formatBatchDate(reminder.remindAt)}</span>
+        <span class="task-date-time">${formatBatchTime(reminder.remindAt)}</span>
+      </div>
+      <div class="task-body">
+        <span class="task-batch-name">${escapeHtml(batch.batchName)}</span>
+        <span class="task-reminder-title">${escapeHtml(reminder.title)}</span>
+        <span class="task-day-note">${day}. den fermentace</span>
+      </div>
+      <div class="task-actions">
+        <button class="recipe-action primary batch-add-check" type="button">Kontrola</button>
+        ${!batch.finished ? `<button class="recipe-action danger batch-finish" type="button" data-batch-id="${batch.id}">Ukončit</button>` : ""}
+        <button class="recipe-action batch-show-detail" type="button">Detail</button>
+      </div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
 function renderBatchTableRow(batch) {
   const status = getBatchStatus(batch);
   const day = getBatchDay(batch);
@@ -2273,6 +2311,12 @@ function renderVarkyView() {
       </div>`;
     return;
   }
+  // Task-focused compact view for "due" and "planned"
+  if (batchFilter === "due" || batchFilter === "planned") {
+    els.varkyList.innerHTML = renderTaskView(batchFilter);
+    return;
+  }
+
   const active = batches.filter(b => !b.finished && !deletedBatchIds.has(b.id));
   const totalL = active.reduce((sum, b) => sum + (b.recipeSnapshot?.workingVolumeL || 0), 0);
   const summaryHtml = active.length
