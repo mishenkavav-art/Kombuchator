@@ -2255,9 +2255,6 @@ function renderBatchTableRow(batch) {
           <button class="batch-edit-name" type="button" title="Změnit název">✏️</button>
         </div>
       </td>
-      <td class="batch-col-status">
-        <span class="batch-status-badge status-${status}">${getBatchStatusLabel(status)}</span>
-      </td>
       <td class="batch-col-checks">
         ${lastChecks.length
           ? lastChecks.map(c => {
@@ -2324,7 +2321,7 @@ function renderVarkyView() {
     <div class="batch-table-wrap">
       <table class="batch-table">
         <thead><tr>
-          <th>Založeno</th><th>Typ</th><th>Název</th><th>Průběh</th><th>Poslední kontroly</th><th>Stav</th><th>Další krok</th><th>Akce</th>
+          <th>Založeno</th><th>Typ</th><th>Název</th><th>Poslední kontroly</th><th>Stav</th><th>Další krok</th><th>Akce</th>
         </tr></thead>
         <tbody>${filtered.map(renderBatchTableRow).join("")}</tbody>
       </table>
