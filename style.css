@@ -2817,52 +2817,59 @@ button {
     display: none;
   }
 
+  /* Experiment mode: 4-col grid, fields in 2×2 pairs below the picker */
   .tea-row {
-    grid-template-columns: 24px minmax(0, 1fr) 28px;
+    grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 28px;
     align-items: start;
-    gap: 8px;
+    gap: 6px 8px;
     padding: 12px 0;
   }
 
   .tea-check {
     grid-column: 1;
     grid-row: 1;
-    margin-top: 9px;
+    margin-top: 10px;
   }
 
   .tea-picker {
-    grid-column: 2;
+    grid-column: 2 / 4;
     grid-row: 1;
     min-width: 0;
   }
 
   .remove-tea {
-    grid-column: 3;
+    grid-column: 4;
     grid-row: 1;
     margin-top: 7px;
   }
 
-  .tea-ratio-unit,
-  .tea-water-unit,
-  .tea-row .inline-unit:not(.tea-ratio-unit):not(.tea-water-unit) {
-    grid-column: 2 / 4;
-    width: 100%;
+  /* Row 2: g/l (left) + voda (right) */
+  .tea-row > div:nth-of-type(4) { grid-column: 2; grid-row: 2; }
+  .tea-water-unit               { grid-column: 3; grid-row: 2; }
+
+  /* Row 3: poměr % (left) + celkem g (right) */
+  .tea-ratio-unit               { grid-column: 2; grid-row: 3; }
+  .tea-row > div:nth-of-type(5) { grid-column: 3; grid-row: 3; }
+
+  .inline-unit {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
   }
 
-  /* Keep simple (classic) mode ratio inline — override experiment-mode rules */
-  .simple-tea-list .tea-row {
-    grid-template-columns: 22px minmax(0, 1fr) 66px 26px;
-    align-items: center;
+  .inline-unit::before {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
   }
-  .simple-tea-list .tea-ratio-unit {
-    grid-column: 3;
-    grid-row: 1;
-    width: auto;
-  }
-  .simple-tea-list .tea-ratio-unit::before { display: none; }
-  .simple-tea-list .remove-tea { grid-column: 4; margin-top: 0; }
-  .simple-tea-list .tea-check  { margin-top: 0; }
-  .simple-tea-list .tea-picker { grid-column: 2; grid-row: 1; }
+
+  .tea-ratio-unit::before { content: "Poměr %"; }
+  .tea-water-unit::before { content: "Voda (l)"; }
+  .tea-row > div:nth-of-type(4)::before { content: "g/l"; }
+  .tea-row > div:nth-of-type(5)::before { content: "Celkem g"; }
 
   .tea-type,
   .tea-ratio,
@@ -2873,26 +2880,25 @@ button {
     min-height: 38px;
   }
 
-  /* Don't stretch ratio input to full height in simple mode */
-  .simple-tea-list .tea-ratio { min-height: 36px; }
+  .tea-picker .tea-type { min-width: 0; }
 
-  .tea-picker .tea-type {
-    min-width: 0;
+  /* Simple (classic) mode overrides — ratio stays inline, no extra rows */
+  .simple-tea-list .tea-row {
+    grid-template-columns: 22px minmax(0, 1fr) 66px 26px;
+    align-items: center;
   }
-
-  .inline-unit::before {
-    min-width: 92px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--ink-muted);
-    text-transform: uppercase;
-    letter-spacing: .05em;
+  .simple-tea-list .tea-ratio-unit {
+    grid-column: 3;
+    grid-row: 1;
+    width: auto;
+    flex-direction: row;
+    align-items: center;
   }
-
-  .tea-ratio-unit::before { content: "Poměr %"; }
-  .tea-water-unit::before { content: "Voda"; }
-  .tea-row .inline-unit:nth-of-type(4)::before { content: "Množství"; }
-  .tea-row .inline-unit:nth-of-type(5)::before { content: "Celkem"; }
+  .simple-tea-list .tea-ratio-unit::before { display: none; }
+  .simple-tea-list .remove-tea { grid-column: 4; margin-top: 0; }
+  .simple-tea-list .tea-check  { margin-top: 0; }
+  .simple-tea-list .tea-picker { grid-column: 2; grid-row: 1; }
+  .simple-tea-list .tea-ratio  { min-height: 36px; }
 
   .pellicle-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
