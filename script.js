@@ -427,6 +427,7 @@ const undoToastTxt = document.getElementById("undoToastText");
 const undoToastBtn = document.getElementById("undoToastBtn");
 let   _undoTimer   = null;
 let   _undoCb      = null;
+let   _undoPending = false; // blocks syncWithServer during undo window
 
 function showUndoToast(message, onUndo) {
   if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
@@ -434,7 +435,11 @@ function showUndoToast(message, onUndo) {
   undoToastTxt.textContent = message;
   undoToastEl.hidden = false;
   requestAnimationFrame(() => undoToastEl.classList.add("visible"));
-  _undoTimer = setTimeout(hideUndoToast, 5000);
+  _undoTimer = setTimeout(() => {
+    _undoPending = false;
+    hideUndoToast();
+    syncWithServer();
+  }, 5000);
 }
 function hideUndoToast() {
   undoToastEl.classList.remove("visible");
@@ -444,6 +449,7 @@ function hideUndoToast() {
 undoToastBtn?.addEventListener("click", () => {
   const cb = _undoCb;
   clearTimeout(_undoTimer);
+  _undoPending = false;
   hideUndoToast();
   cb?.();
 });
@@ -1489,6 +1495,7 @@ function askDeleteRecipe(id) {
 function confirmDeleteRecipe() {
   if (!pendingDeleteRecipeId) return;
   const restored = savedRecipes.find(r => r.id === pendingDeleteRecipeId);
+  _undoPending = true;
   deletedRecipeIds.add(pendingDeleteRecipeId);
   persistDeletedIds();
   savedRecipes = savedRecipes.filter(recipe => recipe.id !== pendingDeleteRecipeId);
@@ -1683,6 +1690,7 @@ function bindEvents() {
     if (e.target.closest(".share-whatsapp")) {
       refreshRecipeShareText(recipe);
       shareWhatsApp(recipe.shareText);
+      showCardFeedback(card, "Otvírám WhatsApp…");
       return;
     }
     if (e.target.closest(".copy-share")) {
@@ -1693,6 +1701,7 @@ function bindEvents() {
     }
     if (e.target.closest(".load-to-calc")) {
       loadRecipeIntoCalculator(recipe);
+      showActionFeedback("Recept načten. Můžeš ho upravit.");
       return;
     }
     if (e.target.closest(".toggle-note")) {
@@ -2541,6 +2550,7 @@ function openDeleteBatchDialog(batchId) {
 
 function confirmDeleteBatch() {
   const restored = batches.find(b => b.id === pendingDeleteBatchId);
+  _undoPending = true;
   deletedBatchIds.add(pendingDeleteBatchId);
   persistDeletedIds();
   batches = batches.filter(b => b.id !== pendingDeleteBatchId);
@@ -2852,7 +2862,7 @@ function mergeSync(localBatches, localRecipes, remote) {
 }
 
 async function syncWithServer() {
-  if (syncBusy) return;
+  if (syncBusy || _undoPending) return;
   syncBusy = true;
   try {
     const res = await fetch("/api/sync", { cache: "no-store" });
