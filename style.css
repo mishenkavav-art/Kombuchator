@@ -3613,12 +3613,38 @@ button {
   margin-bottom: 10px;
 }
 
+.batch-recipe-header-btns {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .batch-no-recipe {
   font-size: 13px;
   color: var(--ink-muted);
   font-style: italic;
   margin: 0;
 }
+
+/* edit snapshot tea rows */
+.edit-snap-tea-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 60px 28px;
+  align-items: end;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.edit-snap-tea-field { display: flex; flex-direction: column; gap: 2px; }
+.edit-snap-tea-field span { font-size: 12px; color: var(--ink-muted); }
+.edit-snap-tea-field input { width: 100%; }
+.edit-snap-tea-remove {
+  background: none; border: none; cursor: pointer;
+  color: var(--ink-muted); font-size: 18px; padding: 0 4px;
+  border-radius: 4px; transition: color 0.15s;
+  align-self: end; padding-bottom: 4px;
+}
+.edit-snap-tea-remove:hover { color: var(--red); }
+.edit-snap-add-tea { margin: 0 0 14px; font-size: 13px; }
 
 /* pick recipe dialog list */
 .pick-recipe-item {

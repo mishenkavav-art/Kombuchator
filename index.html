@@ -599,6 +599,36 @@
     </form>
   </dialog>
 
+  <!-- DIALOG: Upravit recept várky -->
+  <dialog id="editSnapshotDialog">
+    <form class="modal-card batch-dialog" method="dialog">
+      <button class="close-button" id="closeEditSnapshotBtn" type="button" aria-label="Zavřít">×</button>
+      <h2>Upravit recept várky</h2>
+      <label>
+        <span>Název receptu</span>
+        <input id="editSnapName" type="text" placeholder="Název receptu">
+      </label>
+      <div id="editSnapTeasContainer"></div>
+      <button class="recipe-action edit-snap-add-tea" id="editSnapAddTeaBtn" type="button">+ Přidat čaj</button>
+      <div class="dialog-row">
+        <label><span>Startér (ml)</span><input id="editSnapStarterMl" type="number" min="0" step="1" inputmode="numeric"></label>
+        <label><span>Cukr celkem (g)</span><input id="editSnapSugarG" type="number" min="0" step="1" inputmode="numeric"></label>
+      </div>
+      <label>
+        <span>Teplota (°C)</span>
+        <input id="editSnapTemp" type="number" min="10" max="40" step="0.5" inputmode="decimal">
+      </label>
+      <label>
+        <span>Poznámka</span>
+        <textarea id="editSnapNote" rows="2" placeholder="Vlastní poznámka k receptu..."></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button class="recipe-action primary" id="confirmEditSnapshotBtn" type="button">Uložit</button>
+        <button class="recipe-action" id="cancelEditSnapshotBtn" type="button">Zrušit</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- DIALOG: Přechod F1 → F2 -->
   <dialog id="f1ToF2Dialog">
     <form class="modal-card batch-dialog" method="dialog">

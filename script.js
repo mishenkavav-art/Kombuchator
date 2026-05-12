@@ -84,6 +84,8 @@ let editingCheckId = null;
 let editBatchReminders = [];
 let editingReminderId = null;
 let editingReminderBatchId = null;
+let editSnapBatchId = null;
+let editSnapTeas = [];
 // Persist across sessions so "notification on open" doesn't repeat for already-fired reminders
 const FIRED_NOTIFS_KEY = "kombuchator_fired_notifs";
 const firedNotifications = new Set(
@@ -270,6 +272,17 @@ const els = {
   editReminderTitle:        document.querySelector("#editReminderTitle"),
   editReminderDate:         document.querySelector("#editReminderDate"),
   editReminderTime:         document.querySelector("#editReminderTime"),
+  editSnapshotDialog:      document.querySelector("#editSnapshotDialog"),
+  closeEditSnapshotBtn:    document.querySelector("#closeEditSnapshotBtn"),
+  cancelEditSnapshotBtn:   document.querySelector("#cancelEditSnapshotBtn"),
+  confirmEditSnapshotBtn:  document.querySelector("#confirmEditSnapshotBtn"),
+  editSnapName:            document.querySelector("#editSnapName"),
+  editSnapTeasContainer:   document.querySelector("#editSnapTeasContainer"),
+  editSnapAddTeaBtn:       document.querySelector("#editSnapAddTeaBtn"),
+  editSnapStarterMl:       document.querySelector("#editSnapStarterMl"),
+  editSnapSugarG:          document.querySelector("#editSnapSugarG"),
+  editSnapTemp:            document.querySelector("#editSnapTemp"),
+  editSnapNote:            document.querySelector("#editSnapNote"),
   f1ToF2Dialog:         document.querySelector("#f1ToF2Dialog"),
   closeF1ToF2Btn:       document.querySelector("#closeF1ToF2Btn"),
   cancelF1ToF2Btn:      document.querySelector("#cancelF1ToF2Btn"),
@@ -2242,7 +2255,10 @@ function renderBatchDetail(batchId) {
     <div class="batch-recipe-block">
       <div class="batch-recipe-block-header">
         <strong>Recept</strong>
-        <button class="timeline-action-btn pick-recipe-btn" type="button" data-batch-id="${batch.id}">${batch.recipeSnapshot ? "Změnit" : "Přiřadit ze zápisníku"}</button>
+        <div class="batch-recipe-header-btns">
+          ${batch.recipeSnapshot ? `<button class="timeline-action-btn edit-snapshot-btn" type="button" data-batch-id="${batch.id}">Upravit</button>` : ""}
+          <button class="timeline-action-btn pick-recipe-btn" type="button" data-batch-id="${batch.id}">${batch.recipeSnapshot ? "Změnit" : "Přiřadit ze zápisníku"}</button>
+        </div>
       </div>
       ${batch.recipeSnapshot ? renderRecipeNeeds(batch.recipeSnapshot) : `<p class="batch-no-recipe">K várce není přiřazen žádný recept.</p>`}
     </div>
@@ -2839,6 +2855,107 @@ function clearBatchRecipe() {
   pendingPickRecipeBatchId = null;
 }
 
+// ── Edit snapshot inline ──
+
+function openEditSnapshotDialog(batchId) {
+  const batch = findBatch(batchId);
+  if (!batch) return;
+  editSnapBatchId = batchId;
+  const snap = batch.recipeSnapshot || {};
+  els.editSnapName.value = snap.recipeName || "";
+  editSnapTeas = (snap.teas || []).map((t, i) => ({
+    uid: `snaptea-${i}`,
+    type: t.type || "black",
+    waterMl: Math.round(t.waterMl || 0),
+    gramsPerLiter: +(t.gramsPerLiter || teaTypes[t.type]?.grams || 6)
+  }));
+  if (!editSnapTeas.length) {
+    editSnapTeas.push({ uid: `snaptea-new`, type: "black", waterMl: 0, gramsPerLiter: 6 });
+  }
+  els.editSnapStarterMl.value = snap.starterMl != null ? Math.round(snap.starterMl) : "";
+  els.editSnapSugarG.value    = snap.sugarTotalGrams != null ? Math.round(snap.sugarTotalGrams) : "";
+  els.editSnapTemp.value      = snap.temperatureC != null ? snap.temperatureC : "";
+  els.editSnapNote.value      = snap.userNote || "";
+  renderEditSnapTeas();
+  els.editSnapshotDialog?.showModal();
+}
+
+function renderEditSnapTeas() {
+  if (!els.editSnapTeasContainer) return;
+  const canRemove = editSnapTeas.length > 1;
+  els.editSnapTeasContainer.innerHTML = editSnapTeas.map((t, i) => `
+    <div class="edit-snap-tea-row">
+      <select class="edit-snap-tea-type" data-idx="${i}">
+        ${Object.entries(teaTypes).map(([k, v]) =>
+          `<option value="${k}"${t.type === k ? " selected" : ""}>${v.label[0].toUpperCase() + v.label.slice(1)}</option>`
+        ).join("")}
+      </select>
+      <label class="edit-snap-tea-field"><span>Voda (ml)</span><input class="edit-snap-tea-water" type="number" min="0" step="1" inputmode="numeric" value="${t.waterMl}" data-idx="${i}"></label>
+      <label class="edit-snap-tea-field"><span>g/l</span><input class="edit-snap-tea-grams" type="number" min="0" step="0.5" inputmode="decimal" value="${t.gramsPerLiter}" data-idx="${i}"></label>
+      ${canRemove ? `<button class="edit-snap-tea-remove" type="button" data-idx="${i}" title="Odebrat">×</button>` : `<span></span>`}
+    </div>
+  `).join("");
+
+  els.editSnapTeasContainer.querySelectorAll(".edit-snap-tea-type").forEach(sel => {
+    sel.addEventListener("change", () => {
+      const idx = Number(sel.dataset.idx);
+      editSnapTeas[idx].type = sel.value;
+      editSnapTeas[idx].gramsPerLiter = teaTypes[sel.value]?.grams || 6;
+      renderEditSnapTeas();
+    });
+  });
+  els.editSnapTeasContainer.querySelectorAll(".edit-snap-tea-water").forEach(inp => {
+    inp.addEventListener("input", () => { editSnapTeas[Number(inp.dataset.idx)].waterMl = Number(inp.value) || 0; });
+  });
+  els.editSnapTeasContainer.querySelectorAll(".edit-snap-tea-grams").forEach(inp => {
+    inp.addEventListener("input", () => { editSnapTeas[Number(inp.dataset.idx)].gramsPerLiter = Number(inp.value) || 0; });
+  });
+  els.editSnapTeasContainer.querySelectorAll(".edit-snap-tea-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      editSnapTeas.splice(Number(btn.dataset.idx), 1);
+      renderEditSnapTeas();
+    });
+  });
+}
+
+function confirmEditSnapshot() {
+  const batch = findBatch(editSnapBatchId);
+  if (!batch) return;
+  // flush any uncommitted input values
+  els.editSnapTeasContainer.querySelectorAll(".edit-snap-tea-water").forEach(inp => {
+    editSnapTeas[Number(inp.dataset.idx)].waterMl = Number(inp.value) || 0;
+  });
+  els.editSnapTeasContainer.querySelectorAll(".edit-snap-tea-grams").forEach(inp => {
+    editSnapTeas[Number(inp.dataset.idx)].gramsPerLiter = Number(inp.value) || 0;
+  });
+  const teas = editSnapTeas.map(t => ({
+    type: t.type,
+    role: teaTypes[t.type]?.main ? "main" : "additive",
+    gramsPerLiter: t.gramsPerLiter,
+    waterMl: t.waterMl,
+    totalGrams: t.waterMl / 1000 * t.gramsPerLiter
+  }));
+  const teaLiters = teas.reduce((s, t) => s + t.waterMl / 1000, 0);
+  const starterMl = Number(els.editSnapStarterMl.value) || 0;
+  const sugarTotalGrams = Number(els.editSnapSugarG.value) || 0;
+  const tempRaw = els.editSnapTemp.value.trim();
+  const recipeName = els.editSnapName.value.trim() || batch.recipeSnapshot?.recipeName || "Bez názvu";
+  batch.recipeSnapshot = {
+    ...(batch.recipeSnapshot || {}),
+    recipeName,
+    teas,
+    teaLiters,
+    starterMl,
+    sugarTotalGrams,
+    sugarGramsPerLiter: teaLiters > 0 ? sugarTotalGrams / teaLiters : (batch.recipeSnapshot?.sugarGramsPerLiter ?? 0),
+    temperatureC: tempRaw !== "" ? Number(tempRaw) : null,
+    userNote: els.editSnapNote.value.trim()
+  };
+  persistBatches();
+  els.editSnapshotDialog?.close();
+  renderBatchDetail(editSnapBatchId);
+}
+
 // ── Bind batch events ──
 
 function bindBatchEvents() {
@@ -2913,6 +3030,13 @@ function bindBatchEvents() {
   els.closeEditReminderBtn?.addEventListener("click", () => els.editReminderDialog?.close());
   els.cancelEditReminderBtn?.addEventListener("click", () => els.editReminderDialog?.close());
   els.confirmEditReminderBtn?.addEventListener("click", confirmEditReminder);
+  els.closeEditSnapshotBtn?.addEventListener("click", () => els.editSnapshotDialog?.close());
+  els.cancelEditSnapshotBtn?.addEventListener("click", () => els.editSnapshotDialog?.close());
+  els.confirmEditSnapshotBtn?.addEventListener("click", confirmEditSnapshot);
+  els.editSnapAddTeaBtn?.addEventListener("click", () => {
+    editSnapTeas.push({ uid: `snaptea-new-${Date.now()}`, type: "black", waterMl: 0, gramsPerLiter: 6 });
+    renderEditSnapTeas();
+  });
   els.editCheckTypeChips?.addEventListener("click", e => {
     const btn = e.target.closest("[data-ectype]");
     if (!btn) return;
@@ -3067,6 +3191,11 @@ function bindBatchEvents() {
     }
     if (e.target.closest(".batch-empty-add")) {
       openNewBatchDialog(null);
+      return;
+    }
+    if (e.target.closest(".edit-snapshot-btn")) {
+      const btn = e.target.closest(".edit-snapshot-btn");
+      if (btn.dataset.batchId) openEditSnapshotDialog(btn.dataset.batchId);
       return;
     }
     if (e.target.closest(".pick-recipe-btn")) {
