@@ -199,7 +199,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
   box-shadow: 0 7px 16px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.16);
   transform: rotate(-.4deg);
 }
-.nav-icon { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-icon { width: 60px; height: 60px; flex-shrink: 0; object-fit: contain; }
 .nav-item small {
   display: block;
   margin-top: -2px;
@@ -2738,8 +2738,8 @@ button {
   }
 
   .nav-icon {
-    width: 18px;
-    height: 18px;
+    width: 54px;
+    height: 54px;
   }
 
   .main-area {
