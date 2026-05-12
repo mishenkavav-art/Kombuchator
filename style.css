@@ -3349,8 +3349,8 @@ button {
   border-radius: 4px;
   transition: color 0.15s, background 0.15s;
 }
-.batch-rem-edit-btn:hover { color: var(--forest-green); background: var(--soft-green-bg); }
-.batch-rem-cancel-btn:hover { color: var(--red); background: #fef2f2; }
+.batch-rem-edit-btn:hover { color: var(--forest-green); background: var(--muted-green); }
+.batch-rem-cancel-btn:hover { color: var(--danger); background: #fef2f2; }
 
 .batch-col-recipe {
   max-width: 200px;
@@ -3676,7 +3676,7 @@ button {
   color: var(--ink-muted); font-size: 20px; padding: 2px 4px;
   border-radius: 4px; transition: color 0.15s; line-height: 1;
 }
-.edit-snap-tea-remove:hover { color: var(--red); }
+.edit-snap-tea-remove:hover { color: var(--danger); }
 .edit-snap-tea-row > span { grid-column: 3; grid-row: 1; } /* invisible placeholder */
 .edit-snap-tea-field {
   grid-row: 2;
@@ -4114,9 +4114,11 @@ button {
 .custom-reminder-row[hidden] { display: none; }
 .custom-reminder-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 10px;
 }
+.custom-reminder-row label { min-width: 130px; }
 .custom-reminder-row label {
   display: flex;
   flex-direction: column;
