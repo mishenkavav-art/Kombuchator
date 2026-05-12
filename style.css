@@ -1467,13 +1467,7 @@ body::before {
   position: relative;
 }
 .main-header::before {
-  content: "";
-  width: 76px;
-  height: 76px;
-  flex: 0 0 76px;
-  margin-right: 6px;
-  background: url("ikony/kombucha.png") center / contain no-repeat;
-  filter: drop-shadow(0 4px 4px rgba(59,42,24,.16)) saturate(1.08);
+  display: none;
 }
 .brand-title {
   font-size: clamp(48px, 4.8vw, 76px);
@@ -4340,4 +4334,20 @@ button {
   .task-actions {
     justify-content: flex-start;
   }
+}
+
+/* ── Kvasírna title with icon ── */
+
+.kvasirna-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kvasirna-icon {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(59,42,24,.16)) saturate(1.08);
+  flex-shrink: 0;
 }
