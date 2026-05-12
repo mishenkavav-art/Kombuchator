@@ -2192,12 +2192,22 @@ function renderBatchTableRow(batch) {
   const pendingReminders = batch.reminders.filter(r => r.status === "pending");
   const summary = recipeSnapshotSummary(batch.recipeSnapshot);
   const stavTags = lastCheck ? checkActionTags(lastCheck) : "";
+  const exp = !batch.finished ? getBatchExpectedDays(batch) : null;
+  const tableProgressBar = exp ? (() => {
+    const pct = Math.min(100, Math.round((day / exp.high) * 100));
+    const past = day > exp.high;
+    return `<div class="batch-progress batch-progress-table${exp.fromRecipe ? "" : " batch-progress-estimate"}">
+      <div class="batch-progress-track"><div class="batch-progress-fill${past ? " past-window" : ""}" style="width:${pct}%"></div></div>
+      <span class="batch-progress-label">Den ${day} / ~${exp.high}${exp.fromRecipe ? "" : " (odhad)"}</span>
+    </div>`;
+  })() : "";
   return `
     <tr class="batch-row batch-status-${status}" data-batch-id="${batch.id}">
       <td class="batch-col-date">
         <strong>${formatBatchDate(batch.fermentationStartedAt)}</strong><br>
         <span class="batch-time">${formatBatchTime(batch.fermentationStartedAt)}</span><br>
         <span class="batch-day-num">${day}. den</span>
+        ${tableProgressBar}
       </td>
       <td class="batch-col-type">
         <span class="batch-type-badge badge-${batch.type.toLowerCase()}">${batch.type}</span>

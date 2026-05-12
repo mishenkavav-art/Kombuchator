@@ -4208,6 +4208,12 @@ button {
 .batch-progress-fill.past-window {
   background: var(--orange);
 }
+.batch-progress-table {
+  margin-top: 6px;
+}
+.batch-progress-table .batch-progress-label {
+  font-size: 11px;
+}
 .batch-progress-estimate .batch-progress-fill {
   opacity: .55;
   background-image: repeating-linear-gradient(90deg, transparent 0, transparent 4px, rgba(255,255,255,.5) 4px, rgba(255,255,255,.5) 6px);
