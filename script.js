@@ -2123,18 +2123,27 @@ function checkReminders() {
 function renderFilterPills() {
   if (!els.varkyFilterPills) return;
   const counts = getFilterCounts();
-  const pills = [
-    { id: "active",   label: "Aktivní",        count: counts.active },
-    { id: "due",      label: "Dnes k řešení",  count: counts.due },
-    { id: "planned",  label: "Naplánované",    count: counts.planned },
-    { id: "f1",       label: "F1",             count: counts.f1 },
-    { id: "f2",       label: "F2",             count: counts.f2 },
-    { id: "done",     label: "Ukončené",       count: counts.done }
+  const isActiveBranch = batchFilter === "active" || batchFilter === "f1" || batchFilter === "f2";
+  const main = [
+    { id: "active",  label: "Aktivní",       count: counts.active },
+    { id: "due",     label: "Dnes k řešení", count: counts.due },
+    { id: "planned", label: "Naplánované",   count: counts.planned },
+    { id: "done",    label: "Ukončené",      count: counts.done }
   ];
-  els.varkyFilterPills.innerHTML = pills.map(p => `
-    <button class="varky-pill${batchFilter === p.id ? " active" : ""}" type="button" data-filter="${p.id}">
+  const sub = [
+    { id: "active", label: "Vše",  count: counts.active },
+    { id: "f1",     label: "F1",   count: counts.f1 },
+    { id: "f2",     label: "F2",   count: counts.f2 }
+  ];
+  const mainHtml = main.map(p => `
+    <button class="varky-pill${isActiveBranch && p.id === "active" ? " active" : batchFilter === p.id ? " active" : ""}" type="button" data-filter="${p.id}">
       ${escapeHtml(p.label)}<span class="pill-count">${p.count}</span>
     </button>`).join("");
+  const subHtml = isActiveBranch ? `<div class="varky-subpills">${sub.map(p => `
+    <button class="varky-pill varky-subpill${batchFilter === p.id ? " active" : ""}" type="button" data-filter="${p.id}">
+      ${escapeHtml(p.label)}<span class="pill-count">${p.count}</span>
+    </button>`).join("")}</div>` : "";
+  els.varkyFilterPills.innerHTML = `<div class="varky-mainpills">${mainHtml}</div>${subHtml}`;
 }
 
 function renderBatchCard(batch) {

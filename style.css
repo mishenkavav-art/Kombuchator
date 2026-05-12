@@ -3089,8 +3089,27 @@ button {
 
 .varky-filter-pills {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.varky-mainpills {
+  display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.varky-subpills {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding-left: 10px;
+  border-left: 2px solid var(--border-paper);
+}
+
+.varky-subpill {
+  font-size: 12.5px;
+  padding: 4px 11px;
 }
 
 .varky-pill {
