@@ -2191,6 +2191,7 @@ body::before {
 }
 .saved-verdict p {
   margin: 3px 0 0;
+  font-size: 15px;
 }
 .share-text-preview {
   margin: 12px 0;
@@ -2299,7 +2300,7 @@ body::before {
   margin-bottom: 8px;
 }
 .saved-needs-block .needs-list li {
-  font-size: 13.5px;
+  font-size: 15px;
   padding-bottom: 4px;
 }
 

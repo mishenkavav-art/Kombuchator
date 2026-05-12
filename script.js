@@ -1306,10 +1306,10 @@ function renderSavedRecipes() {
       </div>
       <p class="saved-card-feedback" aria-live="polite"></p>
       <div class="saved-card-actions">
+        <button class="recipe-action primary start-batch" type="button">Založ várku</button>
+        <button class="recipe-action primary load-to-calc" type="button">Upravit</button>
         <button class="recipe-action share-whatsapp" type="button">WhatsApp</button>
         <button class="recipe-action copy-share" type="button">Kopírovat</button>
-        <button class="recipe-action load-to-calc" type="button">Nahrát do kalkulačky</button>
-        <button class="recipe-action start-batch" type="button">Založ várku</button>
         <button class="recipe-action toggle-note" type="button">${recipe.userNote ? "Poznámka ✓" : "Přidat poznámku"}</button>
         <button class="recipe-action danger delete-recipe" type="button">Smazat</button>
       </div>
