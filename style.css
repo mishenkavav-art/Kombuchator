@@ -611,7 +611,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 
 /* ═══ TEA LIST ═══ */
 
-.tea-list { margin-bottom: 10px; }
+.tea-list { margin-bottom: 10px; container-type: inline-size; }
 
 .tea-row {
   display: grid;
@@ -767,7 +767,7 @@ body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; 
 
 .pellicle-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
   margin: 10px 0 14px;
 }
@@ -2794,6 +2794,14 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .temp-body {
+    flex-direction: column;
+  }
+
+  .temp-band-col {
+    width: 100%;
+  }
+
   .volume-choice,
   .sugar-row label {
     min-width: 0;
@@ -2811,97 +2819,6 @@ button {
   #jarLiters,
   #pellicleGrams {
     width: min(160px, 100%);
-  }
-
-  .tea-row-head {
-    display: none;
-  }
-
-  /* Experiment mode: 4-col grid, fields in 2×2 pairs below the picker */
-  .tea-row {
-    grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 28px;
-    align-items: start;
-    gap: 6px 8px;
-    padding: 12px 0;
-  }
-
-  .tea-check {
-    grid-column: 1;
-    grid-row: 1;
-    margin-top: 10px;
-  }
-
-  .tea-picker {
-    grid-column: 2 / 4;
-    grid-row: 1;
-    min-width: 0;
-  }
-
-  .remove-tea {
-    grid-column: 4;
-    grid-row: 1;
-    margin-top: 7px;
-  }
-
-  /* Row 2: g/l (left) + voda (right) */
-  .tea-row > div:nth-of-type(4) { grid-column: 2; grid-row: 2; }
-  .tea-water-unit               { grid-column: 3; grid-row: 2; }
-
-  /* Row 3: poměr % (left) + celkem g (right) */
-  .tea-ratio-unit               { grid-column: 2; grid-row: 3; }
-  .tea-row > div:nth-of-type(5) { grid-column: 3; grid-row: 3; }
-
-  .inline-unit {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 3px;
-  }
-
-  .inline-unit::before {
-    display: block;
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--ink-muted);
-    text-transform: uppercase;
-    letter-spacing: .05em;
-  }
-
-  .tea-ratio-unit::before { content: "Poměr %"; }
-  .tea-water-unit::before { content: "Voda (l)"; }
-  .tea-row > div:nth-of-type(4)::before { content: "g/l"; }
-  .tea-row > div:nth-of-type(5)::before { content: "Celkem g"; }
-
-  .tea-type,
-  .tea-ratio,
-  .tea-water,
-  .tea-grams,
-  .tea-total-grams {
-    width: 100%;
-    min-height: 38px;
-  }
-
-  .tea-picker .tea-type { min-width: 0; }
-
-  /* Simple (classic) mode overrides — ratio stays inline, no extra rows */
-  .simple-tea-list .tea-row {
-    grid-template-columns: 22px minmax(0, 1fr) 66px 26px;
-    align-items: center;
-  }
-  .simple-tea-list .tea-ratio-unit {
-    grid-column: 3;
-    grid-row: 1;
-    width: auto;
-    flex-direction: row;
-    align-items: center;
-  }
-  .simple-tea-list .tea-ratio-unit::before { display: none; }
-  .simple-tea-list .remove-tea { grid-column: 4; margin-top: 0; }
-  .simple-tea-list .tea-check  { margin-top: 0; }
-  .simple-tea-list .tea-picker { grid-column: 2; grid-row: 1; }
-  .simple-tea-list .tea-ratio  { min-height: 36px; }
-
-  .pellicle-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .goal-grid {
@@ -2926,6 +2843,67 @@ button {
   .note-pin {
     right: 18px;
   }
+}
+
+/* ═══ TEA LIST — container query (aktivuje se podle šířky karty, ne viewportu) ═══ */
+
+@container (max-width: 560px) {
+  .tea-row-head { display: none; }
+
+  /* Experiment mode: 4-col grid, pole 2×2 pod výběrem čaje */
+  .tea-row {
+    grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) 28px;
+    align-items: start;
+    gap: 6px 8px;
+    padding: 12px 0;
+  }
+
+  .tea-check { grid-column: 1; grid-row: 1; margin-top: 10px; }
+  .tea-picker { grid-column: 2 / 4; grid-row: 1; min-width: 0; }
+  .remove-tea { grid-column: 4; grid-row: 1; margin-top: 7px; }
+
+  .tea-row > div:nth-of-type(4) { grid-column: 2; grid-row: 2; }
+  .tea-water-unit               { grid-column: 3; grid-row: 2; }
+  .tea-ratio-unit               { grid-column: 2; grid-row: 3; }
+  .tea-row > div:nth-of-type(5) { grid-column: 3; grid-row: 3; }
+
+  .inline-unit { flex-direction: column; align-items: stretch; gap: 3px; }
+
+  .inline-unit::before {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  .tea-ratio-unit::before { content: "Poměr %"; }
+  .tea-water-unit::before { content: "Voda (l)"; }
+  .tea-row > div:nth-of-type(4)::before { content: "g/l"; }
+  .tea-row > div:nth-of-type(5)::before { content: "Celkem g"; }
+
+  .tea-type, .tea-ratio, .tea-water, .tea-grams, .tea-total-grams {
+    width: 100%;
+    min-height: 38px;
+  }
+
+  .tea-picker .tea-type { min-width: 0; }
+
+  /* Klasický režim — poměr zůstane na jednom řádku */
+  .simple-tea-list .tea-row {
+    grid-template-columns: 22px minmax(0, 1fr) 66px 26px;
+    align-items: center;
+  }
+  .simple-tea-list .tea-ratio-unit {
+    grid-column: 3; grid-row: 1;
+    width: auto; flex-direction: row; align-items: center;
+  }
+  .simple-tea-list .tea-ratio-unit::before { display: none; }
+  .simple-tea-list .remove-tea { grid-column: 4; margin-top: 0; }
+  .simple-tea-list .tea-check  { margin-top: 0; }
+  .simple-tea-list .tea-picker { grid-column: 2; grid-row: 1; }
+  .simple-tea-list .tea-ratio  { min-height: 36px; }
 }
 
 @media (max-width: 560px) {
@@ -2997,9 +2975,12 @@ button {
     justify-content: center;
   }
 
-  .goal-grid,
-  .pellicle-grid {
+  .goal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .pellicle-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .count-row,

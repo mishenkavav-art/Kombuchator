@@ -236,7 +236,7 @@
               <h2 class="card-title" id="sugarTitle">Jak sladký bude mít SCOBY život?</h2>
             </div>
             <div class="sugar-row">
-              <label>
+              <label class="volume-choice active" id="sugarPerLiterChoice">
                 <span class="choice-label">Cukr na litr čaje</span>
                 <div class="unit-input">
                   <img class="field-icon" src="ikony/cukr.png" alt="" aria-hidden="true">
@@ -244,8 +244,8 @@
                   <em>g/l</em>
                 </div>
               </label>
-              <label>
-                <span class="choice-label">Nebo cukr celkem</span>
+              <label class="volume-choice" id="sugarTotalChoice">
+                <span class="choice-label">Nebo celkem</span>
                 <div class="unit-input">
                   <input id="sugarTotal" type="number" min="0" step="5">
                   <em>g</em>
@@ -275,7 +275,7 @@
               <div class="recipe-actions" id="currentRecipeActions">
                 <div class="recipe-actions-row">
                   <button class="recipe-action primary" id="saveRecipeBtn" type="button">Uložit do Kombuchařky</button>
-                  <button class="recipe-action primary" id="startBatchBtn" type="button">Přesunout do kvasírny</button>
+                  <button class="recipe-action primary" id="startBatchBtn" type="button">Přesunout do Kvasírny</button>
                 </div>
                 <div class="recipe-actions-row">
                   <button class="recipe-action" id="shareWhatsAppBtn" type="button">Poslat na WhatsApp</button>
@@ -322,7 +322,7 @@
       <!-- BATCH DETAIL VIEW -->
       <div id="batchDetailView" hidden>
         <div class="batch-detail-topbar">
-          <button class="recipe-action" id="batchDetailBackBtn" type="button">← Zpět na kvasírnu</button>
+          <button class="recipe-action" id="batchDetailBackBtn" type="button">← Zpět na Kvasírnu</button>
         </div>
         <div id="batchDetailBody"></div>
       </div><!-- /batchDetailView -->

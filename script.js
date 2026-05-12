@@ -165,9 +165,11 @@ const els = {
   temperatureInput: document.querySelector("#temperatureInput"),
   tempBand:            document.querySelector("#tempBand"),
   tempHint:            document.querySelector("#tempHint"),
-  sugarPanel:         document.querySelector("#sugarPanel"),
-  sugarPerLiter:      document.querySelector("#sugarPerLiter"),
-  sugarTotal:         document.querySelector("#sugarTotal"),
+  sugarPanel:              document.querySelector("#sugarPanel"),
+  sugarPerLiterChoice:     document.querySelector("#sugarPerLiterChoice"),
+  sugarTotalChoice:        document.querySelector("#sugarTotalChoice"),
+  sugarPerLiter:           document.querySelector("#sugarPerLiter"),
+  sugarTotal:              document.querySelector("#sugarTotal"),
   sugarSlider:        document.querySelector("#sugarSlider"),
   sugarStatus:        document.querySelector("#sugarStatus"),
   needsList:          document.querySelector("#needsList"),
@@ -1487,6 +1489,8 @@ function syncModeUI() {
     : "<strong>Experimentální laboratoř:</strong> zadáš reálné ingredience a Kombuchátor odhadne, co z toho vyleze.";
   els.jarChoice.classList.toggle("active", state.volumeSource === "jar");
   els.targetChoice.classList.toggle("active", state.volumeSource === "target");
+  els.sugarPerLiterChoice?.classList.toggle("active", state.sugarSource === "perLiter");
+  els.sugarTotalChoice?.classList.toggle("active", state.sugarSource === "total");
 }
 
 function syncAutoVolumeFields(calc) {
@@ -1740,6 +1744,10 @@ function bindEvents() {
   });
   els.jarLiters.addEventListener("focus",    () => { state.volumeSource = "jar";    render(); });
   els.targetLiters.addEventListener("focus", () => { state.volumeSource = "target"; render(); });
+  els.sugarPerLiter.addEventListener("focus", () => { state.sugarSource = "perLiter"; renderChoices(); render(); });
+  els.sugarTotal.addEventListener("focus",    () => { state.sugarSource = "total";    renderChoices(); render(); });
+  els.sugarPerLiterChoice?.addEventListener("click", () => { state.sugarSource = "perLiter"; renderChoices(); render(); });
+  els.sugarTotalChoice?.addEventListener("click",    () => { state.sugarSource = "total";    renderChoices(); render(); });
   els.addTeaBtn.addEventListener("click", () => {
     state.teas.push({ id: createTeaId(), enabled: true, type: "black", ratio: "", waterMl: "", grams: 6, gramsTotal: "", lastEditedTeaField: "" });
     render();
