@@ -1940,10 +1940,11 @@ function formatBatchTime(iso) {
 function getBatchExpectedDays(batch) {
   const text = batch.recipeSnapshot?.fermentationAdviceText || "";
   const m = text.match(/(\d+)[.\-–]+(\d+)/);
-  if (m) return { low: parseInt(m[1]), high: parseInt(m[2]) };
+  if (m) return { low: parseInt(m[1]), high: parseInt(m[2]), fromRecipe: true };
   const m2 = text.match(/(\d+)/);
-  if (m2) { const d = parseInt(m2[1]); return { low: d, high: d }; }
-  return null;
+  if (m2) { const d = parseInt(m2[1]); return { low: d, high: d, fromRecipe: true }; }
+  // Fallback: no recipe or no prediction — use typical ranges
+  return { low: batch.type === "F2" ? 2 : 5, high: batch.type === "F2" ? 4 : 7, fromRecipe: false };
 }
 
 function getBatchDay(batch) {
@@ -2146,9 +2147,9 @@ function renderBatchCard(batch) {
   const progressBar = exp ? (() => {
     const pct = Math.min(110, Math.round((day / exp.high) * 100));
     const past = day > exp.high;
-    return `<div class="batch-progress">
+    return `<div class="batch-progress${exp.fromRecipe ? "" : " batch-progress-estimate"}">
       <div class="batch-progress-track"><div class="batch-progress-fill${past ? " past-window" : ""}" style="width:${Math.min(100,pct)}%"></div></div>
-      <span class="batch-progress-label">Den ${day} / ~${exp.high}</span>
+      <span class="batch-progress-label">Den ${day} / ~${exp.high}${exp.fromRecipe ? "" : " (odhad)"}</span>
     </div>`;
   })() : "";
   return `
