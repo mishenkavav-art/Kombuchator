@@ -1,4 +1,4 @@
-const CACHE = "kombuchator-v12";
+const CACHE = "kombuchator-v13";
 
 self.addEventListener("install", e => {
   e.waitUntil(

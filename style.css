@@ -3974,20 +3974,24 @@ button {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 6px;
+  background: rgba(228,234,216,.35);
+  border-radius: 12px;
+  padding: 10px;
 }
 
 .reminder-quick button {
   padding: 6px 13px;
   border: 1.5px solid var(--border-paper);
   border-radius: 999px;
-  background: var(--paper-bg);
+  background: #fff;
   font: inherit;
   font-size: 13px;
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(59,42,24,.08);
   transition: background .15s, border-color .15s;
 }
 
-.reminder-quick button:hover { background: var(--paper-bg-2); }
+.reminder-quick button:hover { background: var(--paper-bg); border-color: #c8b898; }
 
 .reminder-quick button.active {
   background: var(--soft-green);
@@ -4003,21 +4007,25 @@ button {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 6px;
+  background: rgba(228,234,216,.35);
+  border-radius: 12px;
+  padding: 10px;
 }
 
 .check-chip {
   padding: 6px 13px;
   border: 1.5px solid var(--border-paper);
   border-radius: 999px;
-  background: var(--paper-bg);
+  background: #fff;
   color: var(--ink);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
-  transition: background .15s, border-color .15s;
+  box-shadow: 0 1px 3px rgba(59,42,24,.08);
+  transition: background .15s, border-color .15s, box-shadow .15s;
 }
 
-.check-chip:hover { background: var(--paper-bg-2); }
+.check-chip:hover { background: var(--paper-bg); border-color: #c8b898; }
 
 .check-chip.active {
   background: var(--soft-green);
@@ -4032,7 +4040,7 @@ button {
   color: var(--ink-muted);
   text-transform: uppercase;
   letter-spacing: .06em;
-  margin: 14px 0 6px;
+  margin: 16px 0 6px;
 }
 
 /* result chips inherit tag colors when active */
