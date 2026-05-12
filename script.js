@@ -1652,6 +1652,7 @@ function bindEvents() {
     if (e.target.closest(".copy-share")) {
       refreshRecipeShareText(recipe);
       copyText(recipe.shareText, "Zkopírováno.");
+      showCardFeedback(card, "Zkopírováno. Teď to můžeš vložit kamkoliv.");
       return;
     }
     if (e.target.closest(".load-to-calc")) {
