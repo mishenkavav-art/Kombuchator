@@ -7,7 +7,7 @@ Datum auditu: 2026-05-16
 - Stack: vanilla HTML/CSS/JavaScript frontend, Node.js backend postaveny primo nad `http` modulem.
 - Framework: zadny frontend framework, zadny Express.
 - Backend: ano, `server.js`.
-- Databaze: ne klasicka databaze; server uklada data do lokalnich JSON souboru. Po doplneni tokenove ochrany jsou sync data oddelena v `.sync-stores/<syncId>.json`; autentizacni hashe jsou v `.sync-auth.json`; push subscriptions jsou v `.push-subs.json`; notifikacni deduplikace je v `.notified.json`; VAPID klice jsou v `.vapid.json`.
+- Databaze: ne klasicka databaze; server uklada data do lokalnich JSON souboru. Po doplneni tokenove ochrany jsou sync data oddelena v `.sync-stores/<syncId>.json`; autentizacni hashe jsou v `.sync-auth.json`; push subscriptions jsou v `.push-subs.json`; notifikacni deduplikace je v `.notified.json`; VAPID klice jsou v produkci v environment variables.
 - API endpointy:
   - `GET /api/vapid-public-key` - vraci public VAPID key.
   - `POST /api/sync/bootstrap` - vytvori nebo overi per-install sync identitu.
@@ -19,7 +19,7 @@ Datum auditu: 2026-05-16
 - PWA/service worker: ano, `sw.js`; cache statickych souboru a deduplikace push-fired reminder IDs.
 - Synchronizace mezi zarizenimi: ano, pres `/api/sync`; serverovy JSON store je zdroj pravdy, klienti merguji lokalni a vzdaleny stav.
 - Env promene: `PORT`; nove pridane `ALLOWED_ORIGINS`, `MAX_JSON_BYTES`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`, `NODE_ENV`, `DATA_DIR`.
-- Secrets: `.vapid.json` obsahuje VAPID private key. Soubor byl lokalne pritomny a pred opravou nebyl v `.gitignore`.
+- Secrets: VAPID private key musi byt v produkci nastaveny pres Railway Variables `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`. Lokalni `.vapid.json` je povoleny pouze mimo produkci a je v `.gitignore`.
 - Deploy: Railway, sluzba `Kombuchator`, produkcni URL `https://kombuchator-production.up.railway.app`.
 - Bezpecnostni hlavicky pred auditem: nebyly centralne nastavene.
 - CORS pred auditem: `Access-Control-Allow-Origin: *`.
@@ -38,7 +38,7 @@ Datum auditu: 2026-05-16
   - Verejne jsou pouze `/`, `/index.html`, `/style.css`, `/script.js`, `/sw.js`, `/manifest.json` a obrazky v `/ikony/`.
   - Neveřejne soubory vraci 404.
   - Implementace: `server.js` radky 25, 157-162, 437-447.
-- Mimo kod: VAPID klic povazovat za potencialne unikly a zrotovat.
+- Mimo kod: VAPID klic povazovat za potencialne unikly a zrotovat pres Railway Variables.
 
 ### High: wildcard CORS na produkcnim API
 
@@ -149,8 +149,9 @@ Datum auditu: 2026-05-16
 
 - `.vapid.json`, `.sync.json`, `.sync-auth.json`, `.sync-stores/`, `.sync-migration-backups/`, `.push-subs.json`, `.notified.json`, `.env*` jsou pridane do `.gitignore`.
 - Pridan `.env.example` bez skutecnych secret hodnot.
-- VAPID private key se stale generuje do `.vapid.json`; pro produkci je lepsi nastavit stabilni secret pres Railway env/volume nebo zavest rotacni postup.
-- Protoze `.vapid.json` mohl byt pred opravou verejne staticky dostupny, doporucuji VAPID klic okamzite zrotovat.
+- V produkci server vyzaduje `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` a `VAPID_SUBJECT` z environment variables; pokud chybi, produkcni start selze.
+- Lokalni `.vapid.json` fallback zustava pouze pro development a neni verejne servirovany.
+- Protoze `.vapid.json` byl pred opravou verejne dostupny, VAPID klic je nutne zrotovat.
 
 ## 6. Testy a overeni
 
@@ -204,6 +205,7 @@ Neprovedeno:
   - Nastavit `ALLOWED_ORIGINS=https://kombuchator-production.up.railway.app`.
   - Volitelne nastavit `MAX_JSON_BYTES=1048576`, `RATE_LIMIT_WINDOW_MS=60000`, `RATE_LIMIT_MAX=120`.
   - Nastavit `DATA_DIR=/data` a pripojit Railway Volume na `/data`, pokud maji JSON data prezit redeploy/restart.
+  - Nastavit `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` v Railway Variables a zrotovat stare VAPID klice.
   - Start command musi pouzivat `npm start`, coz podle `package.json` spousti `node server.js`.
   - Zkontrolovat HTTPS-only provoz.
   - Zrotovat VAPID klice po predchozim moznosti vystaveni `.vapid.json`.

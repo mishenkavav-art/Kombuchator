@@ -276,14 +276,29 @@ function initialStoreForNewIdentity(syncId) {
 }
 
 // ── VAPID setup ──
-let vapidKeys;
-try {
-  vapidKeys = JSON.parse(fs.readFileSync(VAPID_FILE, "utf8"));
-} catch {
-  vapidKeys = webpush.generateVAPIDKeys();
-  try { fs.writeFileSync(VAPID_FILE, JSON.stringify(vapidKeys)); } catch {}
+function loadVapidConfig() {
+  const envPublicKey = process.env.VAPID_PUBLIC_KEY;
+  const envPrivateKey = process.env.VAPID_PRIVATE_KEY;
+  const envSubject = process.env.VAPID_SUBJECT;
+  if (envPublicKey && envPrivateKey && envSubject) {
+    return { publicKey: envPublicKey, privateKey: envPrivateKey, subject: envSubject };
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Missing VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, or VAPID_SUBJECT in production");
+  }
+  const subject = envSubject || "mailto:mishenka.vav@gmail.com";
+  let localKeys;
+  try {
+    localKeys = JSON.parse(fs.readFileSync(VAPID_FILE, "utf8"));
+  } catch {
+    localKeys = webpush.generateVAPIDKeys();
+    try { writeJson(VAPID_FILE, localKeys); } catch {}
+  }
+  return { publicKey: localKeys.publicKey, privateKey: localKeys.privateKey, subject };
 }
-webpush.setVapidDetails("mailto:mishenka.vav@gmail.com", vapidKeys.publicKey, vapidKeys.privateKey);
+
+const vapidConfig = loadVapidConfig();
+webpush.setVapidDetails(vapidConfig.subject, vapidConfig.publicKey, vapidConfig.privateKey);
 
 // ── Push subscriptions ──
 let pushSubs = readJson(SUBS_FILE, {});
@@ -496,7 +511,7 @@ http.createServer(async (req, res) => {
   // ── VAPID public key ──
   if (pathname === "/api/vapid-public-key" && req.method === "GET") {
     if (isRateLimited(req, "vapid")) { send(res, 429, "Too Many Requests"); return; }
-    send(res, 200, JSON.stringify({ publicKey: vapidKeys.publicKey }), "application/json; charset=utf-8");
+    send(res, 200, JSON.stringify({ publicKey: vapidConfig.publicKey }), "application/json; charset=utf-8");
     return;
   }
 
