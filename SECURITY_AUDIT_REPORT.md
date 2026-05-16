@@ -170,18 +170,41 @@ Spusteno:
 - `curl /api/sync` s platnym tokenem - 200
 - Overeno oddeleni dvou sync identit: druha identita nevidi data prvni.
 
+Produkce overena 2026-05-16 na `https://kombuchator-production.up.railway.app`:
+
+- Deploy stav: nova verze z commitu `8efaea4` neni na produkci nasazena.
+- Railway CLI stav: `Unauthorized. Please run railway login again.`
+- GitHub push na `main` prosel, ale produkcni Railway URL stale servirovala starou verzi.
+- `GET /api/sync` bez tokenu: `200` - spatne, produkce stale neni chranena.
+- `POST /api/push-subscribe` bez tokenu: `200` - spatne, produkce stale neni chranena.
+- `GET /.vapid.json`: `200` - spatne, produkce stale vystavuje neveřejny soubor.
+- `GET /server.js`: `200` - spatne, produkce stale vystavuje serverovy kod.
+- `GET /package.json`: `200` - spatne, produkce stale vystavuje interní metadata.
+- CORS s nepovolenym originem: `200` a `Access-Control-Allow-Origin: *` - spatne, produkce stale bezi se starou CORS konfiguraci.
+- Security headers: chybi nove hlavicky z aktualniho commitu.
+- Service worker: produkce vraci `kombuchator-v38`, aktualni kod ma `kombuchator-v40`.
+- Zaver: produkcni ochrana neni aktivni, dokud se Railway znovu neprihlasi/nenasadi aktualni commit.
+
 Neprovedeno:
 
 - Playwright vizualni/mobile test kvuli chybejici systemove knihovne `libnspr4.so` v lokalnim prostredi.
 - Plny end-to-end test kalkulacniho UI v prohlizeci. Syntax, server start a API/security flow prosly.
+- Overeni Railway GitHub integrace, env promennych, volume a deployment nastaveni pres CLI nebylo mozne kvuli neplatnemu Railway prihlaseni.
 
 ## 7. Co zustava k nastaveni mimo kod
 
 - Railway:
+  - Obnovit autorizaci CLI pres `railway login`, nebo nastavit `RAILWAY_TOKEN` pouze jako lokalni/session secret mimo repo.
+  - Overit v dashboardu, zda je service napojena na GitHub repo `mishenkavav-art/Kombuchator`, branch `main`, a zda je povolen auto-deploy po pushi.
+  - Pokud auto-deploy neni napojen, v Railway dashboardu otevrit service Kombuchator -> Settings -> Source -> GitHub Repo a vybrat repo + branch `main`.
+  - Pokud se po pushi deploy nespustil, otevrit Deployments a zkontrolovat build/deploy chybu posledniho pokusu; pripadne spustit manual redeploy z commitu `8efaea4`.
   - Nastavit `NODE_ENV=production`.
   - Nastavit `ALLOWED_ORIGINS=https://kombuchator-production.up.railway.app`.
+  - Volitelne nastavit `MAX_JSON_BYTES=1048576`, `RATE_LIMIT_WINDOW_MS=60000`, `RATE_LIMIT_MAX=120`.
+  - Start command musi pouzivat `npm start`, coz podle `package.json` spousti `node server.js`.
   - Zkontrolovat HTTPS-only provoz.
   - Zrotovat VAPID klice po predchozim moznosti vystaveni `.vapid.json`.
+  - Overit perzistenci JSON dat. Pokud service nema Railway Volume pripojeny k adresari aplikace, soubory `.sync-auth.json`, `.sync-stores/`, `.push-subs.json` a `.sync-migration-backups/` nemusi prezit redeploy/restart kontejneru. Pro produkci je potreba Railway Volume nebo databaze.
   - Nastavit monitoring/log alerts pro 4xx/5xx a restart smycky.
 - GitHub/repozitar:
   - Zapnout Dependabot security updates.
