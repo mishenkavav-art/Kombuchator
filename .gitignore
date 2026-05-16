@@ -5,6 +5,9 @@ node_modules/
 .env
 .env.*
 .sync.json
+.sync-auth.json
+.sync-stores/
+.sync-migration-backups/
 .push-subs.json
 .notified.json
 .vapid.json

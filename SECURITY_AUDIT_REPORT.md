@@ -7,14 +7,15 @@ Datum auditu: 2026-05-16
 - Stack: vanilla HTML/CSS/JavaScript frontend, Node.js backend postaveny primo nad `http` modulem.
 - Framework: zadny frontend framework, zadny Express.
 - Backend: ano, `server.js`.
-- Databaze: ne klasicka databaze; server uklada sdilena data do lokalnich JSON souboru `.sync.json`, `.push-subs.json`, `.notified.json`, `.vapid.json`.
+- Databaze: ne klasicka databaze; server uklada data do lokalnich JSON souboru. Po doplneni tokenove ochrany jsou sync data oddelena v `.sync-stores/<syncId>.json`; autentizacni hashe jsou v `.sync-auth.json`; push subscriptions jsou v `.push-subs.json`; notifikacni deduplikace je v `.notified.json`; VAPID klice jsou v `.vapid.json`.
 - API endpointy:
   - `GET /api/vapid-public-key` - vraci public VAPID key.
-  - `POST /api/push-subscribe` - uklada push subscription.
-  - `GET /api/sync` - vraci sdileny sync stav.
-  - `POST /api/sync` - prijima a merguje varky, recepty, pripominky a tombstones.
-- Autentizace/autorizace: neni implementovana.
-- Local storage: frontend pouziva `localStorage` pro recepty, varky, tombstones a fired notification IDs.
+  - `POST /api/sync/bootstrap` - vytvori nebo overi per-install sync identitu.
+  - `POST /api/push-subscribe` - uklada push subscription pro overeny `syncId`.
+  - `GET /api/sync` - vraci sync stav pouze pro overeny `syncId`.
+  - `POST /api/sync` - prijima a merguje varky, recepty, pripominky a tombstones pouze pro overeny `syncId`.
+- Autentizace/autorizace: implementovana minimalni per-install tokenova ochrana bez plneho prihlaseni. Klient posila `X-Sync-Id` a `X-Sync-Token`; server uklada pouze hash tokenu a oddeluje data podle `syncId`.
+- Local storage: frontend pouziva `localStorage` pro recepty, varky, tombstones, fired notification IDs a lokalni sync identitu `kombuchator.syncIdentity.v1`.
 - PWA/service worker: ano, `sw.js`; cache statickych souboru a deduplikace push-fired reminder IDs.
 - Synchronizace mezi zarizenimi: ano, pres `/api/sync`; serverovy JSON store je zdroj pravdy, klienti merguji lokalni a vzdaleny stav.
 - Env promene: `PORT`; nove pridane `ALLOWED_ORIGINS`, `MAX_JSON_BYTES`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`, `NODE_ENV`.
@@ -54,12 +55,16 @@ Datum auditu: 2026-05-16
 ### High: chybejici autentizace a autorizace pro soukroma data
 
 - Soubory: `server.js` endpointy `/api/sync`, `/api/push-subscribe`.
-- Riziko: aplikace ma jeden sdileny serverovy store bez identity uzivatele. CORS je nyni zprisneny, ale skutecna ochrana soukromych dat vyzaduje autentizaci a oddeleni uzivatelskych dat.
-- Mozny utok: kdokoliv, kdo muze volat API z povoleneho originu nebo primo bez browser CORS omezeni, muze cist/zapisovat spolecny sync store.
-- Oprava: castecne provedeno.
-  - Zprisnen CORS, rate limit, limity payloadu a validace.
-  - Skutecna autentizace neni zavedena, aby se nerozbila existujici mobilni/web sync logika bez navrhu prihlasovani.
-- Doporucena dalsi oprava: pridat autentizaci nebo minimalne per-install sync secret/token, idealne uzivatelske ucty a databazi s oddelenim dat.
+- Riziko: pred opravou mela aplikace jeden sdileny serverovy store bez identity. CORS nebyl a neni nahrada autentizace, protoze API muze byt volane mimo browser.
+- Mozny utok: kdokoliv, kdo znal endpoint, mohl cist nebo prepsat globalni varky/recepty/pripominky.
+- Oprava: provedeno jako minimalni per-install auth bez loginu.
+  - Klient si vytvari kryptograficky nahodny `syncId` a `syncSecret` pomoci `crypto.getRandomValues()`.
+  - Token se uklada pouze lokalne v `localStorage`, neposila se v URL a neloguje se.
+  - `/api/sync` a `/api/push-subscribe` vyzaduji hlavicky `X-Sync-Id` a `X-Sync-Token`.
+  - Server uklada hash secretu v `.sync-auth.json` a data oddeluje do `.sync-stores/<syncId>.json`.
+  - Stary `.sync.json` se pri prvnim bootstrapu nemaze; server ho zalohuje a priradi prvni vytvorene identite.
+  - Push subscriptions jsou oddelene podle `syncId`.
+- Zbyvajici riziko: nejde o plnohodnotne uzivatelske ucty. Kdo ziska localStorage zarizeni, ziska i sync token.
 
 ### Medium: chybejici security headers
 
@@ -111,7 +116,7 @@ Datum auditu: 2026-05-16
 - Soubor: `sw.js`.
 - Riziko: mobil mohl po deployi zustat na starsim HTML/JS/CSS, coz uz zpusobovalo rozdilne chovani mezi zarizenimi.
 - Oprava: provedeno.
-  - Cache verze zvysena na `kombuchator-v39`.
+  - Cache verze zvysena na `kombuchator-v40`.
   - Runtime cache uz necachuje `/` ani `.html`; API se necachuje.
   - Implementace: `sw.js` radky 1, 69-85.
 
@@ -137,11 +142,12 @@ Datum auditu: 2026-05-16
 - API endpointy se ve service workeru necachuji.
 - HTML/root uz se runtime-cache neuklada.
 - Reminder merge uz pouziva `updatedAt` a terminalni stavy, aby stary lokalni `pending` neprepsal serverovy `done`.
-- Zbyvajici riziko: bez autentizace je serverovy sync stale jeden sdileny zdroj pravdy.
+- Sync API je chranene per-install tokenem a serverova data jsou oddelena podle `syncId`.
+- CORS zustava pouze dalsi ochranna vrstva; hlavni kontrola pristupu je token v hlavickach.
 
 ## 5. Secrets a deploy
 
-- `.vapid.json`, `.sync.json`, `.push-subs.json`, `.notified.json`, `.env*` jsou pridane do `.gitignore`.
+- `.vapid.json`, `.sync.json`, `.sync-auth.json`, `.sync-stores/`, `.sync-migration-backups/`, `.push-subs.json`, `.notified.json`, `.env*` jsou pridane do `.gitignore`.
 - Pridan `.env.example` bez skutecnych secret hodnot.
 - VAPID private key se stale generuje do `.vapid.json`; pro produkci je lepsi nastavit stabilni secret pres Railway env/volume nebo zavest rotacni postup.
 - Protoze `.vapid.json` mohl byt pred opravou verejne staticky dostupny, doporucuji VAPID klic okamzite zrotovat.
@@ -159,7 +165,10 @@ Spusteno:
 - `curl /.vapid.json` - 404
 - `curl /server.js` - 404
 - `curl /api/sync` s nepovolenym Origin - 403
-- `curl /api/sync` s povolenym Origin - 200
+- `curl /api/sync` bez tokenu - 401
+- `curl /api/sync` se spatnym tokenem - 401/403
+- `curl /api/sync` s platnym tokenem - 200
+- Overeno oddeleni dvou sync identit: druha identita nevidi data prvni.
 
 Neprovedeno:
 
@@ -179,13 +188,14 @@ Neprovedeno:
   - Zapnout branch protection pro main.
   - CI: `npm audit --audit-level=moderate`, `node --check server.js`, `node --check script.js`, `node --check sw.js`.
 - Produktove:
-  - Rozhodnout autentizaci a oddeleni dat. Bez toho nelze garantovat soukromi historie varek/poznamek mezi uzivateli.
+  - Rozhodnout, zda per-install token staci, nebo jestli je potreba plne prihlaseni a ucty. Per-install token chrani API pred anonymnim ctenim/zapisem, ale neresi obnovu pristupu ani role.
   - Zvolit trvalou databazi misto lokalniho JSON souboru, pokud ma aplikace byt viceuzivatelska.
 
 ## 8. Zbyvajici rizika
 
-- High: chybi skutecna autentizace/autorizace. CORS a rate limit nejsou nahrada za auth.
+- Medium/High: per-install token neni plnohodnotny uzivatelsky login. CORS a rate limit nejsou nahrada za auth; token je aktualni hlavni ochrana sync dat.
 - Medium: in-memory rate limit neni sdileny a resetuje se restartem.
-- Medium: serverovy JSON store nema transakcni zapis ani uzivatelske oddeleni.
+- Medium: serverovy JSON store nema databazove transakce; zapis je atomicky po souboru, ale neplni uroven databaze.
+- Medium: pri ztrate localStorage tokenu neni implementovana obnova identity.
 - Low/Medium: CSP vyzaduje `style-src 'unsafe-inline'`, dokud UI obsahuje inline styly.
 - Low: Google Fonts jsou externi dependency; pokud je cilem maximalni privacy/offline determinismus, fonty lokalne vendornout.

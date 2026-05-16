@@ -68,6 +68,7 @@ function createTeaId() { return `tea-${++teaIdCounter}`; }
 const SAVED_RECIPES_KEY  = "kombuchator.savedRecipes.v1";
 const DELETED_BATCH_KEY  = "kombuchator.deletedBatchIds.v1";
 const DELETED_RECIPE_KEY = "kombuchator.deletedRecipeIds.v1";
+const SYNC_IDENTITY_KEY = "kombuchator.syncIdentity.v1";
 let savedRecipes = loadSavedRecipes();
 let pendingRecipeSnapshot = null;
 let pendingDeleteRecipeId = null;
@@ -113,6 +114,69 @@ let newCheckReminderDays = 0;
 let newBatchRecipeSnapshot = null;
 let pendingPickRecipeBatchId = null;
 let batches = [];
+let syncIdentity = loadOrCreateSyncIdentity();
+let syncIdentityReady = false;
+
+function randomToken(bytes = 32) {
+  if (!window.crypto?.getRandomValues) return "";
+  const data = new Uint8Array(bytes);
+  window.crypto.getRandomValues(data);
+  let binary = "";
+  data.forEach(byte => { binary += String.fromCharCode(byte); });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function isValidLocalSyncIdentity(identity) {
+  return Boolean(
+    identity &&
+    typeof identity.syncId === "string" &&
+    /^[A-Za-z0-9_-]{22,80}$/.test(identity.syncId) &&
+    typeof identity.syncSecret === "string" &&
+    /^[A-Za-z0-9_-]{32,160}$/.test(identity.syncSecret)
+  );
+}
+
+function loadOrCreateSyncIdentity() {
+  try {
+    const existing = JSON.parse(localStorage.getItem(SYNC_IDENTITY_KEY) || "null");
+    if (isValidLocalSyncIdentity(existing)) return existing;
+  } catch {}
+  const syncId = randomToken(18);
+  const syncSecret = randomToken(32);
+  if (!syncId || !syncSecret) return null;
+  const identity = { syncId, syncSecret, createdAt: new Date().toISOString() };
+  try { localStorage.setItem(SYNC_IDENTITY_KEY, JSON.stringify(identity)); } catch {}
+  return identity;
+}
+
+function syncHeaders(extra = {}) {
+  if (!syncIdentity) return extra;
+  return {
+    ...extra,
+    "X-Sync-Id": syncIdentity.syncId,
+    "X-Sync-Token": syncIdentity.syncSecret
+  };
+}
+
+async function ensureSyncIdentity() {
+  if (!syncIdentity) syncIdentity = loadOrCreateSyncIdentity();
+  if (!syncIdentity) return false;
+  if (syncIdentityReady) return true;
+  const res = await fetch("/api/sync/bootstrap", {
+    method: "POST",
+    headers: syncHeaders({ "Content-Type": "application/json" }),
+    body: "{}",
+    cache: "no-store"
+  });
+  if (res.ok) {
+    syncIdentityReady = true;
+    return true;
+  }
+  if (res.status === 401 || res.status === 403) {
+    console.warn("[sync] Sync identity rejected. Local data remains on this device.");
+  }
+  return false;
+}
 
 function loadDeletedIds(key) {
   try { return new Set(JSON.parse(localStorage.getItem(key) || "[]")); } catch { return new Set(); }
@@ -3107,7 +3171,9 @@ async function syncWithServer() {
   }
   syncBusy = true;
   try {
-    const res = await fetch("/api/sync", { cache: "no-store" });
+    const hasIdentity = await ensureSyncIdentity();
+    if (!hasIdentity) { syncBusy = false; return; }
+    const res = await fetch("/api/sync", { cache: "no-store", headers: syncHeaders() });
     if (!res.ok) { syncBusy = false; return; }
     const remote = await res.json();
 
@@ -3139,7 +3205,7 @@ async function syncWithServer() {
     } catch {}
     await fetch("/api/sync", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: syncHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ ...merged, pushSub: pushSub ? pushSub.toJSON() : null })
     });
   } catch {}
@@ -3636,6 +3702,8 @@ async function setupPushNotifications() {
     return;
   }
   try {
+    const hasIdentity = await ensureSyncIdentity();
+    if (!hasIdentity) return;
     const reg = await navigator.serviceWorker.ready;
     console.log("[push-setup] SW aktivní:", reg.active?.scriptURL);
     let sub = await reg.pushManager.getSubscription();
@@ -3650,7 +3718,7 @@ async function setupPushNotifications() {
     }
     await fetch("/api/push-subscribe", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: syncHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify(sub)
     });
     console.log("[push-setup] ✓ Subscription zaregistrována na serveru");

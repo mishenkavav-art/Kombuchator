@@ -1,4 +1,4 @@
-const CACHE = "kombuchator-v39";
+const CACHE = "kombuchator-v40";
 const FIRED_META = "push-fired-meta";
 
 self.addEventListener("install", e => {

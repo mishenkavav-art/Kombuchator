@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const webpush = require("web-push");
 
 const root = __dirname;
@@ -8,6 +9,10 @@ const port = Number(process.env.PORT) || 3000;
 const SYNC_FILE  = path.join(__dirname, ".sync.json");
 const SUBS_FILE  = path.join(__dirname, ".push-subs.json");
 const VAPID_FILE = path.join(__dirname, ".vapid.json");
+const AUTH_FILE = path.join(__dirname, ".sync-auth.json");
+const SYNC_DIR = path.join(__dirname, ".sync-stores");
+const BACKUP_DIR = path.join(__dirname, ".sync-migration-backups");
+const NOTIFIED_FILE = path.join(__dirname, ".notified.json");
 const MAX_JSON_BYTES = Math.min(Number(process.env.MAX_JSON_BYTES) || 1024 * 1024, 4 * 1024 * 1024);
 const RATE_LIMIT_WINDOW_MS = Math.max(Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000, 1_000);
 const RATE_LIMIT_MAX = Math.max(Number(process.env.RATE_LIMIT_MAX) || 120, 10);
@@ -39,6 +44,36 @@ const types = {
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 };
 
+const EMPTY_SYNC_STORE = { batches: [], recipes: [], deletedBatchIds: [], deletedRecipeIds: [] };
+
+function ensureDir(dir) {
+  fs.mkdirSync(dir, { recursive: true });
+}
+
+function readJson(file, fallback) {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(file, value) {
+  ensureDir(path.dirname(file));
+  const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(value));
+  fs.renameSync(tmp, file);
+}
+
+function backupFile(file, label) {
+  if (!fs.existsSync(file)) return null;
+  ensureDir(BACKUP_DIR);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const target = path.join(BACKUP_DIR, `${label}-${stamp}.json`);
+  fs.copyFileSync(file, target);
+  return target;
+}
+
 function isAllowedOrigin(origin) {
   return !origin || allowedOrigins.has(origin);
 }
@@ -50,7 +85,7 @@ function applyCors(req, res) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Sync-Id, X-Sync-Token");
 }
 
 function applySecurityHeaders(res) {
@@ -161,6 +196,84 @@ function isPublicPath(pathname) {
   return [".png", ".svg", ".jpg", ".jpeg", ".webp"].includes(ext) && !pathname.includes("..") && !pathname.includes(":");
 }
 
+function isValidSyncId(syncId) {
+  return typeof syncId === "string" && /^[A-Za-z0-9_-]{22,80}$/.test(syncId);
+}
+
+function isValidSyncSecret(secret) {
+  return typeof secret === "string" && /^[A-Za-z0-9_-]{32,160}$/.test(secret);
+}
+
+function syncStoreFile(syncId) {
+  if (!isValidSyncId(syncId)) throw new Error("Invalid syncId");
+  return path.join(SYNC_DIR, `${syncId}.json`);
+}
+
+function hashSecret(syncId, secret) {
+  return crypto.createHash("sha256").update(`${syncId}:${secret}`, "utf8").digest("hex");
+}
+
+let syncAuth = readJson(AUTH_FILE, { identities: {}, legacyMigratedTo: null });
+if (!syncAuth || typeof syncAuth !== "object" || !syncAuth.identities) {
+  syncAuth = { identities: {}, legacyMigratedTo: null };
+}
+
+function saveSyncAuth() {
+  writeJson(AUTH_FILE, syncAuth);
+}
+
+function authFromRequest(req) {
+  const syncId = String(req.headers["x-sync-id"] || "");
+  const syncSecret = String(req.headers["x-sync-token"] || "");
+  if (!isValidSyncId(syncId) || !isValidSyncSecret(syncSecret)) return { ok: false, status: 401 };
+  const identity = syncAuth.identities[syncId];
+  if (!identity) return { ok: false, status: 401, syncId, syncSecret };
+  const incomingHash = hashSecret(syncId, syncSecret);
+  const expected = Buffer.from(identity.secretHash, "hex");
+  const incoming = Buffer.from(incomingHash, "hex");
+  if (expected.length !== incoming.length || !crypto.timingSafeEqual(expected, incoming)) {
+    return { ok: false, status: 403, syncId, syncSecret };
+  }
+  return { ok: true, syncId };
+}
+
+function createIdentity(syncId, syncSecret) {
+  syncAuth.identities[syncId] = {
+    secretHash: hashSecret(syncId, syncSecret),
+    createdAt: new Date().toISOString()
+  };
+  saveSyncAuth();
+}
+
+function getSyncStore(syncId) {
+  return { ...EMPTY_SYNC_STORE, ...readJson(syncStoreFile(syncId), EMPTY_SYNC_STORE) };
+}
+
+function saveSyncStore(syncId, store) {
+  writeJson(syncStoreFile(syncId), store);
+}
+
+function hasLegacySyncData() {
+  if (!fs.existsSync(SYNC_FILE)) return false;
+  const legacy = readJson(SYNC_FILE, EMPTY_SYNC_STORE);
+  return Boolean(
+    (Array.isArray(legacy.batches) && legacy.batches.length) ||
+    (Array.isArray(legacy.recipes) && legacy.recipes.length) ||
+    (Array.isArray(legacy.deletedBatchIds) && legacy.deletedBatchIds.length) ||
+    (Array.isArray(legacy.deletedRecipeIds) && legacy.deletedRecipeIds.length)
+  );
+}
+
+function initialStoreForNewIdentity(syncId) {
+  if (!syncAuth.legacyMigratedTo && Object.keys(syncAuth.identities).length === 1 && hasLegacySyncData()) {
+    backupFile(SYNC_FILE, "legacy-sync-before-token-migration");
+    syncAuth.legacyMigratedTo = syncId;
+    saveSyncAuth();
+    return { ...EMPTY_SYNC_STORE, ...readJson(SYNC_FILE, EMPTY_SYNC_STORE) };
+  }
+  return { ...EMPTY_SYNC_STORE };
+}
+
 // ── VAPID setup ──
 let vapidKeys;
 try {
@@ -172,26 +285,21 @@ try {
 webpush.setVapidDetails("mailto:mishenka.vav@gmail.com", vapidKeys.publicKey, vapidKeys.privateKey);
 
 // ── Push subscriptions ──
-let pushSubs = [];
-try { pushSubs = JSON.parse(fs.readFileSync(SUBS_FILE, "utf8")); } catch {}
-function saveSubs() {
-  try { fs.writeFileSync(SUBS_FILE, JSON.stringify(pushSubs)); } catch {}
+let pushSubs = readJson(SUBS_FILE, {});
+if (Array.isArray(pushSubs)) {
+  backupFile(SUBS_FILE, "legacy-push-subs-before-token-migration");
+  pushSubs = {};
 }
-
-// ── Sync store ──
-let syncStore = { batches: [], recipes: [], deletedBatchIds: [], deletedRecipeIds: [] };
-try { syncStore = { ...syncStore, ...JSON.parse(fs.readFileSync(SYNC_FILE, "utf8")) }; } catch {}
-
-function saveSyncFile() {
-  try { fs.writeFileSync(SYNC_FILE, JSON.stringify(syncStore)); } catch {}
+function saveSubs() {
+  try { writeJson(SUBS_FILE, pushSubs); } catch {}
 }
 
 // ── Reminder push logic ──
 const notifiedIds = new Set(
-  (() => { try { return JSON.parse(fs.readFileSync(path.join(__dirname, ".notified.json"), "utf8")); } catch { return []; } })()
+  (() => { try { return JSON.parse(fs.readFileSync(NOTIFIED_FILE, "utf8")); } catch { return []; } })()
 );
 function saveNotified() {
-  try { fs.writeFileSync(path.join(__dirname, ".notified.json"), JSON.stringify([...notifiedIds])); } catch {}
+  try { writeJson(NOTIFIED_FILE, [...notifiedIds]); } catch {}
 }
 function reminderNotificationKey(reminder) {
   return `${reminder.id}@${reminder.remindAt}`;
@@ -232,33 +340,35 @@ function mergeReminderLists(first = [], second = []) {
   return [...reminderMap.values()];
 }
 
-async function sendPushToOne(sub, payload) {
+async function sendPushToOne(syncId, sub, payload) {
   try {
     console.log(`[push] → ${sub.endpoint.slice(-30)}: ${payload.title}`);
     await webpush.sendNotification(sub, JSON.stringify(payload));
   } catch (e) {
     console.log(`[push] error ${e.statusCode}: ${e.message?.slice(0, 80)}`);
     if (e.statusCode === 410 || e.statusCode === 404) {
-      pushSubs = pushSubs.filter(s => s.endpoint !== sub.endpoint);
+      pushSubs[syncId] = (pushSubs[syncId] || []).filter(s => s.endpoint !== sub.endpoint);
       saveSubs();
     }
   }
 }
 
-async function sendPushToAll(payload) {
-  console.log(`[push] sending "${payload.title}" to ${pushSubs.length} device(s)`);
-  await Promise.all(pushSubs.map(sub => sendPushToOne(sub, payload)));
+async function sendPushToAll(syncId, payload) {
+  const subs = Array.isArray(pushSubs[syncId]) ? pushSubs[syncId] : [];
+  console.log(`[push] sending "${payload.title}" to ${subs.length} device(s)`);
+  await Promise.all(subs.map(sub => sendPushToOne(syncId, sub, payload)));
 }
 
 // Send all currently-due reminders to a single new subscription (catch-up for late devices)
-async function catchUpNewSub(sub) {
+async function catchUpNewSub(syncId, sub) {
   const now = Date.now();
-  for (const batch of (syncStore.batches || [])) {
+  const store = getSyncStore(syncId);
+  for (const batch of (store.batches || [])) {
     if (batch.finished) continue;
     for (const r of (batch.reminders || [])) {
       if (r.status !== "pending") continue;
       if (new Date(r.remindAt).getTime() > now) continue;
-      await sendPushToOne(sub, {
+      await sendPushToOne(syncId, sub, {
         title: `Kombuchátor: ${r.title}`,
         body: batch.batchName,
         url: "/#varky",
@@ -270,24 +380,28 @@ async function catchUpNewSub(sub) {
 }
 
 function checkAndSendReminders() {
-  if (!pushSubs.length) return;
   const now = Date.now();
-  (syncStore.batches || []).forEach(batch => {
-    if (batch.finished) return;
-    (batch.reminders || []).forEach(r => {
-      if (r.status !== "pending") return;
-      const notifKey = reminderNotificationKey(r);
-      if (notifiedIds.has(notifKey)) return;
-      if (new Date(r.remindAt).getTime() > now) return;
-      notifiedIds.add(notifKey);
-      saveNotified();
-      sendPushToAll({
-        title:      `Kombuchátor: ${r.title}`,
-        body:       batch.batchName,
-        url:        "/#varky",
-        reminderId: r.id,
-        reminderKey: notifKey
-      }).catch(() => {});
+  Object.keys(syncAuth.identities || {}).forEach(syncId => {
+    const subs = Array.isArray(pushSubs[syncId]) ? pushSubs[syncId] : [];
+    if (!subs.length) return;
+    const store = getSyncStore(syncId);
+    (store.batches || []).forEach(batch => {
+      if (batch.finished) return;
+      (batch.reminders || []).forEach(r => {
+        if (r.status !== "pending") return;
+        const notifKey = `${syncId}:${reminderNotificationKey(r)}`;
+        if (notifiedIds.has(notifKey)) return;
+        if (new Date(r.remindAt).getTime() > now) return;
+        notifiedIds.add(notifKey);
+        saveNotified();
+        sendPushToAll(syncId, {
+          title:      `Kombuchátor: ${r.title}`,
+          body:       batch.batchName,
+          url:        "/#varky",
+          reminderId: r.id,
+          reminderKey: reminderNotificationKey(r)
+        }).catch(() => {});
+      });
     });
   });
 }
@@ -385,20 +499,47 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  // ── Sync identity bootstrap ──
+  if (pathname === "/api/sync/bootstrap" && req.method === "POST") {
+    if (isRateLimited(req, "sync-bootstrap")) { send(res, 429, "Too Many Requests"); return; }
+    const auth = authFromRequest(req);
+    if (auth.ok) {
+      send(res, 200, JSON.stringify({ ok: true }), "application/json; charset=utf-8");
+      return;
+    }
+    const syncId = auth.syncId;
+    const syncSecret = auth.syncSecret;
+    if (!isValidSyncId(syncId) || !isValidSyncSecret(syncSecret)) {
+      send(res, 401, "Unauthorized");
+      return;
+    }
+    if (syncAuth.identities[syncId]) {
+      send(res, 403, "Forbidden");
+      return;
+    }
+    createIdentity(syncId, syncSecret);
+    saveSyncStore(syncId, initialStoreForNewIdentity(syncId));
+    send(res, 201, JSON.stringify({ ok: true }), "application/json; charset=utf-8");
+    return;
+  }
+
   // ── Push subscription ──
   if (pathname === "/api/push-subscribe" && req.method === "POST") {
     if (isRateLimited(req, "push-subscribe")) { send(res, 429, "Too Many Requests"); return; }
+    const auth = authFromRequest(req);
+    if (!auth.ok) { send(res, auth.status, auth.status === 403 ? "Forbidden" : "Unauthorized"); return; }
     try {
       const sub = await parseJsonBody(req, 64 * 1024);
       if (!sub || typeof sub !== "object" || typeof sub.endpoint !== "string" || sub.endpoint.length > 2000) {
         send(res, 400, "Bad Request");
         return;
       }
-      const idx = pushSubs.findIndex(s => s.endpoint === sub.endpoint);
+      if (!Array.isArray(pushSubs[auth.syncId])) pushSubs[auth.syncId] = [];
+      const idx = pushSubs[auth.syncId].findIndex(s => s.endpoint === sub.endpoint);
       const isNew = idx < 0;
-      if (idx >= 0) pushSubs[idx] = sub; else pushSubs.push(sub);
+      if (idx >= 0) pushSubs[auth.syncId][idx] = sub; else pushSubs[auth.syncId].push(sub);
       saveSubs();
-      if (isNew) catchUpNewSub(sub).catch(() => {});
+      if (isNew) catchUpNewSub(auth.syncId, sub).catch(() => {});
       send(res, 200, "OK");
     } catch { send(res, 400, "Bad Request"); }
     return;
@@ -406,25 +547,28 @@ http.createServer(async (req, res) => {
 
   // ── Sync API ──
   if (pathname === "/api/sync") {
+    if (req.method === "GET" && isRateLimited(req, "sync-get")) { send(res, 429, "Too Many Requests"); return; }
+    if (req.method === "POST" && isRateLimited(req, "sync-post")) { send(res, 429, "Too Many Requests"); return; }
+    const auth = authFromRequest(req);
+    if (!auth.ok) { send(res, auth.status, auth.status === 403 ? "Forbidden" : "Unauthorized"); return; }
     if (req.method === "GET") {
-      if (isRateLimited(req, "sync-get")) { send(res, 429, "Too Many Requests"); return; }
-      send(res, 200, JSON.stringify(syncStore), "application/json; charset=utf-8");
+      send(res, 200, JSON.stringify(getSyncStore(auth.syncId)), "application/json; charset=utf-8");
       return;
     }
     if (req.method === "POST") {
-      if (isRateLimited(req, "sync-post")) { send(res, 429, "Too Many Requests"); return; }
       try {
         const data = sanitizeSyncPayload(await parseJsonBody(req));
         // Re-register push subscription piggybacked on sync
         if (data.pushSub && data.pushSub.endpoint) {
-          const idx = pushSubs.findIndex(s => s.endpoint === data.pushSub.endpoint);
+          if (!Array.isArray(pushSubs[auth.syncId])) pushSubs[auth.syncId] = [];
+          const idx = pushSubs[auth.syncId].findIndex(s => s.endpoint === data.pushSub.endpoint);
           const isNew = idx < 0;
-          if (idx >= 0) pushSubs[idx] = data.pushSub; else pushSubs.push(data.pushSub);
+          if (idx >= 0) pushSubs[auth.syncId][idx] = data.pushSub; else pushSubs[auth.syncId].push(data.pushSub);
           saveSubs();
-          if (isNew) catchUpNewSub(data.pushSub).catch(() => {});
+          if (isNew) catchUpNewSub(auth.syncId, data.pushSub).catch(() => {});
         }
-        syncStore = mergeIncoming(syncStore, data);
-        saveSyncFile();
+        const syncStore = mergeIncoming(getSyncStore(auth.syncId), data);
+        saveSyncStore(auth.syncId, syncStore);
         checkAndSendReminders();
         send(res, 200, JSON.stringify(syncStore), "application/json; charset=utf-8");
       } catch { send(res, 400, "Bad Request"); }
