@@ -54,9 +54,9 @@
         <div class="reminder-banner-actions">
           <button type="button" id="reminderGoToVarkyBtn">Zobrazit várky</button>
           <button type="button" id="reminderSnoozeBtn">Odložit</button>
-          <button type="button" id="reminderDoneBtn">Označit jako splněné</button>
-          <button type="button" id="reminderDismissBtn">Zavřít</button>
+          <button type="button" id="reminderDoneBtn">Splněno</button>
         </div>
+        <button class="reminder-dismiss" type="button" id="reminderDismissBtn" aria-label="Zavřít připomínku">×</button>
       </div>
 
       <!-- HEADER -->
@@ -372,7 +372,7 @@
       <p>Dej mu název, ať ho pak poznáš v zápisníku.</p>
       <label>
         <span>Název receptu</span>
-        <input id="recipeNameInput" type="text" placeholder="Třeba: první povedená várka, jemná kombucha, kyselý startér…">
+        <input id="recipeNameInput" type="text" maxlength="120" placeholder="Třeba: první povedená várka, jemná kombucha, kyselý startér…">
       </label>
       <p class="microcopy" id="recipeNameHint">Název si můžeš kdykoliv změnit.</p>
       <div class="dialog-actions">
@@ -400,7 +400,7 @@
       <h2>Založ novou várku</h2>
       <label>
         <span>Název várky</span>
-        <input id="newBatchName" type="text" placeholder="Třeba: Jemná várka pro Vojtu, Startér na příště, První pokus s malinou…">
+        <input id="newBatchName" type="text" maxlength="120" placeholder="Třeba: Jemná várka pro Vojtu, Startér na příště, První pokus s malinou…">
       </label>
       <div class="dialog-row">
         <div>
@@ -438,7 +438,7 @@
       </div>
       <label>
         <span>Poznámka</span>
-        <textarea id="newBatchNote" rows="3" placeholder="Co si chceš poznamenat k začátku várky?"></textarea>
+        <textarea id="newBatchNote" rows="3" maxlength="2000" placeholder="Co si chceš poznamenat k začátku várky?"></textarea>
       </label>
       <div class="dialog-actions">
         <button class="recipe-action" id="cancelNewBatchBtn" type="button">Zrušit</button>
@@ -472,7 +472,7 @@
       </div>
       <label>
         <span>Poznámka</span>
-        <textarea id="newCheckNote" rows="3" placeholder="Co jsi zjistil/a? Chuť, vůně, bublinky, tlak, co příště změnit…"></textarea>
+        <textarea id="newCheckNote" rows="3" maxlength="2000" placeholder="Co jsi zjistil/a? Chuť, vůně, bublinky, tlak, co příště změnit…"></textarea>
       </label>
       <div>
         <span class="choice-label">Další připomínka</span>
@@ -509,7 +509,7 @@
       </div>
       <label>
         <span>Poznámka</span>
-        <textarea id="finishBatchNote" rows="3" placeholder="Co chceš příště změnit?"></textarea>
+        <textarea id="finishBatchNote" rows="3" maxlength="2000" placeholder="Co chceš příště změnit?"></textarea>
       </label>
       <div class="dialog-actions">
         <button class="recipe-action" id="cancelFinishBatchBtn" type="button">Zrušit</button>
@@ -561,7 +561,7 @@
       </div>
       <label>
         <span>Poznámka</span>
-        <textarea id="editCheckNote" rows="3" placeholder="Co jsi zjistil/a?"></textarea>
+        <textarea id="editCheckNote" rows="3" maxlength="2000" placeholder="Co jsi zjistil/a?"></textarea>
       </label>
       <div class="edit-reminders-block">
         <span class="choice-label">Připomínky</span>
@@ -615,7 +615,7 @@
       <h2>Upravit recept várky</h2>
       <label>
         <span>Název receptu</span>
-        <input id="editSnapName" type="text" placeholder="Název receptu">
+        <input id="editSnapName" type="text" maxlength="120" placeholder="Název receptu">
       </label>
       <div id="editSnapTeasContainer"></div>
       <button class="recipe-action edit-snap-add-tea" id="editSnapAddTeaBtn" type="button">+ Přidat čaj</button>
@@ -629,7 +629,7 @@
       </label>
       <label>
         <span>Poznámka</span>
-        <textarea id="editSnapNote" rows="2" placeholder="Vlastní poznámka k receptu..."></textarea>
+        <textarea id="editSnapNote" rows="2" maxlength="2000" placeholder="Vlastní poznámka k receptu..."></textarea>
       </label>
       <div class="dialog-actions">
         <button class="recipe-action primary" id="confirmEditSnapshotBtn" type="button">Uložit</button>
@@ -646,7 +646,7 @@
       <p class="dialog-hint">F1 skončila — teď ji přesuň do láhví a nech to naperlovat.</p>
       <label>
         <span>Název F2 várky</span>
-        <input id="f1ToF2Name" type="text" placeholder="Třeba: F2 – malinová, Perlení pro Vojtu…">
+        <input id="f1ToF2Name" type="text" maxlength="120" placeholder="Třeba: F2 – malinová, Perlení pro Vojtu…">
       </label>
       <div class="dialog-row">
         <label><span>Datum začátku F2</span><input id="f1ToF2Date" type="date"></label>
@@ -668,7 +668,7 @@
       </div>
       <label>
         <span>Poznámka</span>
-        <textarea id="f1ToF2Note" rows="2" placeholder="Co přidáváš do láhví? Ovoce, zázvor, bylinky…"></textarea>
+        <textarea id="f1ToF2Note" rows="2" maxlength="2000" placeholder="Co přidáváš do láhví? Ovoce, zázvor, bylinky…"></textarea>
       </label>
       <div class="dialog-actions">
         <button class="recipe-action" id="cancelF1ToF2Btn" type="button">Teď ne</button>

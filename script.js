@@ -91,6 +91,13 @@ const FIRED_NOTIFS_KEY = "kombuchator_fired_notifs";
 const firedNotifications = new Set(
   (() => { try { return JSON.parse(localStorage.getItem(FIRED_NOTIFS_KEY) || "[]"); } catch { return []; } })()
 );
+function reminderNotificationKey(reminder) {
+  return `${reminder.id}@${reminder.remindAt}`;
+}
+function forgetFiredReminder(reminder) {
+  firedNotifications.delete(reminder.id);
+  firedNotifications.delete(reminderNotificationKey(reminder));
+}
 function saveFiredNotifications() {
   try { localStorage.setItem(FIRED_NOTIFS_KEY, JSON.stringify([...firedNotifications])); } catch {}
 }
@@ -398,11 +405,76 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+const TEXT_LIMITS = {
+  name: 120,
+  note: 2000,
+  share: 5000,
+  id: 80
+};
+
+function cleanText(value, max = TEXT_LIMITS.note) {
+  return String(value ?? "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .trim()
+    .slice(0, max);
+}
+
+function cleanNullableText(value, max = TEXT_LIMITS.note) {
+  const text = cleanText(value, max);
+  return text || null;
+}
+
+function sanitizeLoadedReminder(reminder) {
+  if (!reminder || typeof reminder !== "object" || !reminder.id) return null;
+  const remindAt = Date.parse(reminder.remindAt);
+  if (!Number.isFinite(remindAt)) return null;
+  const status = ["pending", "done", "closed", "cancelled", "canceled"].includes(reminder.status) ? reminder.status : "pending";
+  return {
+    ...reminder,
+    id: cleanText(reminder.id, TEXT_LIMITS.id),
+    type: cleanText(reminder.type || "taste", 40),
+    title: cleanText(reminder.title || "Připomínka", TEXT_LIMITS.name),
+    remindAt: new Date(remindAt).toISOString(),
+    status,
+    note: reminder.note == null ? null : cleanNullableText(reminder.note)
+  };
+}
+
+function sanitizeLoadedBatch(batch) {
+  if (!batch || typeof batch !== "object" || !batch.id) return null;
+  return {
+    ...batch,
+    id: cleanText(batch.id, TEXT_LIMITS.id),
+    batchName: cleanText(batch.batchName || "Moje várka", TEXT_LIMITS.name),
+    startNote: batch.startNote == null ? null : cleanNullableText(batch.startNote),
+    finalNote: batch.finalNote == null ? null : cleanNullableText(batch.finalNote),
+    checks: Array.isArray(batch.checks) ? batch.checks.map(check => check && typeof check === "object" ? {
+      ...check,
+      id: cleanText(check.id || uid(), TEXT_LIMITS.id),
+      note: check.note == null ? null : cleanNullableText(check.note)
+    } : null).filter(Boolean) : [],
+    reminders: Array.isArray(batch.reminders) ? batch.reminders.map(sanitizeLoadedReminder).filter(Boolean) : [],
+    deletedCheckIds: Array.isArray(batch.deletedCheckIds) ? batch.deletedCheckIds.map(id => cleanText(id, TEXT_LIMITS.id)) : []
+  };
+}
+
+function sanitizeLoadedRecipe(recipe) {
+  if (!recipe || typeof recipe !== "object" || !recipe.id) return null;
+  return {
+    ...recipe,
+    id: cleanText(recipe.id, TEXT_LIMITS.id),
+    recipeName: cleanText(recipe.recipeName || recipe.defaultRecipeName || "Recept", TEXT_LIMITS.name),
+    userNote: cleanText(recipe.userNote || "", TEXT_LIMITS.note),
+    shareText: cleanText(recipe.shareText || "", TEXT_LIMITS.share)
+  };
+}
+
 function loadSavedRecipes() {
   try {
     const raw = localStorage.getItem(SAVED_RECIPES_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(sanitizeLoadedRecipe).filter(Boolean) : [];
   } catch {
     return [];
   }
@@ -1349,7 +1421,7 @@ function renderSavedRecipes() {
       <div class="recipe-note-area" hidden>
         <label class="recipe-note">
           <span>Poznámka</span>
-          <textarea placeholder="Co si k tomu chceš poznamenat? Třeba chuť, datum stáčení nebo co příště změnit…">${escapeHtml(recipe.userNote || "")}</textarea>
+          <textarea maxlength="2000" placeholder="Co si k tomu chceš poznamenat? Třeba chuť, datum stáčení nebo co příště změnit…">${escapeHtml(recipe.userNote || "")}</textarea>
         </label>
       </div>
     </article>
@@ -1395,7 +1467,7 @@ function openSaveRecipeDialog() {
 
 function confirmSaveRecipe() {
   if (!pendingRecipeSnapshot) return;
-  const typedName = els.recipeNameInput.value.trim();
+  const typedName = cleanText(els.recipeNameInput.value, TEXT_LIMITS.name);
   if (!typedName) {
     els.recipeNameHint.textContent = "Bez názvu tě v tom za týden nechám plavat. Použiju radši automatický název.";
   }
@@ -1478,7 +1550,7 @@ function commitRecipeTitle(card) {
   const recipe = findRecipe(card?.dataset.recipeId);
   const input = card?.querySelector(".title-edit-input");
   if (!recipe || !input) return;
-  const nextName = input.value.trim() || recipe.recipeName || recipe.defaultRecipeName;
+  const nextName = cleanText(input.value, TEXT_LIMITS.name) || recipe.recipeName || recipe.defaultRecipeName;
   recipe.recipeName = nextName;
   refreshRecipeShareText(recipe);
   persistSavedRecipes();
@@ -1677,7 +1749,7 @@ function bindEvents() {
     if (e.target.closest(".edit-title") || e.target.closest(".recipe-title-pencil")) {
       const row = card.querySelector(".saved-title-row");
       row.innerHTML = `
-        <input class="title-edit-input" type="text" value="${escapeHtml(recipe.recipeName)}">
+        <input class="title-edit-input" type="text" maxlength="120" value="${escapeHtml(recipe.recipeName)}">
         <button class="recipe-action save-title" type="button">Uložit název</button>`;
       row.querySelector("input").focus();
       row.querySelector("input").select();
@@ -1740,7 +1812,8 @@ function bindEvents() {
     const card = e.target.closest(".saved-recipe-card");
     const recipe = findRecipe(card?.dataset.recipeId);
     if (!recipe) return;
-    recipe.userNote = e.target.value;
+    recipe.userNote = cleanText(e.target.value, TEXT_LIMITS.note);
+    if (e.target.value !== recipe.userNote) e.target.value = recipe.userNote;
     refreshRecipeShareText(recipe);
     persistSavedRecipes();
     const toggleBtn = card.querySelector(".toggle-note");
@@ -1918,6 +1991,65 @@ const finalResultLabels = {
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
+
+const REMINDER_TERMINAL_STATUSES = new Set(["done", "closed", "cancelled", "canceled"]);
+
+function reminderTimestamp(reminder) {
+  return Date.parse(reminder.updatedAt || reminder.statusUpdatedAt || reminder.createdAt || "") || 0;
+}
+
+function isTerminalReminder(reminder) {
+  return REMINDER_TERMINAL_STATUSES.has(reminder?.status);
+}
+
+function touchReminder(reminder) {
+  reminder.updatedAt = new Date().toISOString();
+  return reminder;
+}
+
+function createReminder(data) {
+  const now = new Date().toISOString();
+  return { ...data, createdAt: data.createdAt || now, updatedAt: data.updatedAt || now };
+}
+
+function setReminderStatus(reminder, status) {
+  reminder.status = status;
+  return touchReminder(reminder);
+}
+
+function mergeReminderRecords(existing, incoming) {
+  if (!existing) return incoming;
+  if (!incoming) return existing;
+
+  const existingTs = reminderTimestamp(existing);
+  const incomingTs = reminderTimestamp(incoming);
+  if (existingTs && incomingTs && existingTs !== incomingTs) {
+    return incomingTs > existingTs ? incoming : existing;
+  }
+
+  const existingDone = isTerminalReminder(existing);
+  const incomingDone = isTerminalReminder(incoming);
+  if (existingDone !== incomingDone) return existingDone ? existing : incoming;
+
+  return incoming;
+}
+
+function mergeReminderLists(first = [], second = []) {
+  const reminderMap = new Map();
+  [...first, ...second].forEach(reminder => {
+    reminderMap.set(reminder.id, mergeReminderRecords(reminderMap.get(reminder.id), reminder));
+  });
+  return [...reminderMap.values()];
+}
+
+// Returns { date: "YYYY-MM-DD", time: "HH:MM" } in LOCAL timezone from ISO string
+function localDateTimeFromISO(iso) {
+  const d = new Date(iso);
+  const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  return { date, time };
+}
+
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -1968,7 +2100,12 @@ function getBatchStatusLabel(status) {
 function findBatch(id) { return batches.find(b => b.id === id); }
 
 function loadBatches() {
-  try { return JSON.parse(localStorage.getItem(BATCHES_KEY) || "[]"); } catch { return []; }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(BATCHES_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed.map(sanitizeLoadedBatch).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
 }
 function persistBatches() {
   localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
@@ -2062,26 +2199,45 @@ function updateVarkyBadge() {
   els.navVarkyBadge.hidden = active === 0;
 }
 
-function fireNotification(title, body) {
-  if (Notification.permission !== "granted") return;
+async function fireNotification(title, body) {
+  const perm = Notification?.permission ?? "unavailable";
+  console.log(`[notif] fireNotification — permission: ${perm}, title: "${title}"`);
+  if (perm !== "granted") {
+    console.warn("[notif] ✗ permission not granted, skipping");
+    return;
+  }
   try {
-    new Notification(title, { body, icon: "/ikony/kombucha.png", badge: "/ikony/kombucha.png" });
-  } catch {}
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(title, { body, icon: "/ikony/kombucha.png", badge: "/ikony/kombucha.png" });
+      console.log("[notif] ✓ showNotification via ServiceWorker OK");
+    } else {
+      new Notification(title, { body, icon: "/ikony/kombucha.png", badge: "/ikony/kombucha.png" });
+      console.log("[notif] ✓ new Notification() OK (non-SW path)");
+    }
+  } catch (e) {
+    console.error("[notif] ✗ fireNotification failed:", e.message);
+  }
 }
 
 function checkReminders() {
   if (!els.reminderBanner) return;
   updateVarkyBadge();
   const now = Date.now();
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const todayEnd   = new Date(); todayEnd.setHours(23, 59, 59, 999);
+  const nowStr = new Date(now).toLocaleString("cs-CZ");
+  const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
   const dueItems = [];
   const upcomingItems = [];
+
   batches.forEach(b => {
     if (b.finished) return;
     b.reminders.forEach(r => {
       if (r.status !== "pending") return;
       const t = new Date(r.remindAt).getTime();
+      const remStr = new Date(r.remindAt).toLocaleString("cs-CZ");
+      const notifKey = reminderNotificationKey(r);
+      const alreadyFired = firedNotifications.has(notifKey) || firedNotifications.has(r.id);
+      console.log(`[check] Várka "${b.batchName}" – připomínka "${r.title}" | nastavena: ${remStr} | teď: ${nowStr} | splatná: ${t <= now} | již oznámena: ${alreadyFired}`);
       if (t <= now) {
         dueItems.push({ batch: b, reminder: r });
       } else if (t <= todayEnd.getTime()) {
@@ -2089,6 +2245,8 @@ function checkReminders() {
       }
     });
   });
+
+  console.log(`[check] Splatné: ${dueItems.length}, Dnes nadcházející: ${upcomingItems.length}`);
 
   if (dueItems.length === 0 && upcomingItems.length === 0) {
     els.reminderBanner.hidden = true;
@@ -2111,10 +2269,15 @@ function checkReminders() {
   }
   els.reminderBanner.hidden = false;
 
-  // Browser notifications – once per reminder ID
+  // Browser notifications – once per reminder date
   dueItems.forEach(({ batch, reminder }) => {
-    if (firedNotifications.has(reminder.id)) return;
-    firedNotifications.add(reminder.id);
+    const notifKey = reminderNotificationKey(reminder);
+    if (firedNotifications.has(notifKey) || firedNotifications.has(reminder.id)) {
+      console.log(`[check] Připomínka "${reminder.title}" (${reminder.id}) – přeskakuji, již oznámena`);
+      return;
+    }
+    console.log(`[check] Spouštím notifikaci pro připomínku "${reminder.title}" (${reminder.id})`);
+    firedNotifications.add(notifKey);
     saveFiredNotifications();
     fireNotification(`Kombuchátor: ${reminder.title}`, batch.batchName);
   });
@@ -2186,7 +2349,7 @@ function renderBatchCard(batch) {
         ${nextReminder ? `Další krok: ${escapeHtml(nextReminder.title)} – ${formatBatchDate(nextReminder.remindAt)}` : "Bez připomínky"}
       </p>
       <div class="batch-card-actions">
-        <button class="recipe-action primary batch-add-check" type="button">Kontrola várky</button>
+        ${!batch.finished ? `<button class="recipe-action primary batch-add-check" type="button">Kontrola várky</button>` : ""}
         ${!batch.finished ? `<button class="recipe-action danger batch-finish" type="button" data-batch-id="${batch.id}">Ukončení várky</button>` : ""}
         <button class="recipe-action batch-show-detail" type="button">Detail</button>
       </div>
@@ -2212,7 +2375,7 @@ function renderTaskView(filter) {
   return `<div class="task-list">${items.map(({ batch, reminder }) => {
     const overdue = new Date(reminder.remindAt).getTime() <= now;
     const day = getBatchDay(batch);
-    return `<div class="task-row${overdue ? " task-overdue" : ""}" data-batch-id="${batch.id}">
+    return `<div class="task-row${overdue ? " task-overdue" : ""}" data-batch-id="${batch.id}" data-reminder-id="${reminder.id}">
       <div class="task-date">
         <span class="task-date-main">${formatBatchDate(reminder.remindAt)}</span>
         <span class="task-date-time">${formatBatchTime(reminder.remindAt)}</span>
@@ -2223,8 +2386,9 @@ function renderTaskView(filter) {
         <span class="task-day-note">${day}. den fermentace</span>
       </div>
       <div class="task-actions">
-        <button class="recipe-action primary batch-add-check" type="button">Kontrola</button>
-        ${!batch.finished ? `<button class="recipe-action danger batch-finish" type="button" data-batch-id="${batch.id}">Ukončit</button>` : ""}
+        ${!batch.finished ? `<button class="recipe-action primary batch-add-check" type="button">Kontrola</button>` : ""}
+        <button class="recipe-action task-reschedule-btn" type="button" data-batch-id="${batch.id}" data-rem-id="${reminder.id}">Přeplánovat</button>
+        <button class="recipe-action task-remove-rem-btn" type="button" data-batch-id="${batch.id}" data-rem-id="${reminder.id}">Odebrat</button>
         <button class="recipe-action batch-show-detail" type="button">Detail</button>
       </div>
     </div>`;
@@ -2370,7 +2534,7 @@ function renderBatchDetail(batchId) {
         </div>` : ""}
     </div>
     <div class="batch-detail-actions">
-      <button class="recipe-action primary batch-add-check" type="button" data-batch-id="${batch.id}">+ Zapsat kontrolu</button>
+      ${!batch.finished ? `<button class="recipe-action primary batch-add-check" type="button" data-batch-id="${batch.id}">+ Zapsat kontrolu</button>` : ""}
       ${!batch.finished ? `<button class="recipe-action danger batch-finish" type="button" data-batch-id="${batch.id}">Ukončit várku</button>` : ""}
       <button class="recipe-action danger batch-delete" type="button" data-batch-id="${batch.id}">Smazat</button>
     </div>
@@ -2442,7 +2606,7 @@ function openNewBatchDialog(recipeSnapshot) {
 }
 
 function confirmNewBatch() {
-  const name = els.newBatchName?.value.trim() || "Moje várka";
+  const name = cleanText(els.newBatchName?.value, TEXT_LIMITS.name) || "Moje várka";
   const dateStr = els.newBatchDate?.value || todayISO();
   const timeStr = els.newBatchTime?.value || "12:00";
   const startedAt = new Date(`${dateStr}T${timeStr}:00`).toISOString();
@@ -2450,16 +2614,16 @@ function confirmNewBatch() {
   if (newBatchReminderDays === -1) {
     const cd = els.newBatchCustomDate?.value || todayISO();
     const ct = els.newBatchCustomTime?.value || "12:00";
-    reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt: new Date(`${cd}T${ct}:00`).toISOString(), status: "pending", note: null });
+    reminders.push(createReminder({ id: uid(), type: "taste", title: "Ochutnat", remindAt: new Date(`${cd}T${ct}:00`).toISOString(), status: "pending", note: null }));
   } else if (newBatchReminderDays > 0) {
     const remindAt = new Date(new Date(startedAt).getTime() + newBatchReminderDays * 86400000).toISOString();
-    reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt, status: "pending", note: null });
+    reminders.push(createReminder({ id: uid(), type: "taste", title: "Ochutnat", remindAt, status: "pending", note: null }));
   }
   const batch = {
     id: uid(), batchName: name, type: newBatchType,
     fermentationStartedAt: startedAt, createdAt: new Date().toISOString(),
     finished: false, finishedAt: null, finalResult: null, finalNote: null,
-    startNote: els.newBatchNote?.value.trim() || null,
+    startNote: cleanNullableText(els.newBatchNote?.value),
     recipeSnapshot: newBatchRecipeSnapshot || null,
     checks: [], reminders, deletedCheckIds: []
   };
@@ -2477,6 +2641,10 @@ function confirmNewBatch() {
 function openNewCheckDialog(batchId) {
   const batch = findBatch(batchId);
   if (!batch) return;
+  if (batch.finished) {
+    showActionFeedback("U ukončené várky už nejde přidat novou kontrolu.");
+    return;
+  }
   pendingCheckBatchId = batchId;
   newCheckTypes   = new Set(["taste"]);
   newCheckResults = new Set();
@@ -2526,25 +2694,31 @@ function confirmNewCheck() {
   if (!pendingCheckBatchId) return;
   const batch = findBatch(pendingCheckBatchId);
   if (!batch) return;
+  if (batch.finished) {
+    els.newCheckDialog?.close();
+    pendingCheckBatchId = null;
+    showActionFeedback("U ukončené várky už nejde přidat novou kontrolu.");
+    return;
+  }
   const dateStr = els.newCheckDate?.value || todayISO();
   const timeStr = els.newCheckTime?.value || "12:00";
   const check = {
     id: uid(), checkedAt: new Date(`${dateStr}T${timeStr}:00`).toISOString(),
     checkTypes: [...newCheckTypes], checkResults: [...newCheckResults],
-    note: els.newCheckNote?.value.trim() || null
+    note: cleanNullableText(els.newCheckNote?.value)
   };
   batch.checks.push(check);
   // Mark any due reminders as done since the user just checked
   batch.reminders.forEach(r => {
-    if (r.status === "pending" && new Date(r.remindAt) <= new Date()) r.status = "done";
+    if (r.status === "pending" && new Date(r.remindAt) <= new Date()) setReminderStatus(r, "done");
   });
   if (newCheckReminderDays === -1) {
     const cd = els.checkCustomDate?.value || todayISO();
     const ct = els.checkCustomTime?.value || "12:00";
-    batch.reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt: new Date(`${cd}T${ct}:00`).toISOString(), status: "pending", note: null });
+    batch.reminders.push(createReminder({ id: uid(), type: "taste", title: "Ochutnat", remindAt: new Date(`${cd}T${ct}:00`).toISOString(), status: "pending", note: null }));
   } else if (newCheckReminderDays > 0) {
     const remindAt = new Date(new Date(check.checkedAt).getTime() + newCheckReminderDays * 86400000).toISOString();
-    batch.reminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt, status: "pending", note: null });
+    batch.reminders.push(createReminder({ id: uid(), type: "taste", title: "Ochutnat", remindAt, status: "pending", note: null }));
   }
   persistBatches();
   els.newCheckDialog?.close();
@@ -2580,8 +2754,8 @@ function confirmFinishBatch() {
   batch.finished = true;
   batch.finishedAt = new Date().toISOString();
   batch.finalResult = resultInput?.value || "success";
-  batch.finalNote = els.finishBatchNote?.value.trim() || null;
-  batch.reminders.forEach(r => { if (r.status === "pending") r.status = "done"; });
+  batch.finalNote = cleanNullableText(els.finishBatchNote?.value);
+  batch.reminders.forEach(r => { if (r.status === "pending") setReminderStatus(r, "done"); });
   persistBatches();
   els.finishBatchDialog?.close();
   renderBatchDetail(pendingFinishBatchId);
@@ -2632,12 +2806,13 @@ function startBatchNameEdit(container, batchId) {
   const input = document.createElement("input");
   input.type = "text";
   input.className = "title-edit-input";
+  input.maxLength = TEXT_LIMITS.name;
   input.value = batch.batchName;
   titleEl.replaceWith(input);
   input.focus();
   input.select();
   function commit() {
-    const val = input.value.trim() || batch.batchName;
+    const val = cleanText(input.value, TEXT_LIMITS.name) || batch.batchName;
     batch.batchName = val;
     persistBatches();
     const newEl = document.createElement(titleEl.tagName.toLowerCase());
@@ -2690,8 +2865,8 @@ function renderEditReminders() {
     <div class="edit-reminder-row">
       <span class="edit-rem-label">${escapeHtml(r.title)}</span>
       <div class="edit-rem-fields">
-        <input type="date" class="edit-rem-date" data-rem-id="${r.id}" value="${r.remindAt.slice(0, 10)}">
-        <input type="time" class="edit-rem-time" data-rem-id="${r.id}" value="${r.remindAt.slice(11, 16)}">
+        <input type="date" class="edit-rem-date" data-rem-id="${r.id}" value="${localDateTimeFromISO(r.remindAt).date}">
+        <input type="time" class="edit-rem-time" data-rem-id="${r.id}" value="${localDateTimeFromISO(r.remindAt).time}">
       </div>
       <button type="button" class="edit-rem-del" data-rem-id="${r.id}" title="Smazat připomínku">×</button>
     </div>`).join("");
@@ -2753,19 +2928,27 @@ function confirmEditCheck() {
   check.checkedAt    = new Date(`${dateStr}T${timeStr}:00`).toISOString();
   check.checkTypes   = [...editCheckTypes];
   check.checkResults = [...editCheckResults];
-  check.note         = els.editCheckNote?.value.trim() || null;
+  check.note         = cleanNullableText(els.editCheckNote?.value);
 
-  // Apply reminder edits: read current DOM values, then replace batch pending reminders
+  // Apply reminder edits: read current DOM values and mark removed rows as done
   const section = document.querySelector("#editRemindersSection");
   editBatchReminders.forEach(r => {
     const d = section?.querySelector(`.edit-rem-date[data-rem-id="${r.id}"]`)?.value;
     const t = section?.querySelector(`.edit-rem-time[data-rem-id="${r.id}"]`)?.value;
-    if (d && t) r.remindAt = new Date(`${d}T${t}:00`).toISOString();
+    if (d && t) {
+      r.remindAt = new Date(`${d}T${t}:00`).toISOString();
+      touchReminder(r);
+    }
   });
-  batch.reminders = [
-    ...batch.reminders.filter(r => r.status !== "pending"),
-    ...editBatchReminders
-  ];
+  const keptReminderIds = new Set(editBatchReminders.map(r => r.id));
+  batch.reminders.forEach(r => {
+    if (r.status === "pending" && !keptReminderIds.has(r.id)) {
+      setReminderStatus(r, "done");
+      forgetFiredReminder(r);
+    }
+  });
+  const editedReminderMap = new Map(editBatchReminders.map(r => [r.id, r]));
+  batch.reminders = batch.reminders.map(r => editedReminderMap.get(r.id) || r);
 
   persistBatches();
   els.editCheckDialog?.close();
@@ -2786,8 +2969,9 @@ function openEditReminderDialog(batchId, remId) {
   editingReminderId = remId;
   editingReminderBatchId = batchId;
   if (els.editReminderTitle) els.editReminderTitle.textContent = rem.title;
-  if (els.editReminderDate) els.editReminderDate.value = rem.remindAt.slice(0, 10);
-  if (els.editReminderTime) els.editReminderTime.value = rem.remindAt.slice(11, 16);
+  const { date: remDate, time: remTime } = localDateTimeFromISO(rem.remindAt);
+  if (els.editReminderDate) els.editReminderDate.value = remDate;
+  if (els.editReminderTime) els.editReminderTime.value = remTime;
   els.editReminderDialog?.showModal();
 }
 
@@ -2798,8 +2982,12 @@ function confirmEditReminder() {
   if (!rem) return;
   const d = els.editReminderDate?.value;
   const t = els.editReminderTime?.value;
-  if (d && t) rem.remindAt = new Date(`${d}T${t}:00`).toISOString();
-  firedNotifications.delete(editingReminderId);
+  if (d && t) {
+    forgetFiredReminder(rem);
+    const newTime = new Date(`${d}T${t}:00`).toISOString();
+    rem.remindAt = newTime;
+    setReminderStatus(rem, "pending");
+  }
   saveFiredNotifications();
   persistBatches();
   els.editReminderDialog?.close();
@@ -2830,7 +3018,7 @@ function openF1ToF2Dialog(sourceBatchId) {
 function confirmF1ToF2() {
   const sourceBatch = findBatch(pendingF1ToF2BatchId);
   if (!sourceBatch) return;
-  const name = els.f1ToF2Name?.value.trim() || `F2 – ${sourceBatch.batchName}`;
+  const name = cleanText(els.f1ToF2Name?.value, TEXT_LIMITS.name) || `F2 – ${sourceBatch.batchName}`;
   const dateStr = els.f1ToF2Date?.value || todayISO();
   const timeStr = els.f1ToF2Time?.value || "12:00";
   const startedAt = new Date(`${dateStr}T${timeStr}:00`).toISOString();
@@ -2838,16 +3026,16 @@ function confirmF1ToF2() {
   if (f1ToF2ReminderDays === -1) {
     const cd = els.f1ToF2CustomDate?.value || todayISO();
     const ct = els.f1ToF2CustomTime?.value || "12:00";
-    reminders.push({ id: uid(), type: "check", title: "Zkontrolovat tlak", remindAt: new Date(`${cd}T${ct}:00`).toISOString(), status: "pending", note: null });
+    reminders.push(createReminder({ id: uid(), type: "check", title: "Zkontrolovat tlak", remindAt: new Date(`${cd}T${ct}:00`).toISOString(), status: "pending", note: null }));
   } else if (f1ToF2ReminderDays > 0) {
-    reminders.push({ id: uid(), type: "check", title: "Zkontrolovat tlak", remindAt: new Date(new Date(startedAt).getTime() + f1ToF2ReminderDays * 86400000).toISOString(), status: "pending", note: null });
+    reminders.push(createReminder({ id: uid(), type: "check", title: "Zkontrolovat tlak", remindAt: new Date(new Date(startedAt).getTime() + f1ToF2ReminderDays * 86400000).toISOString(), status: "pending", note: null }));
   }
   const f2Id = uid();
   const f2Batch = {
     id: f2Id, batchName: name, type: "F2",
     fermentationStartedAt: startedAt, createdAt: new Date().toISOString(),
     finished: false, finishedAt: null, finalResult: null, finalNote: null,
-    startNote: els.f1ToF2Note?.value.trim() || null,
+    startNote: cleanNullableText(els.f1ToF2Note?.value),
     recipeSnapshot: sourceBatch.recipeSnapshot || null,
     parentBatchId: pendingF1ToF2BatchId,
     checks: [], reminders, deletedCheckIds: []
@@ -2867,6 +3055,7 @@ function confirmF1ToF2() {
 // ── Cloud Sync ──
 
 let syncBusy = false;
+let syncQueued = false;
 
 function mergeSync(localBatches, localRecipes, remote) {
   // Union tombstones from both sides
@@ -2888,12 +3077,11 @@ function mergeSync(localBatches, localRecipes, remote) {
     const deadChecks = new Set([...(existing.deletedCheckIds || []), ...(b.deletedCheckIds || [])]);
     const checkMap = new Map([...(existing.checks || []), ...(b.checks || [])].map(c => [c.id, c]));
     for (const id of deadChecks) checkMap.delete(id);
-    const remMap   = new Map([...(existing.reminders || []), ...(b.reminders || [])].map(r => [r.id, r]));
     const base = (b.checks?.length ?? 0) >= (existing.checks?.length ?? 0) ? b : existing;
     batchMap.set(b.id, {
       ...base,
       checks:          [...checkMap.values()].sort((a, c) => new Date(a.checkedAt) - new Date(c.checkedAt)),
-      reminders:       [...remMap.values()],
+      reminders:       mergeReminderLists(existing.reminders || [], b.reminders || []),
       deletedCheckIds: [...deadChecks]
     });
   });
@@ -2912,7 +3100,11 @@ function mergeSync(localBatches, localRecipes, remote) {
 }
 
 async function syncWithServer() {
-  if (syncBusy || _undoPending) return;
+  if (_undoPending) return;
+  if (syncBusy) {
+    syncQueued = true;
+    return;
+  }
   syncBusy = true;
   try {
     const res = await fetch("/api/sync", { cache: "no-store" });
@@ -2952,6 +3144,10 @@ async function syncWithServer() {
     });
   } catch {}
   syncBusy = false;
+  if (syncQueued) {
+    syncQueued = false;
+    syncWithServer();
+  }
 }
 
 // ── Pick Recipe Dialog ──
@@ -3077,7 +3273,7 @@ function confirmEditSnapshot() {
   const starterMl = Number(els.editSnapStarterMl.value) || 0;
   const sugarTotalGrams = Number(els.editSnapSugarG.value) || 0;
   const tempRaw = els.editSnapTemp.value.trim();
-  const recipeName = els.editSnapName.value.trim() || batch.recipeSnapshot?.recipeName || "Bez názvu";
+  const recipeName = cleanText(els.editSnapName.value, TEXT_LIMITS.name) || batch.recipeSnapshot?.recipeName || "Bez názvu";
   batch.recipeSnapshot = {
     ...(batch.recipeSnapshot || {}),
     recipeName,
@@ -3087,7 +3283,7 @@ function confirmEditSnapshot() {
     sugarTotalGrams,
     sugarGramsPerLiter: teaLiters > 0 ? sugarTotalGrams / teaLiters : (batch.recipeSnapshot?.sugarGramsPerLiter ?? 0),
     temperatureC: tempRaw !== "" ? Number(tempRaw) : null,
-    userNote: els.editSnapNote.value.trim()
+    userNote: cleanText(els.editSnapNote.value, TEXT_LIMITS.note)
   };
   persistBatches();
   els.editSnapshotDialog?.close();
@@ -3218,10 +3414,13 @@ function bindBatchEvents() {
     const t = els.snoozeReminderTime?.value;
     if (!d || !t) return;
     const newTime = new Date(`${d}T${t}:00`).toISOString();
+    console.log(`[snooze] Odkládám splatné připomínky → nový čas: ${new Date(newTime).toLocaleString("cs-CZ")}`);
     batches.forEach(b => b.reminders.forEach(r => {
       if (r.status === "pending" && new Date(r.remindAt) <= new Date()) {
-        firedNotifications.delete(r.id);
+        console.log(`[snooze] Připomínka "${r.title}" (${r.id}) – nový čas: ${newTime}`);
+        forgetFiredReminder(r);
         r.remindAt = newTime;
+        touchReminder(r);
       }
     }));
     saveFiredNotifications();
@@ -3232,7 +3431,7 @@ function bindBatchEvents() {
   });
   els.reminderDoneBtn?.addEventListener("click", () => {
     batches.forEach(b => b.reminders.forEach(r => {
-      if (r.status === "pending" && new Date(r.remindAt) <= new Date()) r.status = "done";
+      if (r.status === "pending" && new Date(r.remindAt) <= new Date()) setReminderStatus(r, "done");
     }));
     persistBatches();
     checkReminders();
@@ -3273,6 +3472,27 @@ function bindBatchEvents() {
       openDeleteBatchDialog(e.target.closest(".batch-delete").dataset.batchId);
       return;
     }
+    if (e.target.closest(".task-reschedule-btn")) {
+      const btn = e.target.closest(".task-reschedule-btn");
+      openEditReminderDialog(btn.dataset.batchId, btn.dataset.remId);
+      return;
+    }
+    if (e.target.closest(".task-remove-rem-btn")) {
+      const btn = e.target.closest(".task-remove-rem-btn");
+      const batch = findBatch(btn.dataset.batchId);
+      if (!batch) return;
+      const rem = batch.reminders.find(r => r.id === btn.dataset.remId);
+      if (rem) {
+        setReminderStatus(rem, "done");
+        forgetFiredReminder(rem);
+        saveFiredNotifications();
+      }
+      persistBatches();
+      checkReminders();
+      renderVarkyView();
+      showActionFeedback("Připomínka odebrána.");
+      return;
+    }
     if (e.target.closest(".batch-rem-edit-btn")) {
       const btn = e.target.closest(".batch-rem-edit-btn");
       openEditReminderDialog(btn.dataset.batchId, btn.dataset.remId);
@@ -3282,8 +3502,14 @@ function bindBatchEvents() {
       const btn = e.target.closest(".batch-rem-cancel-btn");
       const batch = findBatch(btn.dataset.batchId);
       if (batch) {
-        batch.reminders = batch.reminders.filter(r => r.id !== btn.dataset.remId);
+        const rem = batch.reminders.find(r => r.id === btn.dataset.remId);
+        if (rem) {
+          setReminderStatus(rem, "done");
+          forgetFiredReminder(rem);
+          saveFiredNotifications();
+        }
         persistBatches();
+        checkReminders();
         renderVarkyView();
         showActionFeedback("Připomínka zrušena.");
       }
@@ -3319,7 +3545,12 @@ function bindBatchEvents() {
       const btn = e.target.closest(".rem-chip-del");
       const batch = findBatch(btn.dataset.batchId);
       if (batch) {
-        batch.reminders = batch.reminders.filter(r => r.id !== btn.dataset.remId);
+        const rem = batch.reminders.find(r => r.id === btn.dataset.remId);
+        if (rem) {
+          setReminderStatus(rem, "done");
+          forgetFiredReminder(rem);
+          saveFiredNotifications();
+        }
         persistBatches();
         renderBatchDetail(btn.dataset.batchId);
         renderVarkyView();
@@ -3358,7 +3589,7 @@ function bindBatchEvents() {
       const tomorrow = new Date(Date.now() + 86400000);
       const d = tomorrow.toISOString().slice(0, 10);
       const t = "09:00";
-      editBatchReminders.push({ id: uid(), type: "taste", title: "Ochutnat", remindAt: new Date(`${d}T${t}:00`).toISOString(), status: "pending", note: null });
+      editBatchReminders.push(createReminder({ id: uid(), type: "taste", title: "Ochutnat", remindAt: new Date(`${d}T${t}:00`).toISOString(), status: "pending", note: null }));
       renderEditReminders();
       return;
     }
@@ -3373,33 +3604,60 @@ bindEvents();
 render();
 renderSavedRecipes();
 batches = loadBatches();
-renderVarkyView();
-checkReminders();
-syncWithServer();
+(async function initBatchesFromSync() {
+  await syncWithServer();
+  renderVarkyView();
+  checkReminders();
+})();
 setInterval(syncWithServer, 30000);
 setInterval(checkReminders, 60000);
 
 // Request notification permission and register push subscription
 async function setupPushNotifications() {
-  if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  const hasNotif = "Notification" in window;
+  const hasSW    = "serviceWorker" in navigator;
+  const hasPush  = "PushManager" in window;
+  console.log(`[push-setup] Notifikace: ${hasNotif}, ServiceWorker: ${hasSW}, PushManager: ${hasPush}`);
+  if (!hasNotif || !hasSW || !hasPush) {
+    console.warn("[push-setup] ✗ Push notifikace nejsou podporovány v tomto prohlížeči/PWA");
+    console.warn("[push-setup] Upozornění nejsou v tomto prohlížeči podporována.");
+    return;
+  }
   let permission = Notification.permission;
-  if (permission === "default") permission = await Notification.requestPermission();
-  if (permission !== "granted") return;
+  console.log(`[push-setup] Aktuální oprávnění: ${permission}`);
+  if (permission === "default") {
+    console.log("[push-setup] Žádám o oprávnění...");
+    permission = await Notification.requestPermission();
+    console.log(`[push-setup] Odpověď: ${permission}`);
+  }
+  if (permission !== "granted") {
+    console.warn("[push-setup] ✗ Oprávnění zamítnuto nebo ignorováno. Push notifikace nebudou fungovat.");
+    console.warn("[push-setup] Oprávnění zamítnuto.");
+    return;
+  }
   try {
     const reg = await navigator.serviceWorker.ready;
+    console.log("[push-setup] SW aktivní:", reg.active?.scriptURL);
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
+      console.log("[push-setup] Žádná push subscription, vytvářím novou...");
       const resp = await fetch("/api/vapid-public-key");
       const { publicKey } = await resp.json();
       sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: publicKey });
+      console.log("[push-setup] ✓ Nová push subscription vytvořena");
+    } else {
+      console.log("[push-setup] Existující push subscription:", sub.endpoint.slice(-40));
     }
-    // Vždy znovu zaregistrovat – server ztrácí záznamy při restartu
     await fetch("/api/push-subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(sub)
     });
-  } catch {}
+    console.log("[push-setup] ✓ Subscription zaregistrována na serveru");
+  } catch (e) {
+    console.error("[push-setup] ✗ Chyba při setup push:", e.message);
+    console.error("[push-setup] Chyba:", e.message);
+  }
 }
 setupPushNotifications();
 
@@ -3412,4 +3670,19 @@ setupPushNotifications();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
+  // Listen for push-fired messages from SW (deduplicates in-app notifications)
+  navigator.serviceWorker.addEventListener("message", e => {
+    if (e.data?.type === "push-fired" && (e.data.reminderKey || e.data.reminderId)) {
+      firedNotifications.add(e.data.reminderKey || e.data.reminderId);
+      saveFiredNotifications();
+    }
+    if (e.data?.type === "push-fired-list" && Array.isArray(e.data.ids)) {
+      e.data.ids.forEach(id => firedNotifications.add(id));
+      saveFiredNotifications();
+    }
+  });
+  // Ask SW for IDs that were push-fired while the page was closed
+  navigator.serviceWorker.ready.then(reg => {
+    reg.active?.postMessage({ type: "get-push-fired" });
+  });
 }

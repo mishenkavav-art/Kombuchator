@@ -8,6 +8,22 @@ const port = Number(process.env.PORT) || 3000;
 const SYNC_FILE  = path.join(__dirname, ".sync.json");
 const SUBS_FILE  = path.join(__dirname, ".push-subs.json");
 const VAPID_FILE = path.join(__dirname, ".vapid.json");
+const MAX_JSON_BYTES = Math.min(Number(process.env.MAX_JSON_BYTES) || 1024 * 1024, 4 * 1024 * 1024);
+const RATE_LIMIT_WINDOW_MS = Math.max(Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000, 1_000);
+const RATE_LIMIT_MAX = Math.max(Number(process.env.RATE_LIMIT_MAX) || 120, 10);
+const DEFAULT_ALLOWED_ORIGINS = [
+  `http://localhost:${port}`,
+  `http://127.0.0.1:${port}`,
+  "https://kombuchator-production.up.railway.app"
+];
+const allowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(","))
+    .split(",")
+    .map(origin => origin.trim())
+    .filter(Boolean)
+);
+const publicRootFiles = new Set(["/", "/index.html", "/style.css", "/script.js", "/sw.js", "/manifest.json"]);
+const rateBuckets = new Map();
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -22,6 +38,128 @@ const types = {
   ".webmanifest": "application/manifest+json; charset=utf-8",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 };
+
+function isAllowedOrigin(origin) {
+  return !origin || allowedOrigins.has(origin);
+}
+
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  res.setHeader("Vary", "Origin");
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+function applySecurityHeaders(res) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=()");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Content-Security-Policy", [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "script-src 'self'",
+    "worker-src 'self'",
+    "connect-src 'self'",
+    "img-src 'self' data:",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "manifest-src 'self'",
+    "upgrade-insecure-requests"
+  ].join("; "));
+  if (process.env.RAILWAY_ENVIRONMENT === "production" || process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+}
+
+function clientIp(req) {
+  return String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").split(",")[0].trim();
+}
+
+function isRateLimited(req, key = "global") {
+  const now = Date.now();
+  const bucketKey = `${clientIp(req)}:${key}`;
+  const bucket = rateBuckets.get(bucketKey);
+  if (!bucket || now - bucket.start > RATE_LIMIT_WINDOW_MS) {
+    rateBuckets.set(bucketKey, { start: now, count: 1 });
+    return false;
+  }
+  bucket.count += 1;
+  return bucket.count > RATE_LIMIT_MAX;
+}
+
+function safeString(value, max = 500) {
+  return typeof value === "string" ? value.slice(0, max) : value == null ? value : String(value).slice(0, max);
+}
+
+function safeIso(value) {
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? new Date(time).toISOString() : null;
+}
+
+function sanitizeReminder(reminder) {
+  if (!reminder || typeof reminder !== "object" || !reminder.id) return null;
+  const remindAt = safeIso(reminder.remindAt);
+  if (!remindAt) return null;
+  const status = ["pending", "done", "closed", "cancelled", "canceled"].includes(reminder.status) ? reminder.status : "pending";
+  return {
+    ...reminder,
+    id: safeString(reminder.id, 80),
+    type: safeString(reminder.type || "taste", 40),
+    title: safeString(reminder.title || "Připomínka", 120),
+    remindAt,
+    status,
+    note: reminder.note == null ? null : safeString(reminder.note, 1000),
+    createdAt: safeIso(reminder.createdAt) || undefined,
+    updatedAt: safeIso(reminder.updatedAt) || undefined
+  };
+}
+
+function sanitizeSyncPayload(data) {
+  if (!data || typeof data !== "object") return { batches: [], recipes: [], deletedBatchIds: [], deletedRecipeIds: [] };
+  const batches = Array.isArray(data.batches) ? data.batches.slice(0, 500).filter(b => b && typeof b === "object" && b.id).map(b => ({
+    ...b,
+    id: safeString(b.id, 80),
+    batchName: safeString(b.batchName || "Moje várka", 120),
+    startNote: b.startNote == null ? null : safeString(b.startNote, 2000),
+    finalNote: b.finalNote == null ? null : safeString(b.finalNote, 2000),
+    checks: Array.isArray(b.checks) ? b.checks.slice(0, 1000).map(c => c && typeof c === "object" ? {
+      ...c,
+      id: safeString(c.id || "", 80),
+      note: c.note == null ? null : safeString(c.note, 2000)
+    } : null).filter(Boolean) : [],
+    reminders: Array.isArray(b.reminders) ? b.reminders.slice(0, 1000).map(sanitizeReminder).filter(Boolean) : [],
+    deletedCheckIds: Array.isArray(b.deletedCheckIds) ? b.deletedCheckIds.slice(0, 1000).map(id => safeString(id, 80)) : []
+  })) : [];
+  const recipes = Array.isArray(data.recipes) ? data.recipes.slice(0, 500).filter(r => r && typeof r === "object" && r.id).map(r => ({
+    ...r,
+    id: safeString(r.id, 80),
+    recipeName: safeString(r.recipeName || r.defaultRecipeName || "Recept", 120),
+    userNote: safeString(r.userNote || "", 2000),
+    shareText: safeString(r.shareText || "", 5000)
+  })) : [];
+  return {
+    ...data,
+    batches,
+    recipes,
+    deletedBatchIds: Array.isArray(data.deletedBatchIds) ? data.deletedBatchIds.slice(0, 1000).map(id => safeString(id, 80)) : [],
+    deletedRecipeIds: Array.isArray(data.deletedRecipeIds) ? data.deletedRecipeIds.slice(0, 1000).map(id => safeString(id, 80)) : []
+  };
+}
+
+function isPublicPath(pathname) {
+  if (publicRootFiles.has(pathname)) return true;
+  if (!pathname.startsWith("/ikony/")) return false;
+  const ext = path.extname(pathname).toLowerCase();
+  return [".png", ".svg", ".jpg", ".jpeg", ".webp"].includes(ext) && !pathname.includes("..") && !pathname.includes(":");
+}
 
 // ── VAPID setup ──
 let vapidKeys;
@@ -55,6 +193,44 @@ const notifiedIds = new Set(
 function saveNotified() {
   try { fs.writeFileSync(path.join(__dirname, ".notified.json"), JSON.stringify([...notifiedIds])); } catch {}
 }
+function reminderNotificationKey(reminder) {
+  return `${reminder.id}@${reminder.remindAt}`;
+}
+
+const REMINDER_TERMINAL_STATUSES = new Set(["done", "closed", "cancelled", "canceled"]);
+
+function reminderTimestamp(reminder) {
+  return Date.parse(reminder.updatedAt || reminder.statusUpdatedAt || reminder.createdAt || "") || 0;
+}
+
+function isTerminalReminder(reminder) {
+  return REMINDER_TERMINAL_STATUSES.has(reminder?.status);
+}
+
+function mergeReminderRecords(existing, incoming) {
+  if (!existing) return incoming;
+  if (!incoming) return existing;
+
+  const existingTs = reminderTimestamp(existing);
+  const incomingTs = reminderTimestamp(incoming);
+  if (existingTs && incomingTs && existingTs !== incomingTs) {
+    return incomingTs > existingTs ? incoming : existing;
+  }
+
+  const existingDone = isTerminalReminder(existing);
+  const incomingDone = isTerminalReminder(incoming);
+  if (existingDone !== incomingDone) return existingDone ? existing : incoming;
+
+  return incoming;
+}
+
+function mergeReminderLists(first = [], second = []) {
+  const reminderMap = new Map();
+  [...first, ...second].forEach(reminder => {
+    reminderMap.set(reminder.id, mergeReminderRecords(reminderMap.get(reminder.id), reminder));
+  });
+  return [...reminderMap.values()];
+}
 
 async function sendPushToOne(sub, payload) {
   try {
@@ -82,7 +258,13 @@ async function catchUpNewSub(sub) {
     for (const r of (batch.reminders || [])) {
       if (r.status !== "pending") continue;
       if (new Date(r.remindAt).getTime() > now) continue;
-      await sendPushToOne(sub, { title: `Kombuchátor: ${r.title}`, body: batch.batchName, url: "/#varky" });
+      await sendPushToOne(sub, {
+        title: `Kombuchátor: ${r.title}`,
+        body: batch.batchName,
+        url: "/#varky",
+        reminderId: r.id,
+        reminderKey: reminderNotificationKey(r)
+      });
     }
   }
 }
@@ -94,14 +276,17 @@ function checkAndSendReminders() {
     if (batch.finished) return;
     (batch.reminders || []).forEach(r => {
       if (r.status !== "pending") return;
-      if (notifiedIds.has(r.id)) return;
+      const notifKey = reminderNotificationKey(r);
+      if (notifiedIds.has(notifKey)) return;
       if (new Date(r.remindAt).getTime() > now) return;
-      notifiedIds.add(r.id);
+      notifiedIds.add(notifKey);
       saveNotified();
       sendPushToAll({
-        title: `Kombuchátor: ${r.title}`,
-        body:  batch.batchName,
-        url:   "/#varky"
+        title:      `Kombuchátor: ${r.title}`,
+        body:       batch.batchName,
+        url:        "/#varky",
+        reminderId: r.id,
+        reminderKey: notifKey
       }).catch(() => {});
     });
   });
@@ -124,12 +309,11 @@ function mergeIncoming(existing, incoming) {
     const deadChecks = new Set([...(curr.deletedCheckIds || []), ...(b.deletedCheckIds || [])]);
     const checkMap = new Map([...(curr.checks || []), ...(b.checks || [])].map(c => [c.id, c]));
     for (const id of deadChecks) checkMap.delete(id);
-    const remMap = new Map([...(curr.reminders || []), ...(b.reminders || [])].map(r => [r.id, r]));
     const base = (b.checks?.length ?? 0) >= (curr.checks?.length ?? 0) ? b : curr;
     batchMap.set(b.id, {
       ...base,
       checks:          [...checkMap.values()].sort((a, c) => new Date(a.checkedAt) - new Date(c.checkedAt)),
-      reminders:       [...remMap.values()],
+      reminders:       mergeReminderLists(curr.reminders || [], b.reminders || []),
       deletedCheckIds: [...deadChecks]
     });
   });
@@ -148,13 +332,19 @@ function mergeIncoming(existing, incoming) {
   };
 }
 
-function parseJsonBody(req) {
+function parseJsonBody(req, maxBytes = MAX_JSON_BYTES) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
     req.on("data", chunk => {
       size += chunk.length;
-      if (size > 4e6) { req.destroy(); return; }
+      if (size > maxBytes) {
+        const err = new Error("Payload too large");
+        err.statusCode = 413;
+        req.destroy(err);
+        reject(err);
+        return;
+      }
       chunks.push(chunk);
     });
     req.on("end", () => {
@@ -163,13 +353,6 @@ function parseJsonBody(req) {
     });
     req.on("error", reject);
   });
-}
-
-function cors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Cache-Control", "no-store");
 }
 
 function send(res, status, body, type = "text/plain; charset=utf-8") {
@@ -181,19 +364,36 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const pathname = decodeURIComponent(url.pathname);
 
-  cors(res);
+  applySecurityHeaders(res);
+  applyCors(req, res);
+  res.setHeader("Cache-Control", pathname.startsWith("/api/") ? "no-store" : "no-cache");
+
+  if (!isAllowedOrigin(req.headers.origin)) {
+    send(res, 403, "Forbidden");
+    return;
+  }
+  if (!["GET", "HEAD", "POST", "OPTIONS"].includes(req.method)) {
+    send(res, 405, "Method Not Allowed");
+    return;
+  }
   if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
   // ── VAPID public key ──
   if (pathname === "/api/vapid-public-key" && req.method === "GET") {
+    if (isRateLimited(req, "vapid")) { send(res, 429, "Too Many Requests"); return; }
     send(res, 200, JSON.stringify({ publicKey: vapidKeys.publicKey }), "application/json; charset=utf-8");
     return;
   }
 
   // ── Push subscription ──
   if (pathname === "/api/push-subscribe" && req.method === "POST") {
+    if (isRateLimited(req, "push-subscribe")) { send(res, 429, "Too Many Requests"); return; }
     try {
-      const sub = await parseJsonBody(req);
+      const sub = await parseJsonBody(req, 64 * 1024);
+      if (!sub || typeof sub !== "object" || typeof sub.endpoint !== "string" || sub.endpoint.length > 2000) {
+        send(res, 400, "Bad Request");
+        return;
+      }
       const idx = pushSubs.findIndex(s => s.endpoint === sub.endpoint);
       const isNew = idx < 0;
       if (idx >= 0) pushSubs[idx] = sub; else pushSubs.push(sub);
@@ -207,12 +407,14 @@ http.createServer(async (req, res) => {
   // ── Sync API ──
   if (pathname === "/api/sync") {
     if (req.method === "GET") {
+      if (isRateLimited(req, "sync-get")) { send(res, 429, "Too Many Requests"); return; }
       send(res, 200, JSON.stringify(syncStore), "application/json; charset=utf-8");
       return;
     }
     if (req.method === "POST") {
+      if (isRateLimited(req, "sync-post")) { send(res, 429, "Too Many Requests"); return; }
       try {
-        const data = await parseJsonBody(req);
+        const data = sanitizeSyncPayload(await parseJsonBody(req));
         // Re-register push subscription piggybacked on sync
         if (data.pushSub && data.pushSub.endpoint) {
           const idx = pushSubs.findIndex(s => s.endpoint === data.pushSub.endpoint);
@@ -233,8 +435,12 @@ http.createServer(async (req, res) => {
   }
 
   // ── Static files ──
+  if (!isPublicPath(pathname)) {
+    send(res, 404, "Not found");
+    return;
+  }
   const filePath = path.normalize(path.join(root, pathname === "/" ? "index.html" : pathname));
-  if (!filePath.startsWith(root)) { send(res, 403, "Forbidden"); return; }
+  if (!filePath.startsWith(root + path.sep)) { send(res, 403, "Forbidden"); return; }
   fs.readFile(filePath, (err, data) => {
     if (err) { send(res, 404, "Not found"); return; }
     send(res, 200, data, types[path.extname(filePath).toLowerCase()] || "application/octet-stream");
