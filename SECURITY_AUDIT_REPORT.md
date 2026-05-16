@@ -18,7 +18,7 @@ Datum auditu: 2026-05-16
 - Local storage: frontend pouziva `localStorage` pro recepty, varky, tombstones, fired notification IDs a lokalni sync identitu `kombuchator.syncIdentity.v1`.
 - PWA/service worker: ano, `sw.js`; cache statickych souboru a deduplikace push-fired reminder IDs.
 - Synchronizace mezi zarizenimi: ano, pres `/api/sync`; serverovy JSON store je zdroj pravdy, klienti merguji lokalni a vzdaleny stav.
-- Env promene: `PORT`; nove pridane `ALLOWED_ORIGINS`, `MAX_JSON_BYTES`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`, `NODE_ENV`.
+- Env promene: `PORT`; nove pridane `ALLOWED_ORIGINS`, `MAX_JSON_BYTES`, `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`, `NODE_ENV`, `DATA_DIR`.
 - Secrets: `.vapid.json` obsahuje VAPID private key. Soubor byl lokalne pritomny a pred opravou nebyl v `.gitignore`.
 - Deploy: Railway, sluzba `Kombuchator`, produkcni URL `https://kombuchator-production.up.railway.app`.
 - Bezpecnostni hlavicky pred auditem: nebyly centralne nastavene.
@@ -201,10 +201,11 @@ Neprovedeno:
   - Nastavit `NODE_ENV=production`.
   - Nastavit `ALLOWED_ORIGINS=https://kombuchator-production.up.railway.app`.
   - Volitelne nastavit `MAX_JSON_BYTES=1048576`, `RATE_LIMIT_WINDOW_MS=60000`, `RATE_LIMIT_MAX=120`.
+  - Nastavit `DATA_DIR=/data` a pripojit Railway Volume na `/data`, pokud maji JSON data prezit redeploy/restart.
   - Start command musi pouzivat `npm start`, coz podle `package.json` spousti `node server.js`.
   - Zkontrolovat HTTPS-only provoz.
   - Zrotovat VAPID klice po predchozim moznosti vystaveni `.vapid.json`.
-  - Overit perzistenci JSON dat. Pokud service nema Railway Volume pripojeny k adresari aplikace, soubory `.sync-auth.json`, `.sync-stores/`, `.push-subs.json` a `.sync-migration-backups/` nemusi prezit redeploy/restart kontejneru. Pro produkci je potreba Railway Volume nebo databaze.
+  - Overit perzistenci JSON dat. Pokud service nema Railway Volume pripojeny na `DATA_DIR`, soubory `.sync-auth.json`, `.sync-stores/`, `.push-subs.json` a `.sync-migration-backups/` nemusi prezit redeploy/restart kontejneru. Pro produkci je potreba Railway Volume nebo databaze.
   - Nastavit monitoring/log alerts pro 4xx/5xx a restart smycky.
 - GitHub/repozitar:
   - Zapnout Dependabot security updates.

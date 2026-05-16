@@ -36,6 +36,8 @@ Push subscriptions jsou take oddelene podle `syncId` v `.push-subs.json`.
 
 `/api/sync` bez platneho paru `syncId + syncSecret` vraci `401` nebo `403` a nevraci soukroma data.
 
+V produkci nastav `DATA_DIR` na perzistentni adresar, napr. `/data`, a pripoj na nej Railway Volume. Bez volume nebo databaze nemusi JSON soubory prezit novy deploy nebo presun kontejneru.
+
 ## Migrace starych dat
 
 Stary globalni `.sync.json` se nemaze.
