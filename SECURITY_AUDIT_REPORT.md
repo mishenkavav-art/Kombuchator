@@ -172,24 +172,26 @@ Spusteno:
 
 Produkce overena 2026-05-16 na `https://kombuchator-production.up.railway.app`:
 
-- Deploy stav: nova verze z commitu `8efaea4` neni na produkci nasazena.
-- Railway CLI stav: `Unauthorized. Please run railway login again.`
-- GitHub push na `main` prosel, ale produkcni Railway URL stale servirovala starou verzi.
-- `GET /api/sync` bez tokenu: `200` - spatne, produkce stale neni chranena.
-- `POST /api/push-subscribe` bez tokenu: `200` - spatne, produkce stale neni chranena.
-- `GET /.vapid.json`: `200` - spatne, produkce stale vystavuje neveřejny soubor.
-- `GET /server.js`: `200` - spatne, produkce stale vystavuje serverovy kod.
-- `GET /package.json`: `200` - spatne, produkce stale vystavuje interní metadata.
-- CORS s nepovolenym originem: `200` a `Access-Control-Allow-Origin: *` - spatne, produkce stale bezi se starou CORS konfiguraci.
-- Security headers: chybi nove hlavicky z aktualniho commitu.
-- Service worker: produkce vraci `kombuchator-v38`, aktualni kod ma `kombuchator-v40`.
-- Zaver: produkcni ochrana neni aktivni, dokud se Railway znovu neprihlasi/nenasadi aktualni commit.
+- Deploy stav po rucnim Railway deployi: nova verze je na produkci nasazena.
+- `GET /api/sync` bez tokenu: `401`.
+- `POST /api/sync` bez tokenu: `401`.
+- `POST /api/sync/bootstrap` bez tokenu: `401`, endpoint existuje a nevraci `404`.
+- `GET /api/sync` s neexistujici identitou/spatnym tokenem: `401`.
+- `POST /api/push-subscribe` bez tokenu: `401`.
+- `GET /.vapid.json`: `404`.
+- `GET /server.js`: `404`.
+- `GET /package.json`: `404`.
+- CORS s nepovolenym originem: `403`, bez `Access-Control-Allow-Origin`.
+- Security headers pritomne: CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`.
+- Service worker: produkce vraci `kombuchator-v40`.
+- Railway nastaveni potvrzene rucne: `NODE_ENV=production`, `ALLOWED_ORIGINS=https://kombuchator-production.up.railway.app`, `DATA_DIR=/data`, limity payload/rate limit a Volume pripojeny na `/data`.
+- Zaver: produkcni sync API je chranene tokenem. Perzistence JSON dat je kodove smerovana do `/data`; skutecne preziti restartu/redeploye je zavisle na Railway Volume a nebylo destruktivne testovano restartem.
 
 Neprovedeno:
 
 - Playwright vizualni/mobile test kvuli chybejici systemove knihovne `libnspr4.so` v lokalnim prostredi.
 - Plny end-to-end test kalkulacniho UI v prohlizeci. Syntax, server start a API/security flow prosly.
-- Overeni Railway GitHub integrace, env promennych, volume a deployment nastaveni pres CLI nebylo mozne kvuli neplatnemu Railway prihlaseni.
+- Overeni Railway volume pres CLI nebylo mozne kvuli neplatnemu lokalnimu Railway prihlaseni. Restart/redeploy test perzistence nebyl proveden, aby se zbytecne nezasahovalo do produkcnich dat.
 
 ## 7. Co zustava k nastaveni mimo kod
 
